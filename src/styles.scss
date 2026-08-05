@@ -1,1 +1,156 @@
-/* You can add global styles to this file, and also import other style files */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+
+:root {
+
+    --bg-primary: #0b1017;
+    --bg-secondary: #111925;
+    --bg-card: #171f2b;
+
+    --text-primary: #f5f7fa;
+    --text-secondary: #a7b1c2;
+
+    --accent-orange: #ff6a3d;
+    --accent-blue: #49c6ff;
+
+    --border:
+        rgba(255,255,255,.08);
+
+}
+
+* {
+    box-sizing:border-box;
+}
+
+html {
+
+    background:
+        var(--bg-primary);
+
+    color:
+        var(--text-primary);
+
+    font-family:
+        'Inter',
+        sans-serif;
+
+}
+
+body {
+
+    margin:0;
+
+    min-height:100vh;
+
+    background:
+        radial-gradient(
+            circle at top,
+            rgba(73,198,255,.08),
+            transparent 35%
+        ),
+        var(--bg-primary);
+
+}
+
+a {
+    color:inherit;
+}
+
+button {
+
+    font-family:inherit;
+
+}
+
+::-webkit-scrollbar {
+
+    width:10px;
+
+}
+
+::-webkit-scrollbar-track {
+
+    background:
+        var(--bg-primary);
+
+}
+
+::-webkit-scrollbar-thumb {
+
+    background:
+        #293241;
+
+    border-radius:10px;
+
+}
+body {
+
+    position: relative;
+
+    overflow-x:hidden;
+
+}
+
+body::before {
+
+    content:"";
+
+    position:fixed;
+
+    inset:0;
+
+    background-image:
+
+        linear-gradient(
+            rgba(255,255,255,.025) 1px,
+            transparent 1px
+        ),
+
+        linear-gradient(
+            90deg,
+            rgba(255,255,255,.025) 1px,
+            transparent 1px
+        );
+
+    background-size:
+        48px 48px;
+
+    mask-image:
+        radial-gradient(
+            circle at center,
+            black,
+            transparent 75%
+        );
+
+    pointer-events:none;
+
+    z-index:-1;
+
+}
+
+body::after {
+
+    content:"";
+
+    position:fixed;
+
+    top:-300px;
+
+    right:-200px;
+
+    width:700px;
+
+    height:700px;
+
+    background:
+
+        radial-gradient(
+            circle,
+            rgba(73,198,255,.15),
+            transparent 65%
+        );
+
+    pointer-events:none;
+
+    z-index:-1;
+
+}

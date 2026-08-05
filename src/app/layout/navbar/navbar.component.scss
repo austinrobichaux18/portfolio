@@ -1,0 +1,138 @@
+.navbar {
+
+    position: fixed;
+
+    top: 20px;
+    left: 50%;
+
+    transform: translateX(-50%);
+
+    width: min(1180px, calc(100% - 48px));
+
+    height: 64px;
+
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+
+    padding: 0 22px;
+
+    background:
+        rgba(17, 25, 37, 0.85);
+
+    border:
+        1px solid rgba(255,255,255,.08);
+
+    border-radius: 16px;
+
+    backdrop-filter:
+        blur(18px);
+
+    box-shadow:
+        0 20px 40px rgba(0,0,0,.25);
+
+    z-index:100;
+
+}
+
+.logo {
+
+    display:flex;
+
+    align-items:center;
+
+    gap:12px;
+
+    text-decoration:none;
+
+    color:#f5f7fa;
+
+    font-weight:600;
+
+    letter-spacing:-.02em;
+
+}
+
+.logo-mark {
+
+    width:34px;
+
+    height:34px;
+
+    display:grid;
+
+    place-items:center;
+
+    border-radius:9px;
+
+    background:
+        #ff6a3d;
+
+    color:white;
+
+    font-size:.85rem;
+
+    font-weight:800;
+
+}
+
+nav {
+
+    display:flex;
+
+    align-items:center;
+
+    gap:28px;
+
+    a {
+
+        color:#9ca8b8;
+
+        text-decoration:none;
+
+        font-size:.9rem;
+
+        transition:.2s;
+
+        &:hover {
+
+            color:white;
+
+        }
+
+    }
+
+}
+
+.resume-button {
+
+    padding:
+
+        9px 16px;
+
+    border-radius:10px;
+
+    background:
+
+        rgba(255,255,255,.06);
+
+    border:
+
+        1px solid rgba(255,255,255,.1);
+
+    color:white;
+
+    font-size:.9rem;
+
+    font-weight:600;
+
+    transition:.2s;
+
+    &:hover {
+
+        background:
+            rgba(255,255,255,.12);
+
+    }
+
+}

@@ -1,0 +1,263 @@
+.hero {
+
+    min-height:
+
+        calc(100vh - 180px);
+
+    display:grid;
+
+    grid-template-columns:
+
+        1fr 420px;
+
+    align-items:center;
+
+    gap:80px;
+
+}
+
+.availability {
+
+    display:inline-flex;
+
+    align-items:center;
+
+    gap:10px;
+
+    padding:
+
+        8px 14px;
+
+    border-radius:20px;
+
+    background:
+
+        rgba(255,255,255,.05);
+
+    border:
+
+        1px solid rgba(255,255,255,.08);
+
+    color:#a7b1c2;
+
+    font-size:.85rem;
+
+}
+
+.dot {
+
+    width:8px;
+
+    height:8px;
+
+    border-radius:50%;
+
+    background:#49c675;
+
+}
+
+h1 {
+
+    margin:
+
+        28px 0 20px;
+
+    font-size:
+
+        clamp(3rem,6vw,5rem);
+
+    line-height:
+
+        .95;
+
+    letter-spacing:
+
+        -.06em;
+
+    font-weight:800;
+
+}
+
+h1 span {
+
+    color:#ff6a3d;
+
+}
+
+.description {
+
+    max-width:560px;
+
+    color:#a7b1c2;
+
+    font-size:1.15rem;
+
+    line-height:1.7;
+
+}
+
+.stack {
+
+    display:flex;
+
+    flex-wrap:wrap;
+
+    gap:10px;
+
+    margin:
+
+        32px 0;
+
+}
+
+.stack span {
+
+    padding:
+
+        7px 14px;
+
+    border-radius:8px;
+
+    background:#171f2b;
+
+    border:
+
+        1px solid rgba(255,255,255,.08);
+
+    color:#d7dee8;
+
+    font-size:.85rem;
+
+}
+
+.actions {
+
+    display:flex;
+
+    gap:14px;
+
+}
+
+.actions a {
+
+    padding:
+
+        13px 22px;
+
+    border-radius:10px;
+
+    text-decoration:none;
+
+    font-weight:600;
+
+}
+
+.primary {
+
+    background:#ff6a3d;
+
+    color:white;
+
+}
+
+.secondary {
+
+    border:
+
+        1px solid rgba(255,255,255,.15);
+
+    color:white;
+
+}
+
+.terminal {
+
+    background:#111925;
+
+    border:
+
+        1px solid rgba(255,255,255,.08);
+
+    border-radius:18px;
+
+    overflow:hidden;
+
+    box-shadow:
+
+        0 30px 80px rgba(0,0,0,.4);
+
+}
+
+.terminal-header {
+
+    height:42px;
+
+    display:flex;
+
+    align-items:center;
+
+    gap:8px;
+
+    padding-left:18px;
+
+    border-bottom:
+
+        1px solid rgba(255,255,255,.06);
+
+}
+
+.terminal-header div {
+
+    width:10px;
+
+    height:10px;
+
+    border-radius:50%;
+
+    background:#394555;
+
+}
+
+.terminal-body {
+
+    padding:28px;
+
+    font-family:
+
+        monospace;
+
+    line-height:1.8;
+
+    color:#a7b1c2;
+
+}
+
+.terminal-body span {
+
+    color:#49c6ff;
+
+}
+
+.success {
+
+    color:#55d68a;
+
+}
+
+.muted {
+
+    color:#748092;
+
+}
+
+@media(max-width:900px) {
+
+    .hero {
+
+        grid-template-columns:1fr;
+
+        gap:40px;
+
+    }
+
+}

@@ -1,0 +1,23 @@
+.panel{
+
+    background:var(--bg-card);
+
+    border:1px solid var(--border);
+
+    border-radius:var(--radius-lg);
+
+    padding:28px;
+
+    transition:.25s;
+
+}
+
+.panel:hover{
+
+    transform:translateY(-4px);
+
+    border-color:var(--border-light);
+
+    box-shadow:var(--shadow);
+
+}

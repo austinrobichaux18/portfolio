@@ -1,0 +1,33 @@
+.section{
+
+    padding-block:96px;
+
+}
+
+.section-header{
+
+    margin-bottom:48px;
+
+}
+
+.section-title{
+
+    display:flex;
+
+    align-items:center;
+
+    gap:14px;
+
+}
+
+.section-title::before{
+
+    content:"";
+
+    width:36px;
+
+    height:2px;
+
+    background:var(--accent);
+
+}
