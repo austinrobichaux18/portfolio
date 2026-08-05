@@ -1,4 +1,33 @@
-.page-placeholder {
-  padding: 4rem;
-  text-align: center;
+
+
+.page-header {
+
+    margin-bottom:60px;
+
+    h1 {
+
+        font-size:3rem;
+
+        margin-bottom:16px;
+
+    }
+
+    p {
+
+        color:#8f9bad;
+
+        font-size:1.1rem;
+
+    }
+
+}
+
+.timeline {
+
+    display:flex;
+
+    flex-direction:column;
+
+    gap:32px;
+
 }

@@ -1,1 +1,35 @@
-<p>project-card works!</p>
+<article class="project-card">
+
+    @if(project.status) {
+
+        <span class="status">
+            {{ project.status }}
+        </span>
+
+    }
+
+    <h3>
+
+        {{ project.title }}
+
+    </h3>
+
+    <p>
+
+        {{ project.description }}
+
+    </p>
+
+    <div class="tags">
+
+        @for(tag of project.tags; track tag) {
+
+            <span>
+                {{ tag }}
+            </span>
+
+        }
+
+    </div>
+
+</article>

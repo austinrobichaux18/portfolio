@@ -1,0 +1,64 @@
+.page-header {
+
+    margin-bottom:60px;
+
+}
+
+h1 {
+
+    font-size:3rem;
+
+}
+
+p {
+
+    color:#8f9bad;
+
+}
+
+.game-card {
+
+    padding:40px;
+
+    background:
+        rgba(23,31,43,.7);
+
+    border:
+
+        1px solid rgba(255,255,255,.08);
+
+    border-radius:20px;
+
+}
+
+.status {
+
+    color:#49c6ff;
+
+}
+
+h2 {
+
+    margin:20px 0;
+
+}
+
+.meta {
+
+    display:flex;
+
+    gap:12px;
+
+    span {
+
+        padding:8px 14px;
+
+        background:#111827;
+
+        border-radius:20px;
+
+        font-size:.85rem;
+
+    }
+
+}

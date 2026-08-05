@@ -1,9 +1,15 @@
-import { Component } from '@angular/core';
+import { Component, Input } from '@angular/core';
 
 @Component({
   selector: 'app-skill-chip',
   imports: [],
   templateUrl: './skill-chip.html',
-  styleUrl: './skill-chip.scss',
+  styleUrl: './skill-chip.scss'
 })
-export class SkillChip {}
+export class SkillChip {
+
+    @Input() name = '';
+
+    @Input() level = '';
+
+}

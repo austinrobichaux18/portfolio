@@ -1,4 +1,43 @@
-.page-placeholder {
-  padding: 4rem;
-  text-align: center;
+
+.page-header {
+
+    margin-bottom:60px;
+
+    h1 {
+
+        font-size:3rem;
+
+        margin-bottom:16px;
+
+    }
+
+    p {
+
+        color:#8f9bad;
+
+        font-size:1.1rem;
+
+    }
+
+}
+
+.project-grid {
+
+    display:grid;
+
+    grid-template-columns:
+        repeat(2, 1fr);
+
+    gap:24px;
+
+}
+
+@media(max-width:900px) {
+
+    .project-grid {
+
+        grid-template-columns:1fr;
+
+    }
+
 }

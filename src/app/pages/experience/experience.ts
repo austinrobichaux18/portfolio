@@ -1,9 +1,17 @@
 import { Component } from '@angular/core';
+import { experience } from '../../core/data/experience';
+import { TimelineItem } from '../../shared/timeline-item/timeline-item';
 
 @Component({
   selector: 'app-experience',
-  standalone: true,
+  imports: [
+    TimelineItem
+  ],
   templateUrl: './experience.html',
-  styleUrls: ['./experience.scss'],
+  styleUrl: './experience.scss'
 })
-export class Experience {}
+export class Experience {
+
+  experience = experience;
+
+}

@@ -1,0 +1,203 @@
+﻿Folder PATH listing
+Volume serial number is 00000085 141D:CDB0
+C:\USERS\AUSTIN\SOURCE\REPOS\PORTFOLIO\SRC
+│  index.html
+│  main.ts
+│  styles.scss
+│  
+├─app
+│  │  app.config.ts
+│  │  app.html
+│  │  app.routes.ts
+│  │  app.scss
+│  │  app.ts
+│  │  
+│  ├─core
+│  │  ├─data
+│  │  │      experience.ts
+│  │  │      games.ts
+│  │  │      projects.ts
+│  │  │      skills.ts
+│  │  │      
+│  │  ├─models
+│  │  │      Experience.ts
+│  │  │      Game.ts
+│  │  │      Project.ts
+│  │  │      Skill.ts
+│  │  │      
+│  │  └─services
+│  ├─layout
+│  │  ├─footer
+│  │  │      footer.component.html
+│  │  │      footer.component.scss
+│  │  │      footer.component.ts
+│  │  │      
+│  │  └─navbar
+│  │          navbar.component.html
+│  │          navbar.component.scss
+│  │          navbar.component.ts
+│  │          
+│  ├─pages
+│  │  ├─about
+│  │  │      about.component.ts
+│  │  │      about.html
+│  │  │      about.scss
+│  │  │      about.spec.ts
+│  │  │      about.ts
+│  │  │      
+│  │  ├─contact
+│  │  │      contact.html
+│  │  │      contact.scss
+│  │  │      contact.spec.ts
+│  │  │      contact.ts
+│  │  │      
+│  │  ├─experience
+│  │  │      experience.html
+│  │  │      experience.scss
+│  │  │      experience.ts
+│  │  │      
+│  │  ├─games
+│  │  │      games.component.ts
+│  │  │      games.html
+│  │  │      games.scss
+│  │  │      games.spec.ts
+│  │  │      games.ts
+│  │  │      
+│  │  ├─home
+│  │  │      home.html
+│  │  │      home.scss
+│  │  │      home.spec.ts
+│  │  │      home.ts
+│  │  │      
+│  │  ├─projects
+│  │  │      projects.html
+│  │  │      projects.scss
+│  │  │      projects.spec.ts
+│  │  │      projects.ts
+│  │  │      
+│  │  └─resume
+│  │          resume.component.ts
+│  │          resume.html
+│  │          resume.scss
+│  │          resume.spec.ts
+│  │          resume.ts
+│  │          
+│  └─shared
+│      ├─button
+│      │      button.component.ts
+│      │      
+│      ├─card
+│      │      card.component.ts
+│      │      
+│      ├─footer
+│      │      footer.component.ts
+│      │      footer.html
+│      │      footer.scss
+│      │      footer.spec.ts
+│      │      footer.ts
+│      │      
+│      ├─hero
+│      │      hero.component.ts
+│      │      hero.html
+│      │      hero.scss
+│      │      hero.spec.ts
+│      │      hero.ts
+│      │      
+│      ├─navbar
+│      │      navbar.component.ts
+│      │      navbar.html
+│      │      navbar.scss
+│      │      navbar.spec.ts
+│      │      navbar.ts
+│      │      
+│      ├─project-card
+│      │      project-card.component.ts
+│      │      project-card.html
+│      │      project-card.scss
+│      │      project-card.spec.ts
+│      │      project-card.ts
+│      │      
+│      ├─section-title
+│      │      section-title.component.ts
+│      │      section-title.html
+│      │      section-title.scss
+│      │      section-title.spec.ts
+│      │      section-title.ts
+│      │      
+│      ├─skill-chip
+│      │      skill-chip.component.ts
+│      │      skill-chip.html
+│      │      skill-chip.scss
+│      │      skill-chip.spec.ts
+│      │      skill-chip.ts
+│      │      
+│      ├─stat-card
+│      │      stat-card.component.ts
+│      │      stat-card.html
+│      │      stat-card.scss
+│      │      stat-card.spec.ts
+│      │      stat-card.ts
+│      │      
+│      ├─timeline
+│      │      timeline.component.ts
+│      │      
+│      └─timeline-item
+│              timeline-item.html
+│              timeline-item.scss
+│              timeline-item.spec.ts
+│              timeline-item.ts
+│              
+└─styles
+        theme.scss
+        _animations.scss
+        _buttons.scss
+        _cards.scss
+        _colors.scss
+        _container.scss
+        _heroPanel.scss
+        _layout.scss
+        _others.scss
+        _panels.scss
+        _sections.scss
+        _typography.scss
+        _variables.scss
+        
+import { Routes } from '@angular/router';
+
+import { Contact } from './pages/contact/contact';
+import { Experience } from './pages/experience/experience';
+import { Home } from './pages/home/home';
+import { Projects} from './pages/projects/projects';
+
+export const routes: Routes = [
+
+    {
+        path: '',
+        component: Home,
+        title: 'Austin Robichaux | Senior Software Engineer'
+    },
+
+    {
+        path: 'experience',
+        component: Experience,
+        title: 'Experience | Austin Robichaux'
+    },
+
+    {
+        path: 'projects',
+        component: Projects,
+        title: 'Projects | Austin Robichaux'
+    },
+
+    {
+        path: 'contact',
+        component: Contact,
+        title: 'Contact | Austin Robichaux'
+    },
+
+    {
+        path: '**',
+        redirectTo: ''
+    }
+
+];

@@ -136,3 +136,27 @@ nav {
     }
 
 }
+.resume-link {
+
+    padding:10px 20px;
+
+    border-radius:10px;
+
+    border:1px solid rgba(255,255,255,.15);
+
+    transition:.2s;
+
+    &:hover {
+
+        border-color:#49c6ff;
+
+        color:#49c6ff;
+
+    }
+
+}
+.navbar a {
+
+    text-decoration: none;
+
+}

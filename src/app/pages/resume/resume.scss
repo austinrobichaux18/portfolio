@@ -1,0 +1,82 @@
+
+
+.page-header {
+
+    margin-bottom:50px;
+
+    h1 {
+
+        font-size:3rem;
+
+    }
+
+    p {
+
+        color:#8f9bad;
+
+        max-width:700px;
+
+    }
+
+}
+
+.resume-card {
+
+    padding:40px;
+
+    background:
+        rgba(23,31,43,.7);
+
+    border:
+
+        1px solid rgba(255,255,255,.08);
+
+    border-radius:20px;
+
+}
+
+h2 {
+
+    margin:0;
+
+}
+
+h3 {
+
+    color:#49c6ff;
+
+}
+
+p {
+
+    color:#b8c1ce;
+
+    line-height:1.6;
+
+}
+
+.download {
+
+    display:inline-block;
+
+    margin-top:24px;
+
+    padding:12px 24px;
+
+    border-radius:10px;
+
+    background:#49c6ff;
+
+    color:#081018;
+
+    text-decoration:none;
+
+    transition:.2s;
+
+    &:hover {
+
+        opacity:.85;
+
+    }
+
+}

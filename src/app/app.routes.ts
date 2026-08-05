@@ -2,8 +2,10 @@ import { Routes } from '@angular/router';
 
 import { Contact } from './pages/contact/contact';
 import { Experience } from './pages/experience/experience';
+import { Games } from './pages/games/games';
 import { Home } from './pages/home/home';
-import { Projects} from './pages/projects/projects';
+import { Projects } from './pages/projects/projects';
+import { Resume } from './pages/resume/resume';
 
 export const routes: Routes = [
 
@@ -26,11 +28,22 @@ export const routes: Routes = [
     },
 
     {
+        path: 'games',
+        component: Games,
+        title: 'Games | Austin Robichaux'
+    },
+
+    {
         path: 'contact',
         component: Contact,
         title: 'Contact | Austin Robichaux'
     },
 
+    {
+        path: 'resume',
+        component: Resume,
+        title: 'Resume | Austin Robichaux'
+    },
     {
         path: '**',
         redirectTo: ''

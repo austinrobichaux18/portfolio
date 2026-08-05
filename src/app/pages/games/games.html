@@ -1,1 +1,53 @@
-<p>games works!</p>
+<section class="page-container games-page">
+
+    <header class="page-header">
+
+        <h1>
+            Indie Games
+        </h1>
+
+        <p>
+            Personal game development projects built with modern engines and tools.
+        </p>
+
+    </header>
+
+    @for(game of games; track game.id) {
+
+        <article class="game-card">
+
+            <span class="status">
+
+                {{ game.status }}
+
+            </span>
+
+            <h2>
+
+                {{ game.title }}
+
+            </h2>
+
+            <p>
+
+                {{ game.description }}
+
+            </p>
+
+            <div class="meta">
+
+                <span>
+                    {{ game.engine }}
+                </span>
+
+                <span>
+                    {{ game.platform }}
+                </span>
+
+            </div>
+
+        </article>
+
+    }
+
+</section>

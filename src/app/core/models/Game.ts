@@ -1,7 +1,17 @@
 export interface Game {
-  id: string;
-  title: string;
-  platform?: string;
-  description?: string;
-  link?: string;
+
+    id: string;
+
+    title: string;
+
+    platform?: string;
+
+    engine?: string;
+
+    status?: string;
+
+    description?: string;
+
+    link?: string;
+
 }

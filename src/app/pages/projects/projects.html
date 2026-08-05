@@ -1,5 +1,27 @@
-<section class="page-placeholder">
-  <h1>
-    Coming Soon
-  </h1>
+<section class="page-container projects-page">
+
+    <header class="page-header">
+
+        <h1>
+            Projects
+        </h1>
+
+        <p>
+            A collection of software projects, experiments, and engineering work.
+        </p>
+
+    </header>
+
+    <section class="project-grid">
+
+      @for(project of projects; track project.id) {
+
+    <app-project-card
+        [project]="project">
+    </app-project-card>
+
+}
+
+    </section>
+
 </section>

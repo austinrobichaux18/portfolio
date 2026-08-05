@@ -4,6 +4,8 @@ import { Component } from '@angular/core';
   selector: 'app-resume',
   imports: [],
   templateUrl: './resume.html',
-  styleUrl: './resume.scss',
+  styleUrl: './resume.scss'
 })
-export class Resume {}
+export class Resume {
+
+}

@@ -1,1 +1,52 @@
-<p>timeline-item works!</p>
+<article class="timeline-item">
+
+    <div class="date">
+
+        {{ item.startDate }} -
+        {{ item.endDate }}
+
+    </div>
+
+    <h3>
+
+        {{ item.role }}
+
+    </h3>
+
+    <h4>
+
+        {{ item.company }}
+
+    </h4>
+
+    <p>
+
+        {{ item.description }}
+
+    </p>
+
+    <div class="tags">
+
+        @for (tech of item.technologies; track tech) {
+
+            <span>
+                {{ tech }}
+            </span>
+
+        }
+
+    </div>
+
+    <ul>
+
+        @for (highlight of item.highlights; track highlight) {
+
+            <li>
+                {{ highlight }}
+            </li>
+
+        }
+
+    </ul>
+
+</article>

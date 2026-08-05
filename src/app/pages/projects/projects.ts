@@ -1,9 +1,17 @@
 import { Component } from '@angular/core';
+import { ProjectCard } from '../../shared/project-card/project-card';
+import { projects } from '../../core/data/projects';
 
 @Component({
   selector: 'app-projects',
-  standalone: true,
-  templateUrl: './projects.html',
-  styleUrls: ['./projects.scss'],
-})
-export class Projects {}
+    imports: [
+        ProjectCard
+          ],
+            templateUrl: './projects.html',
+              styleUrl: './projects.scss'
+              })
+              export class Projects {
+
+                projects = projects;
+
+                }
