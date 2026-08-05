@@ -7,70 +7,111 @@
         </h1>
 
         <p>
-            Interested in working together, discussing software,
-            or talking about game development? Reach out.
+            Have a project, opportunity, or just want to talk software?
+            Send me a message.
         </p>
 
     </header>
 
     <section class="contact-card">
 
-        <div class="contact-item">
+        <form
+            [formGroup]="contactForm"
+            (ngSubmit)="submit()">
 
-            <h3>
-                Email
-            </h3>
+            <div class="form-group">
 
-            <a href="mailto:austinrobichaux18@example.com">
-                austin@example.com
-            </a>
+                <label>
+                    Name
+                </label>
 
-        </div>
+                <input
+                    type="text"
+                    formControlName="name"
+                    placeholder="Your name">
 
-        <div class="contact-item">
+                @if (f.name.touched && f.name.invalid) {
 
-            <h3>
-                LinkedIn
-            </h3>
+                    <span class="error">
+                        Please enter your name.
+                    </span>
 
-            <a
-                href="#"
-                target="_blank">
+                }
 
-                LinkedIn Profile
+            </div>
 
-            </a>
+            <div class="form-group">
 
-        </div>
+                <label>
+                    Email
+                </label>
 
-        <div class="contact-item">
+                <input
+                    type="email"
+                    formControlName="email"
+                    placeholder="you@example.com">
 
-            <h3>
-                GitHub
-            </h3>
+                @if (f.email.touched && f.email.invalid) {
 
-            <a
-                href="#"
-                target="_blank">
+                    <span class="error">
+                        Please enter a valid email address.
+                    </span>
 
-                GitHub Profile
+                }
 
-            </a>
+            </div>
 
-        </div>
+            <div class="form-group">
 
+                <label>
+                    Company
+                    <span>
+                        (optional)
+                    </span>
+                </label>
+
+                <input
+                    type="text"
+                    formControlName="company"
+                    placeholder="Company name">
+
+            </div>
+
+            <div class="form-group">
+
+                <label>
+                    Message
+                </label>
+
+                <textarea
+
+                    rows="6"
+
+                    formControlName="message"
+
+                    placeholder="Tell me about your project or opportunity...">
+
+                </textarea>
+
+                @if (f.message.touched && f.message.invalid) {
+
+                    <span class="error">
+                        Message must be at least 20 characters.
+                    </span>
+
+                }
+
+            </div>
+
+            <button
+                type="submit"
+                class="submit-button">
+
+                Send Message
+
+            </button>
+
+        </form>
     </section>
-
-    <div class="actions">
-
-        <a
-            routerLink="/resume"
-            class="resume-link">
-
-            View Resume
-
-        </a>
-
-    </div>
 
 </section>
