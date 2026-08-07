@@ -1,117 +1,82 @@
 <section class="page-container contact-page">
+  <header class="page-header">
+    <h1>Contact</h1>
 
-    <header class="page-header">
+    <p>Have a project, opportunity, or just want to talk software? Send me a message.</p>
+  </header>
 
-        <h1>
-            Contact
-        </h1>
+  <section class="contact-card">
+    <form [formGroup]="contactForm" (ngSubmit)="submit()">
+      <div class="form-group">
+        <label> Name </label>
 
-        <p>
-            Have a project, opportunity, or just want to talk software?
-            Send me a message.
-        </p>
+        <input type="text" formControlName="name" placeholder="Your name" />
 
-    </header>
+        @if (f.name.touched && f.name.invalid) {
+          <span class="error"> Please enter your name. </span>
+        }
+      </div>
 
-    <section class="contact-card">
+      <div class="form-group">
+        <label> Email </label>
 
-        <form
-            [formGroup]="contactForm"
-            (ngSubmit)="submit()">
+        <input type="email" formControlName="email" placeholder="you@example.com" />
 
-            <div class="form-group">
+        @if (f.email.touched && f.email.invalid) {
+          <span class="error"> Please enter a valid email address. </span>
+        }
+      </div>
 
-                <label>
-                    Name
-                </label>
+      <div class="form-group">
+        <label>
+          Company
+          <span> (optional) </span>
+        </label>
 
-                <input
-                    type="text"
-                    formControlName="name"
-                    placeholder="Your name">
+        <input type="text" formControlName="company" placeholder="Company name" />
+      </div>
 
-                @if (f.name.touched && f.name.invalid) {
+      <div class="form-group">
+        <label> Message </label>
 
-                    <span class="error">
-                        Please enter your name.
-                    </span>
+        <textarea
+          rows="6"
+          formControlName="message"
+          placeholder="Tell me about your project or opportunity..."
+        >
+        </textarea>
 
-                }
+        @if (f.message.touched && f.message.invalid) {
+          <span class="error"> Message must be at least 20 characters. </span>
+        }
+      </div>
 
-            </div>
+      <ngx-turnstile
+        siteKey="0x4AAAAAAEJVg_Hz1IalcQj8"
+        (resolved)="onTurnstileSuccess($event)"
+        (expired)="onTurnstileExpired()"
+      >
+      </ngx-turnstile>
 
-            <div class="form-group">
+      @if (errorMessage) {
+        <span class="error">
+          {{ errorMessage }}
+        </span>
+      }
 
-                <label>
-                    Email
-                </label>
+      @if (successMessage) {
+        <span class="success">
+          {{ successMessage }}
+        </span>
+      }
 
-                <input
-                    type="email"
-                    formControlName="email"
-                    placeholder="you@example.com">
-
-                @if (f.email.touched && f.email.invalid) {
-
-                    <span class="error">
-                        Please enter a valid email address.
-                    </span>
-
-                }
-
-            </div>
-
-            <div class="form-group">
-
-                <label>
-                    Company
-                    <span>
-                        (optional)
-                    </span>
-                </label>
-
-                <input
-                    type="text"
-                    formControlName="company"
-                    placeholder="Company name">
-
-            </div>
-
-            <div class="form-group">
-
-                <label>
-                    Message
-                </label>
-
-                <textarea
-
-                    rows="6"
-
-                    formControlName="message"
-
-                    placeholder="Tell me about your project or opportunity...">
-
-                </textarea>
-
-                @if (f.message.touched && f.message.invalid) {
-
-                    <span class="error">
-                        Message must be at least 20 characters.
-                    </span>
-
-                }
-
-            </div>
-
-            <button
-                type="submit"
-                class="submit-button">
-
-                Send Message
-
-            </button>
-
-        </form>
-    </section>
-
+      <button type="submit" class="submit-button" [disabled]="sending">
+        @if (sending) {
+          Sending...
+        } @else {
+          Send Message
+        }
+      </button>
+    </form>
+  </section>
 </section>
