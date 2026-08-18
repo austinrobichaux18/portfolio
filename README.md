@@ -1,8 +1,8 @@
 # Austin Robichaux — Portfolio
 
-Personal portfolio site built with Angular, showcasing professional experience, projects, and indie game development work. Deployed on Firebase Hosting with a Cloud Functions backend for the contact form.
+Personal portfolio built with Angular, showcasing professional experience, projects, and indie game development. Deployed with Firebase Hosting and backed by Firebase Cloud Functions, Cloudflare Turnstile bot protection, and Resend for contact form email delivery.
 
-**Live site:** [portfolio-bce46.web.app](https://portfolio-bce46.web.app)
+**Live site:** [austinrobichaux.com](https://austinrobichaux.com)
 
 ## Tech stack
 
