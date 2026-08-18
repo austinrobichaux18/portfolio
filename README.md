@@ -1,59 +1,98 @@
-# Portfolio
+# Austin Robichaux — Portfolio
 
-This project was generated using [Angular CLI](https://github.com/angular/angular-cli) version 22.1.2.
+Personal portfolio site built with Angular, showcasing professional experience, projects, and indie game development work. Deployed on Firebase Hosting with a Cloud Functions backend for the contact form.
 
-## Development server
+**Live site:** [portfolio-bce46.web.app](https://portfolio-bce46.web.app)
 
-To start a local development server, run:
+## Tech stack
 
-```bash
-ng serve
-```
+- **Frontend:** Angular 22 (standalone components), TypeScript, SCSS
+- **Backend:** Firebase Cloud Functions (2nd gen, TypeScript)
+- **Hosting:** Firebase Hosting, with CI/CD via GitHub Actions
+- **Contact form:** Cloudflare Turnstile (bot protection) + Resend (transactional email)
+- **Testing:** Vitest (via the Angular CLI's unit-test builder)
 
-Once the server is running, open your browser and navigate to `http://localhost:4200/`. The application will automatically reload whenever you modify any of the source files.
+## Pages
 
-## Code scaffolding
+| Route         | Description                              |
+| ------------- | ----------------------------------------- |
+| `/`           | Home — intro, stats, and skills overview  |
+| `/experience` | Professional work history                 |
+| `/projects`   | Featured software and engineering projects |
+| `/games`      | Indie game development projects            |
+| `/resume`     | Resume viewer/download                     |
+| `/contact`    | Contact form                               |
 
-Angular CLI includes powerful code scaffolding tools. To generate a new component, run:
+## Getting started
 
-```bash
-ng generate component component-name
-```
+### Prerequisites
 
-For a complete list of available schematics (such as `components`, `directives`, or `pipes`), run:
+- Node.js and npm
+- [Firebase CLI](https://firebase.google.com/docs/cli) (for Functions/Hosting work)
 
-```bash
-ng generate --help
-```
-
-## Building
-
-To build the project run:
-
-```bash
-ng build
-```
-
-This will compile your project and store the build artifacts in the `dist/` directory. By default, the production build optimizes your application for performance and speed.
-
-## Running unit tests
-
-To execute unit tests with the [Vitest](https://vitest.dev/) test runner, use the following command:
+### Install and run
 
 ```bash
-ng test
+npm install
+npm start
 ```
 
-## Running end-to-end tests
+The app will be available at `http://localhost:4200` and reloads automatically on source changes.
 
-For end-to-end (e2e) testing, run:
+### Available scripts
+
+| Command        | Description                                             |
+| -------------- | -------------------------------------------------------- |
+| `npm start`    | Runs the dev server (`ng serve`)                          |
+| `npm run build`| Production build, output to `dist/portfolio/browser`      |
+| `npm run watch`| Development build in watch mode                           |
+| `npm test`     | Runs unit tests with Vitest                                |
+
+## Project structure
+
+```
+src/app/
+├─ core/
+│  ├─ data/       # Static content (projects, experience, games, skills)
+│  └─ models/     # TypeScript interfaces for that content
+├─ layout/        # Navbar and footer, shared across all pages
+├─ pages/         # Route-level components (one folder per page)
+└─ shared/        # Reusable presentational components
+```
+
+Site content (projects, experience, games, skills) is defined as static data in `src/app/core/data/` rather than fetched from an API.
+
+## Cloud Functions
+
+`functions/` contains a single HTTPS function, `sendContactEmail`, which:
+
+1. Verifies the Cloudflare Turnstile token submitted with the contact form.
+2. Sends the message via [Resend](https://resend.com).
 
 ```bash
-ng e2e
+cd functions
+npm install
+npm run build
+npm run serve   # run in the Firebase emulator
 ```
 
-Angular CLI does not come with an end-to-end testing framework by default. You can choose one that suits your needs.
+Requires two Firebase Functions secrets to be configured:
 
-## Additional Resources
+```bash
+firebase functions:secrets:set TURNSTILE_SECRET
+firebase functions:secrets:set RESEND_API_KEY
+```
 
-For more information on using the Angular CLI, including detailed command references, visit the [Angular CLI Overview and Command Reference](https://angular.dev/tools/cli) page.
+## Deployment
+
+Firebase Hosting deploys are automated via GitHub Actions:
+
+- Pushes to `master` deploy to production.
+- Pull requests get a preview channel deploy.
+
+Cloud Functions are deployed manually:
+
+```bash
+cd functions
+npm run deploy
+```
