@@ -96,3 +96,9 @@ Cloud Functions are deployed manually:
 cd functions
 npm run deploy
 ```
+
+or from root directory,
+
+```
+firebase deploy --only functions:sendContactEmail
+```
