@@ -15,7 +15,7 @@ export class Contact {
 
   private readonly http = inject(HttpClient);
 
-  private readonly functionUrl = 'YOUR_FIREBASE_FUNCTION_URL';
+  private readonly functionUrl = 'https://sendcontactemail-7vohdas4fa-uc.a.run.app';
 
   sending = false;
 

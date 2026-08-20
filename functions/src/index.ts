@@ -59,12 +59,10 @@ export const sendContactEmail = onRequest(
         const resend = new Resend(resendApiKey.value());
 
         await resend.emails.send({
-          from: "onboarding@resend.dev",
-
+          from: "portfolio@austinrobichaux.com",
           to: "austinrobichaux18+MyWebsitePortfolioForm@gmail.com",
-
           subject: `Portfolio Contact - ${name}`,
-
+          replyTo: email,
           html: `
                     <h2>New Portfolio Contact</h2>
 
