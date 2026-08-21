@@ -95,9 +95,19 @@ export const projects: Project[] = [
 
         technicalChallenges: [
             {
-                title: 'Data-Driven Architecture',
+                title: 'Hex-Grid System',
+                description:
+                    'Built the hex-based grid powering tactical positioning, movement, and encounter placement across each run.'
+            },
+            {
+                title: 'Card System',
                 description:
                     'Built data-driven frameworks for cards, enemies, and encounters so new content can be added without touching engine code.'
+            },
+            {
+                title: 'Combat & AI Systems',
+                description:
+                    'Implemented automated combat and enemy AI systems driving hex-based tactical encounters.'
             },
             {
                 title: 'Procedural Generation',
@@ -105,9 +115,14 @@ export const projects: Project[] = [
                     'Designed procedural systems for hex-based terrain and run generation to keep each playthrough distinct.'
             },
             {
-                title: 'AI Systems',
+                title: 'Save System',
                 description:
-                    'Implemented automated combat and enemy AI systems driving hex-based tactical encounters.'
+                    'Built a save system that persists run state, progression, and data-driven content across sessions.'
+            },
+            {
+                title: 'UI Architecture',
+                description:
+                    'Designed the game\'s UI/UX systems to stay responsive and readable as card, combat, and progression state grows in complexity.'
             }
         ],
 
@@ -144,17 +159,22 @@ export const projects: Project[] = [
 
         overview: [
             'An automated Wordle-playing solver that plays the daily puzzle end-to-end, filtering the candidate word list using constraint-based logic derived from each guess\'s letter feedback.',
-            'Built to explore how closely a straightforward constraint-satisfaction approach can approach the information-theoretic optimum for the game, without relying on precomputed guess trees.'
+            'Built to explore how closely a straightforward constraint-satisfaction approach can approach the information-theoretic optimum for the game, without relying on precomputed guess trees, in the spirit of 3Blue1Brown\'s information-theory breakdown of optimal Wordle strategy.'
         ],
 
         myRole:
-            'Designed and built the solver\'s guessing strategy, constraint-filtering logic, and browser automation end-to-end.',
+            'Designed and built the solver\'s guessing strategy, scoring system, constraint-filtering logic, and browser automation end-to-end.',
 
         technicalChallenges: [
             {
                 title: 'Algorithm Design',
                 description:
                     'Implemented constraint-based candidate filtering from letter feedback (correct, present, absent) to narrow the word list after each guess.'
+            },
+            {
+                title: 'Guess Strategy & Scoring',
+                description:
+                    'Scored candidate guesses by how much they narrow the remaining word list, balancing information gain against the odds of guessing correctly outright.'
             },
             {
                 title: 'Browser Automation',

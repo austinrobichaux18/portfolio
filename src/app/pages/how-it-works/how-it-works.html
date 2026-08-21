@@ -1,0 +1,52 @@
+<section class="page-container how-it-works-page">
+
+    <header class="page-header">
+
+        <h1>How This Site Works</h1>
+
+        <p>
+            This portfolio is a real, production Angular application, not just a static resume page.
+            Here's how it's actually built and deployed.
+        </p>
+
+    </header>
+
+    <section class="detail-section">
+
+        <p class="section-label">Architecture</p>
+
+        <div class="architecture-diagram">
+
+            @for (step of architecture; track step; let last = $last) {
+
+                <div class="arch-step">{{ step }}</div>
+
+                @if (!last) {
+
+                    <div class="arch-arrow">↓</div>
+
+                }
+
+            }
+
+        </div>
+
+    </section>
+
+    <section class="topic-grid">
+
+        @for (topic of topics; track topic.title) {
+
+            <div class="topic-card">
+
+                <h3>{{ topic.title }}</h3>
+
+                <p>{{ topic.description }}</p>
+
+            </div>
+
+        }
+
+    </section>
+
+</section>

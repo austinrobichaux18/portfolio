@@ -3,14 +3,25 @@
     <header class="page-header">
 
         <h1>
-            Indie Games
+            Indie Development
         </h1>
 
         <p>
-            Personal game development projects built with modern engines and tools.
+            Outside of enterprise software development, I build and publish my own software and
+            games.
         </p>
 
     </header>
+
+    <div class="indie-tags">
+
+        @for (tag of indieTags; track tag) {
+
+            <span>{{ tag }}</span>
+
+        }
+
+    </div>
 
     @for(game of games; track game.id) {
 
@@ -45,6 +56,12 @@
                 </span>
 
             </div>
+
+            @if (game.link) {
+
+                <a [routerLink]="game.link" class="case-study"> View Case Study </a>
+
+            }
 
         </article>
 

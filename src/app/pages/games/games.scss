@@ -1,6 +1,36 @@
 .page-header {
 
+    margin-bottom:32px;
+
+}
+
+.indie-tags {
+
+    display:flex;
+
+    flex-wrap:wrap;
+
+    gap:10px;
+
     margin-bottom:60px;
+
+    span {
+
+        padding:7px 14px;
+
+        border-radius:8px;
+
+        background:#171f2b;
+
+        border:
+
+            1px solid rgba(255,255,255,.08);
+
+        color:#d7dee8;
+
+        font-size:.85rem;
+
+    }
 
 }
 
@@ -58,6 +88,28 @@ h2 {
         border-radius:20px;
 
         font-size:.85rem;
+
+    }
+
+}
+
+.case-study {
+
+    display:inline-block;
+
+    margin-top:20px;
+
+    color:#49c6ff;
+
+    text-decoration:none;
+
+    font-weight:600;
+
+    font-size:.9rem;
+
+    &:hover {
+
+        text-decoration:underline;
 
     }
 

@@ -1,61 +1,144 @@
 
-PHASE 2 — AI / Claude
-17. Add AI & Modern Development Section
+PHASE 2 — Indie Development
+20. Reframe /games
 
-Position this as practical engineering experience, not AI research.
+The game section should support the professional engineering story.
 
-Recommended title:
+Position it as:
 
-AI-Assisted Development
+Indie Development
 
-Explain how AI is used for:
+Possible introductory text:
 
-Code generation
-Code review
-Debugging
-Refactoring
-Test generation
-Documentation
-Architecture exploration
-Developer productivity
+Outside of enterprise software development, I build and publish my own software and games.
 
-The positioning should be:
+The section should communicate:
 
-Senior software engineer who knows how to use AI effectively in real software development.
+C#
+Godot
+Architecture
+UI
+Data modeling
+Algorithms
+Systems design
+Independent product development
 
-Avoid exaggerated claims.
+Do not let games dominate the primary professional narrative.
 
-18. Show Actual AI Development Examples
+21. Create a Dedicated Hexing Case Study
 
-Where possible, create small case studies:
+Hexing should receive its own detailed project presentation.
 
-Problem
+Suggested structure:
 
-Large unfamiliar codebase.
+Hexing
 
-Approach
+Dungeon Manager · Godot 4 · C#
 
-Used Claude to analyze architecture and identify dependencies.
+A roguelike strategy game built from the ground up in Godot using C#.
 
-Result
+Sections:
 
-Reduced time required to understand and modify the system.
+Game
 
-Use real examples rather than invented claims.
+Screenshots and/or video.
 
-PHASE 2 — Certifications
-19. Create Certifications Section
+Engineering
 
-Recommended structure:
+Potential topics:
 
-Claude Certified Developer – Foundations
+Hex-grid system
+Card system
+Combat system
+Save system
+Data-driven game objects
+Procedural systems
+UI architecture
+Architecture
 
-Anthropic
+Explain major systems.
 
-August 2026
+Development
 
-[View Credential]
+Show development progression if useful:
 
-Add additional certifications as appropriate.
+Prototype → Systems → Alpha → Release
 
-Use credential links when available.
+Technology
+
+Godot C# .NET JSON
+
+Results
+
+Include Steam, GitHub, player metrics, release information, etc. when available.
+
+22. Feature Wordle Solver
+
+The Wordle project can demonstrate algorithmic thinking.
+
+Highlight:
+
+Automated gameplay
+Search/guess strategy
+Scoring system
+Average of approximately 3.6 guesses, if still accurate
+Theoretical comparison to the 3Blue1Brown discussion of Wordle strategy
+GitHub source
+Demo/video where useful
+
+Use this as an algorithmic/software-engineering project rather than presenting it primarily as a game.
+
+PHASE 2 — Portfolio Architecture Case Study
+23. Add "How This Site Works"
+
+Create a small technical page or section explaining the portfolio itself.
+
+Potential architecture:
+
+Angular 22
+     ↓
+Firebase Hosting
+     ↓
+Firebase Cloud Functions
+     ↓
+Cloudflare Turnstile
+     ↓
+Resend
+
+Explain:
+
+Why Angular
+Why Firebase
+Contact form architecture
+Bot protection
+Secret management
+CI/CD
+Testing
+Deployment
+
+This makes the portfolio itself an interview talking point.
+
+PHASE 3 — Engineering Quality
+24. Automated Testing
+
+Increase test coverage around meaningful behavior.
+
+At minimum consider:
+
+Component tests
+Contact form tests
+Service tests
+Data/model tests
+Cloud Function tests
+
+CI should run:
+
+npm test
+
+and:
+
+npm run build
+
+before deployment.
+
+Do not chase arbitrary percentage coverage. Focus on meaningful behavior.

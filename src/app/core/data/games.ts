@@ -3,9 +3,9 @@ import { Game } from '../models/Game';
 export const games: Game[] = [
 
     {
-        id: 'dungeon-manager',
+        id: 'hexing',
 
-        title: 'Dungeon Manager',
+        title: 'Hexing',
 
         platform: 'Steam',
 
@@ -14,7 +14,9 @@ export const games: Game[] = [
         status: 'In Development',
 
         description:
-            'A roguelike deckbuilder where players build and manage a dungeon using cards, hex terrain, monsters, and automated battles.',
+            'A roguelike deckbuilding strategy game where players build and manage a dungeon using cards, hex terrain, monsters, and automated battles.',
+
+        link: '/projects/hexing'
 
     }
 
