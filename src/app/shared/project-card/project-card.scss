@@ -68,3 +68,37 @@ p {
     }
 
 }
+
+.result {
+
+    margin-top:16px;
+
+    color:#8f9bad;
+
+    font-size:.9rem;
+
+    line-height:1.6;
+
+}
+
+.case-study {
+
+    display:inline-block;
+
+    margin-top:18px;
+
+    color:#49c6ff;
+
+    text-decoration:none;
+
+    font-weight:600;
+
+    font-size:.9rem;
+
+    &:hover {
+
+        text-decoration:underline;
+
+    }
+
+}

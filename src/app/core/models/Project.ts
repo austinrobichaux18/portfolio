@@ -16,4 +16,8 @@ export interface Project {
 
     repo?: string;
 
+    result?: string;
+
+    featured?: boolean;
+
 }

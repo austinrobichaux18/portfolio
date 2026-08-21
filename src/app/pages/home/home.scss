@@ -364,3 +364,199 @@ h1 {
     gap:12px;
 
 }
+
+.what-i-do {
+
+    margin-top:80px;
+
+}
+
+.what-i-do h2 {
+
+    margin-bottom:24px;
+
+}
+
+.capability-grid {
+
+    display:grid;
+
+    grid-template-columns:
+
+        repeat(3,1fr);
+
+    gap:18px;
+
+}
+
+.capability-card {
+
+    padding:28px;
+
+    background:
+
+        rgba(23,31,43,.75);
+
+    border:
+
+        1px solid rgba(255,255,255,.08);
+
+    border-radius:16px;
+
+}
+
+.capability-card h3 {
+
+    margin-bottom:10px;
+
+    font-size:1.1rem;
+
+}
+
+.capability-card p {
+
+    color:#a7b1c2;
+
+    font-size:.95rem;
+
+    line-height:1.6;
+
+}
+
+@media(max-width:900px) {
+
+    .capability-grid {
+
+        grid-template-columns:1fr;
+
+    }
+
+}
+
+.featured-projects {
+
+    margin-top:80px;
+
+}
+
+.featured-projects h2 {
+
+    margin-bottom:24px;
+
+}
+
+.featured-projects .project-grid {
+
+    display:grid;
+
+    grid-template-columns:
+
+        repeat(3,1fr);
+
+    gap:18px;
+
+}
+
+@media(max-width:900px) {
+
+    .featured-projects .project-grid {
+
+        grid-template-columns:1fr;
+
+    }
+
+}
+
+.certifications {
+
+    margin-top:80px;
+
+}
+
+.certification-card {
+
+    display:flex;
+
+    align-items:center;
+
+    gap:20px;
+
+    padding:24px 28px;
+
+    background:
+
+        rgba(23,31,43,.75);
+
+    border:
+
+        1px solid rgba(255,255,255,.08);
+
+    border-radius:16px;
+
+}
+
+.certification-card .badge-icon {
+
+    width:64px;
+
+    height:64px;
+
+    flex-shrink:0;
+
+    object-fit:contain;
+
+}
+
+.certification-info {
+
+    flex:1;
+
+}
+
+.certification-info h3 {
+
+    font-size:1.05rem;
+
+    margin-bottom:4px;
+
+}
+
+.certification-info p {
+
+    color:#a7b1c2;
+
+    font-size:.9rem;
+
+}
+
+.credential-link {
+
+    color:#49c6ff;
+
+    text-decoration:none;
+
+    font-weight:600;
+
+    font-size:.9rem;
+
+    white-space:nowrap;
+
+    &:hover {
+
+        text-decoration:underline;
+
+    }
+
+}
+
+@media(max-width:600px) {
+
+    .certification-card {
+
+        flex-direction:column;
+
+        align-items:flex-start;
+
+    }
+
+}

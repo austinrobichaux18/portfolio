@@ -32,4 +32,30 @@
 
     </div>
 
+    @if(project.result) {
+
+        <p class="result">
+            {{ project.result }}
+        </p>
+
+    }
+
+    @if(project.link) {
+
+        @if(isExternalLink) {
+
+            <a class="case-study" [href]="project.link" target="_blank" rel="noopener">
+                View Case Study
+            </a>
+
+        } @else {
+
+            <a class="case-study" [routerLink]="project.link">
+                View Case Study
+            </a>
+
+        }
+
+    }
+
 </article>

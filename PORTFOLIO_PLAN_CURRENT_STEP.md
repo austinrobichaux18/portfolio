@@ -51,7 +51,7 @@ View Case Study link
 5. Add Certifications to Home
 
 Make certifications visible without allowing them to dominate the site.
-
+`
 Current important certification:
 
 Claude Certified Developer – Foundations
