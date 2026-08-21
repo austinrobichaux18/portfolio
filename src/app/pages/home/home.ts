@@ -3,6 +3,7 @@ import { ProjectCard } from '../../shared/project-card/project-card';
 import { projects } from '../../core/data/projects';
 import { skills } from '../../core/data/skills';
 import { RouterLink } from '@angular/router';
+import { RevealOnScroll } from '../../shared/reveal-on-scroll/reveal-on-scroll';
 import { SkillChip } from '../../shared/skill-chip/skill-chip';
 import { StatCard } from '../../shared/stat-card/stat-card';
 
@@ -12,7 +13,8 @@ imports: [
     RouterLink,
     StatCard,
     SkillChip,
-    ProjectCard
+    ProjectCard,
+    RevealOnScroll
 ],
   templateUrl: './home.html',
   styleUrl: './home.scss'

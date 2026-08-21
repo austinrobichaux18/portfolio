@@ -32,8 +32,6 @@ export class Contact {
 
     email: ['', [Validators.required, Validators.email]],
 
-    company: ['', [Validators.maxLength(100)]],
-
     message: ['', [Validators.required, Validators.minLength(20), Validators.maxLength(2000)]],
   });
 

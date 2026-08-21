@@ -54,11 +54,16 @@
         @for (item of experience; track item.id) {
 
             <app-timeline-item
-                [item]="item">
+                [item]="item"
+                appRevealOnScroll>
             </app-timeline-item>
 
         }
 
     </section>
+
+    <div class="experience-cta">
+        <a routerLink="/resume" class="secondary"> View Resume </a>
+    </div>
 
 </section>

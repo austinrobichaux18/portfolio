@@ -1,8 +1,11 @@
 <section class="page-container contact-page">
   <header class="page-header">
-    <h1>Contact</h1>
+    <h1>Contact Austin</h1>
 
-    <p>Have a project, opportunity, or just want to talk software? Send me a message.</p>
+    <p>
+      I'm currently open to opportunities in senior software engineering, .NET, full-stack, cloud,
+      and AI-assisted development.
+    </p>
   </header>
 
   <section class="contact-card">
@@ -30,20 +33,6 @@
         @if (f.email.touched && f.email.invalid) {
           <span class="error"> Please enter a valid email address. </span>
         }
-      </div>
-
-      <div class="form-group">
-        <label for="contact-company">
-          Company
-          <span> (optional) </span>
-        </label>
-
-        <input
-          id="contact-company"
-          type="text"
-          formControlName="company"
-          placeholder="Company name"
-        />
       </div>
 
       <div class="form-group">
@@ -94,5 +83,11 @@
         }
       </button>
     </form>
+
+    <div class="social-links">
+      <a href="https://www.linkedin.com/in/austin-robichaux-2886b1271/" target="_blank" rel="noopener">
+        Connect with me on LinkedIn →
+      </a>
+    </div>
   </section>
 </section>

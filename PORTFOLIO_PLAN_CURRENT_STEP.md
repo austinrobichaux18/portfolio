@@ -1,89 +1,128 @@
 
-25. Improve CI/CD
 
-Current state:
+29. Subtle Animation
 
-Firebase Hosting automatically deploys
-Cloud Functions deployed manually
+Use animation sparingly.
 
-Future desired pipeline:
+Good uses:
 
-Pull Request
-    ↓
-Tests
-    ↓
-Build
-    ↓
-Firebase Preview Deployment
+Page transitions
+Cards entering viewport
+Timeline transitions
+Small hover effects
+Hero elements
 
-Merge to master
-    ↓
-Tests
-    ↓
-Build
-    ↓
-Firebase Hosting Deployment
-    ↓
-Cloud Functions Deployment
+Avoid:
 
-Before implementing automatic Function deployment:
+Particle backgrounds
+Excessive motion
+Spinning technology logos
+Giant animated text
+Constant motion
+Unnecessary loading screens
 
-Confirm secrets are configured correctly.
-Confirm production function deployment is safe.
-Ensure failures stop the deployment.
-Do not deploy Functions from pull-request preview workflows unless intentionally designed.
-26. Accessibility
+Respect prefers-reduced-motion.
 
-Audit the entire application.
+PHASE 3 — Navigation
+30. Recommended Main Navigation
 
-Check:
-
-Semantic HTML
-Keyboard navigation
-Focus states
-Heading hierarchy
-Alt text
-Form labels
-Screen reader compatibility
-Color contrast
-Reduced-motion preference
-
-Do not sacrifice accessibility for visual effects.
-
-27. Responsive Design
-
-Test at minimum:
-
-320px
-375px
-390px
-768px
-1024px
-1440px+
-
-Critical pages:
+Use:
 
 Home
 Experience
 Projects
+Indie
 Resume
 Contact
 
-Mobile should not feel like an afterthought.
+Secondary links:
 
-28. Performance
+GitHub
+LinkedIn
 
-Evaluate:
+Do not overload the main navbar.
 
-Bundle size
-Image optimization
-Lazy loading
-Route-level loading
-Font loading
-Large media
-Animation performance
-Lighthouse scores
+Put lower-priority pages such as "About This Site" in the footer.
 
-Use lazy loading for large project/game content where appropriate.
+PHASE 3 — GitHub
+31. Add GitHub Presence
 
-Do not add unnecessary third-party dependencies.
+Add a clear GitHub link.
+
+Potential section:
+
+Open Source & Personal Development
+
+Explore my code, experiments, and personal software projects on GitHub.
+
+Button:
+
+View GitHub →
+
+Do not automatically import every GitHub repository unless there is a compelling reason.
+
+Curated projects are better for a professional portfolio.
+
+PHASE 3 — Resume
+32. Make Resume Access Obvious
+
+Provide:
+
+View Resume
+Download PDF
+
+Potential locations:
+
+Navbar
+Home hero
+Experience page
+Footer
+
+Do not force recruiters to hunt for the resume.
+
+PHASE 3 — Contact
+33. Keep Contact Simple
+
+Recommended page:
+
+Contact Austin
+
+I'm currently open to opportunities in senior software engineering, .NET, full-stack, cloud, and AI-assisted development.
+
+Fields:
+
+Name
+Email
+Message
+
+Button:
+
+Send Message
+
+Secondary option:
+
+Connect with me on LinkedIn →
+
+Do not make the recruiter complete a complicated form.
+
+Maintain Cloudflare Turnstile protection.
+
+PHASE 4 — SEO
+34. Metadata
+
+Recommended title:
+
+Austin Robichaux | Senior Software Engineer
+
+Recommended description:
+
+Senior Software Engineer specializing in C#, .NET, Angular, SQL Server, Azure, and AI-assisted development.
+
+Add:
+
+Canonical URL
+OpenGraph metadata
+Social preview metadata
+Favicon
+Sitemap
+robots.txt

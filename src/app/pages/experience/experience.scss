@@ -129,3 +129,43 @@
     }
 
 }
+
+.experience-cta {
+
+    margin-top:48px;
+
+    text-align:center;
+
+}
+
+.experience-cta .secondary {
+
+    display:inline-block;
+
+    padding:
+
+        13px 22px;
+
+    border-radius:10px;
+
+    border:
+
+        1px solid rgba(255,255,255,.15);
+
+    color:white;
+
+    text-decoration:none;
+
+    font-weight:600;
+
+    transition:.2s;
+
+    &:hover {
+
+        border-color:#49c6ff;
+
+        color:#49c6ff;
+
+    }
+
+}
