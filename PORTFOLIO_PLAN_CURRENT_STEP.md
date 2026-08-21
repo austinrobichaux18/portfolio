@@ -1,128 +1,86 @@
 
+Structured data
+35. Structured Data
 
-29. Subtle Animation
+Add appropriate Person structured data.
 
-Use animation sparingly.
-
-Good uses:
-
-Page transitions
-Cards entering viewport
-Timeline transitions
-Small hover effects
-Hero elements
-
-Avoid:
-
-Particle backgrounds
-Excessive motion
-Spinning technology logos
-Giant animated text
-Constant motion
-Unnecessary loading screens
-
-Respect prefers-reduced-motion.
-
-PHASE 3 — Navigation
-30. Recommended Main Navigation
-
-Use:
-
-Home
-Experience
-Projects
-Indie
-Resume
-Contact
-
-Secondary links:
-
-GitHub
-LinkedIn
-
-Do not overload the main navbar.
-
-Put lower-priority pages such as "About This Site" in the footer.
-
-PHASE 3 — GitHub
-31. Add GitHub Presence
-
-Add a clear GitHub link.
-
-Potential section:
-
-Open Source & Personal Development
-
-Explore my code, experiments, and personal software projects on GitHub.
-
-Button:
-
-View GitHub →
-
-Do not automatically import every GitHub repository unless there is a compelling reason.
-
-Curated projects are better for a professional portfolio.
-
-PHASE 3 — Resume
-32. Make Resume Access Obvious
-
-Provide:
-
-View Resume
-Download PDF
-
-Potential locations:
-
-Navbar
-Home hero
-Experience page
-Footer
-
-Do not force recruiters to hunt for the resume.
-
-PHASE 3 — Contact
-33. Keep Contact Simple
-
-Recommended page:
-
-Contact Austin
-
-I'm currently open to opportunities in senior software engineering, .NET, full-stack, cloud, and AI-assisted development.
-
-Fields:
+Potential properties:
 
 Name
-Email
-Message
+Job title
+URL
+LinkedIn
+GitHub
+Relevant professional skills
 
-Button:
+Do not expose private information.
 
-Send Message
+PHASE 4 — Analytics
+36. Add Basic Analytics
 
-Secondary option:
+Track useful portfolio actions:
 
-Connect with me on LinkedIn →
+Homepage visit
+Resume view
+Resume download
+Experience page
+Project page
+GitHub click
+LinkedIn click
+Contact form submission
 
-Do not make the recruiter complete a complicated form.
+The goal is to answer:
 
-Maintain Cloudflare Turnstile protection.
+Are recruiters finding and using my resume and projects?
 
-PHASE 4 — SEO
-34. Metadata
+Do not build an unnecessarily complicated analytics system.
 
-Recommended title:
+Follow applicable privacy requirements.
 
-Austin Robichaux | Senior Software Engineer
+PHASE 4 — Metrics
+37. Add Professional Numbers Section
 
-Recommended description:
+Potential home-page metrics:
 
-Senior Software Engineer specializing in C#, .NET, Angular, SQL Server, Azure, and AI-assisted development.
+6+
 
-Add:
+Years Software Engineering
 
-Canonical URL
-OpenGraph metadata
-Social preview metadata
-Favicon
-Sitemap
-robots.txt
+$30M+
+
+Business Impact
+
+Multiple
+
+Production Applications
+
+4
+
+Claude Certifications
+
+Only use values that are current and defensible.
+
+Do not invent metrics.
+
+PHASE 4 — Differentiation
+38. Add "What Makes Me Different?"
+
+Possible content:
+
+Enterprise Engineering
+
+Real-world experience building and modernizing enterprise applications.
+
+Product Development
+
+Experience building software independently from idea through implementation and release.
+
+AI-Native Development
+
+Claude certification and practical AI-assisted software development.
+
+Cross-Stack Experience
+
+Backend, frontend, database, cloud, CI/CD, and desktop development.
+
+The goal is to differentiate Austin from a generic .NET developer profile.

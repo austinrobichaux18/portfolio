@@ -3,6 +3,7 @@ import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
 
 import { HttpClient } from '@angular/common/http';
 import { NgxTurnstileModule } from 'ngx-turnstile';
+import { AnalyticsService } from '../../core/services/analytics';
 
 @Component({
   selector: 'app-contact',
@@ -14,6 +15,8 @@ export class Contact {
   private readonly fb = inject(FormBuilder);
 
   private readonly http = inject(HttpClient);
+
+  private readonly analytics = inject(AnalyticsService);
 
   private readonly functionUrl = 'https://sendcontactemail-7vohdas4fa-uc.a.run.app';
 
@@ -75,6 +78,8 @@ export class Contact {
     this.http.post(this.functionUrl, payload).subscribe({
       next: () => {
         this.successMessage = 'Message sent successfully!';
+
+        this.analytics.track('contact_form_submit');
 
         this.contactForm.reset();
 
