@@ -108,6 +108,32 @@
 
         }
 
+        @if (project.deepDive?.length) {
+
+            <section class="detail-section">
+
+                <h2 class="section-label">Technical Deep Dive</h2>
+
+                <div class="challenge-grid">
+
+                    @for (topic of project.deepDive; track topic.title) {
+
+                        <div class="challenge-card">
+
+                            <h3>{{ topic.title }}</h3>
+
+                            <p>{{ topic.description }}</p>
+
+                        </div>
+
+                    }
+
+                </div>
+
+            </section>
+
+        }
+
         <section class="detail-section">
 
             <h2 class="section-label">Technologies</h2>

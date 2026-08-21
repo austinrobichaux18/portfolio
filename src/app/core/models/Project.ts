@@ -28,6 +28,8 @@ export interface Project {
 
     architecture?: string[];
 
+    deepDive?: { title: string; description: string }[];
+
     links?: {
         github?: string;
         demo?: string;

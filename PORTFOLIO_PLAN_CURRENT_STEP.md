@@ -1,86 +1,84 @@
 
-Structured data
-35. Structured Data
+PHASE 4 — Technical Deep Dive
+40. Optional Technical Deep-Dive Pages
 
-Add appropriate Person structured data.
+For strong projects, allow engineers/interviewers to explore:
 
-Potential properties:
+Architecture
+Data model
+API design
+Testing
+Performance
+Security
+CI/CD
+Technical challenges
 
-Name
-Job title
-URL
-LinkedIn
-GitHub
-Relevant professional skills
+Recommended Site Structure
+/
+├── Home
+│   ├── Hero
+│   ├── Professional Summary
+│   ├── Key Metrics
+│   ├── What I Do
+│   ├── Featured Projects
+│   ├── Skills
+│   ├── Certifications
+│   └── CTA
+│
+├── Experience
+│   ├── SPARQ
+│   │   ├── Overview
+│   │   ├── Client Experience
+│   │   ├── Responsibilities
+│   │   ├── Technologies
+│   │   └── Impact
+│   └── 365 LABS
+│
+├── Projects
+│   ├── Featured
+│   ├── Professional
+│   ├── Personal
+│   └── Technical Deep Dives
+│
+├── Indie
+│   ├── Hexing
+│   └── Other Games
+│
+├── Resume
+│
+├── Contact
+│
+└── Footer
+    ├── LinkedIn
+    ├── GitHub
+    ├── Resume
+    ├── About This Site
+    └── Contact
+Recommended Component Architecture
 
-Do not expose private information.
+Do not blindly implement every component below. Reuse existing components where they already provide the required behavior.
 
-PHASE 4 — Analytics
-36. Add Basic Analytics
+Potential shared components:
 
-Track useful portfolio actions:
+Hero
+SectionHeader
+MetricCard
+CapabilityCard
+ProjectCard
+ProjectGrid
+SkillGroup
+SkillTag
+CertificationCard
+ExperienceTimeline
+ExperienceCard
+TechnologyTags
+CaseStudy
+ArchitectureDiagram
+CTASection
+SocialLinks
+Footer
+ContactForm
 
-Homepage visit
-Resume view
-Resume download
-Experience page
-Project page
-GitHub click
-LinkedIn click
-Contact form submission
+Keep components focused and reusable.
 
-The goal is to answer:
-
-Are recruiters finding and using my resume and projects?
-
-Do not build an unnecessarily complicated analytics system.
-
-Follow applicable privacy requirements.
-
-PHASE 4 — Metrics
-37. Add Professional Numbers Section
-
-Potential home-page metrics:
-
-6+
-
-Years Software Engineering
-
-$30M+
-
-Business Impact
-
-Multiple
-
-Production Applications
-
-4
-
-Claude Certifications
-
-Only use values that are current and defensible.
-
-Do not invent metrics.
-
-PHASE 4 — Differentiation
-38. Add "What Makes Me Different?"
-
-Possible content:
-
-Enterprise Engineering
-
-Real-world experience building and modernizing enterprise applications.
-
-Product Development
-
-Experience building software independently from idea through implementation and release.
-
-AI-Native Development
-
-Claude certification and practical AI-assisted software development.
-
-Cross-Stack Experience
-
-Backend, frontend, database, cloud, CI/CD, and desktop development.
-
-The goal is to differentiate Austin from a generic .NET developer profile.
+Avoid creating components for trivial one-off markup unless they provide meaningful reuse or improve maintainability.

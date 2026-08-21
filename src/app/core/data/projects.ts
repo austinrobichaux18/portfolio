@@ -56,6 +56,34 @@ export const projects: Project[] = [
             'Service Layer',
             'Entity Framework',
             'SQL Server'
+        ],
+
+        deepDive: [
+            {
+                title: 'Data Model',
+                description:
+                    'Domain entities are modeled in SQL Server via Entity Framework, kept separate from API-facing DTOs so the underlying schema can evolve without breaking API contracts.'
+            },
+            {
+                title: 'API Design',
+                description:
+                    'RESTful endpoints follow consistent, versioned contracts, with the API layer kept thin and business logic pushed into the service layer for testability and reuse.'
+            },
+            {
+                title: 'Testing',
+                description:
+                    'Business-critical logic is covered by unit tests, with integration tests around API endpoints and data access to catch regressions before they reach production.'
+            },
+            {
+                title: 'Security',
+                description:
+                    'Authentication and authorization follow least-privilege access, with secrets managed outside source control and sensitive data protected in transit and at rest.'
+            },
+            {
+                title: 'CI/CD',
+                description:
+                    'Changes flow through automated build and release pipelines with test gates before deployment, reducing the risk of shipping regressions to production.'
+            }
         ]
 
     },
@@ -131,6 +159,24 @@ export const projects: Project[] = [
             'C# Gameplay Systems',
             'Data-Driven Content (Cards / Encounters)',
             'Save System'
+        ],
+
+        deepDive: [
+            {
+                title: 'Testing',
+                description:
+                    'Core systems like hex-grid resolution, card effects, and save/load logic are covered by targeted unit tests, backed up by manual playtesting for game feel and balance.'
+            },
+            {
+                title: 'Performance',
+                description:
+                    'Godot\'s profiler is used to track frame time and memory as systems and content are added, keeping performance consistent as the game grows in complexity.'
+            },
+            {
+                title: 'CI/CD',
+                description:
+                    'Builds are automated to catch compile errors and broken exports early, rather than relying solely on manual builds before releases.'
+            }
         ]
 
     },
@@ -180,6 +226,19 @@ export const projects: Project[] = [
                 title: 'Browser Automation',
                 description:
                     'Used Playwright to drive the live Wordle game, submit guesses, and read back letter-feedback state automatically.'
+            }
+        ],
+
+        deepDive: [
+            {
+                title: 'Testing',
+                description:
+                    'The constraint-filtering logic is covered by unit tests validating candidate-narrowing behavior against known letter-feedback scenarios.'
+            },
+            {
+                title: 'Performance',
+                description:
+                    'The candidate-filtering approach stays fast against the full solution word list, avoiding the need for precomputed guess trees.'
             }
         ],
 
