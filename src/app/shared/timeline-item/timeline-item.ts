@@ -1,9 +1,10 @@
 import { Component, Input } from '@angular/core';
 import { Experience } from '../../core/models/Experience';
+import { StatCard } from '../stat-card/stat-card';
 
 @Component({
   selector: 'app-timeline-item',
-  imports: [],
+  imports: [StatCard],
   templateUrl: './timeline-item.html',
   styleUrl: './timeline-item.scss'
 })

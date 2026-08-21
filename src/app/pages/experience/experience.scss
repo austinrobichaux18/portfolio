@@ -31,3 +31,101 @@
     gap:32px;
 
 }
+
+.career-timeline {
+
+    margin-bottom:60px;
+
+    padding:32px;
+
+    background:
+
+        rgba(23,31,43,.7);
+
+    border:
+
+        1px solid rgba(255,255,255,.08);
+
+    border-radius:18px;
+
+}
+
+.career-timeline ol {
+
+    display:flex;
+
+    flex-wrap:wrap;
+
+    list-style:none;
+
+    margin:0;
+
+    padding:0;
+
+    gap:24px;
+
+}
+
+.career-timeline li {
+
+    flex:1;
+
+    min-width:160px;
+
+    position:relative;
+
+    padding-left:22px;
+
+    border-left:
+
+        2px solid #49c6ff;
+
+}
+
+.ct-year {
+
+    display:block;
+
+    color:#49c6ff;
+
+    font-size:.85rem;
+
+    font-weight:600;
+
+}
+
+.ct-role {
+
+    display:block;
+
+    color:white;
+
+    font-size:1.05rem;
+
+    font-weight:700;
+
+    margin-top:4px;
+}
+
+.ct-title {
+
+    display:block;
+
+    color:#9aa6b8;
+
+    font-size:.9rem;
+
+    margin-top:2px;
+}
+
+@media(max-width:700px) {
+
+    .career-timeline ol {
+
+        flex-direction:column;
+
+        gap:20px;
+
+    }
+
+}

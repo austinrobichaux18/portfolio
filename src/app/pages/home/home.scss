@@ -560,3 +560,71 @@ h1 {
     }
 
 }
+
+.cta {
+
+    margin-top:80px;
+
+    padding:48px;
+
+    background:
+
+        rgba(23,31,43,.75);
+
+    border:
+
+        1px solid rgba(255,255,255,.08);
+
+    border-radius:18px;
+
+    text-align:center;
+
+}
+
+.cta h2 {
+
+    margin-bottom:12px;
+
+}
+
+.cta p {
+
+    max-width:520px;
+
+    margin:0 auto 28px;
+
+    color:#a7b1c2;
+
+    font-size:1.05rem;
+
+    line-height:1.6;
+
+}
+
+.cta-actions {
+
+    display:flex;
+
+    flex-wrap:wrap;
+
+    justify-content:center;
+
+    gap:14px;
+
+}
+
+.cta-actions a {
+
+    padding:
+
+        13px 22px;
+
+    border-radius:10px;
+
+    text-decoration:none;
+
+    font-weight:600;
+
+    transition:.2s;
+
+}

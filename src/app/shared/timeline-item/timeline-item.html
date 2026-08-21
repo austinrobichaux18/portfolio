@@ -19,34 +19,132 @@
 
     </h4>
 
+    <p class="section-label">Overview</p>
+
     <p>
 
         {{ item.description }}
 
     </p>
 
-    <div class="tags">
+    @if (item.impact?.length) {
 
-        @for (tech of item.technologies; track tech) {
+        <p class="section-label">Impact</p>
 
-            <span>
-                {{ tech }}
-            </span>
+        <div class="impact-grid">
 
-        }
+            @for (metric of item.impact; track metric.label) {
 
-    </div>
+                <app-stat-card [value]="metric.value" [label]="metric.label"> </app-stat-card>
 
-    <ul>
+            }
 
-        @for (highlight of item.highlights; track highlight) {
+        </div>
 
-            <li>
-                {{ highlight }}
-            </li>
+    }
 
-        }
+    @if (item.highlights?.length) {
 
-    </ul>
+        <p class="section-label">Responsibilities</p>
+
+        <ul>
+
+            @for (highlight of item.highlights; track highlight) {
+
+                <li>
+                    {{ highlight }}
+                </li>
+
+            }
+
+        </ul>
+
+    }
+
+    @if (item.accomplishments?.length) {
+
+        <p class="section-label">Major Accomplishments</p>
+
+        <ul>
+
+            @for (accomplishment of item.accomplishments; track accomplishment) {
+
+                <li>
+                    {{ accomplishment }}
+                </li>
+
+            }
+
+        </ul>
+
+    }
+
+    @if (item.technologies?.length) {
+
+        <p class="section-label">Technologies</p>
+
+        <div class="tags">
+
+            @for (tech of item.technologies; track tech) {
+
+                <span>
+                    {{ tech }}
+                </span>
+
+            }
+
+        </div>
+
+    }
+
+    @if (item.clients?.length) {
+
+        <p class="section-label">Selected Client Experience</p>
+
+        <div class="client-list">
+
+            @for (client of item.clients; track client.name) {
+
+                <div class="client-card">
+
+                    <div class="client-header">
+                        <h4>{{ client.name }}</h4>
+
+                        <span class="client-dates">{{ client.dateRange }}</span>
+                    </div>
+
+                    <p class="client-focus">{{ client.focus }}</p>
+
+                    <p>{{ client.work }}</p>
+
+                    @if (client.technologies?.length) {
+
+                        <div class="tags">
+
+                            @for (tech of client.technologies; track tech) {
+
+                                <span>
+                                    {{ tech }}
+                                </span>
+
+                            }
+
+                        </div>
+
+                    }
+
+                    @if (client.results) {
+
+                        <p class="client-results">{{ client.results }}</p>
+
+                    }
+
+                </div>
+
+            }
+
+        </div>
+
+    }
 
 </article>

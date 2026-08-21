@@ -1,65 +1,34 @@
 
-3. Add "What I Do"
+10. Upgrade 365 LABS
 
-Translate technical skills into professional capabilities.
+Use the same case-study format:
 
-Recommended cards:
-
-Enterprise Software
-
-Designing and developing large-scale applications using C#, .NET, SQL Server, Angular, and Azure.
-
-Full-Stack Development
-
-Building applications across the entire stack, from database and APIs through frontend experiences.
-
-Software Modernization
-
-Modernizing legacy applications and architectures while maintaining reliability and business continuity.
-
-Cloud & DevOps
-
-Deploying and maintaining applications using Azure, Firebase, CI/CD, and modern development workflows.
-
-AI-Assisted Development
-
-Using AI development tools such as Claude to accelerate development, debugging, documentation, testing, refactoring, and architectural work.
-
-Keep this section concise.
-
-4. Add Featured Projects to Home
-
-Do not require recruiters to navigate to /projects before seeing evidence of technical work.
-
-Feature approximately three projects.
-
-Prioritize projects based on career value, not necessarily personal preference.
-
-Potential structure:
-
-Professional/enterprise engineering project
-Hexing
-Wordle solver / algorithmic project
-
-Each project card should contain:
-
-Project name
-One-line description
+Company
+Role
+Dates
+Overview
+Responsibilities
+Major accomplishments
 Technologies
-Short result/value statement
-View Case Study link
-5. Add Certifications to Home
+Results
 
-Make certifications visible without allowing them to dominate the site.
-`
-Current important certification:
+Maintain consistency between employment entries.
 
-Claude Certified Developer – Foundations
+11. Add Career Timeline
 
-Anthropic
+Add a visual career timeline if it improves the page.
 
-August 2026
+Conceptually:
 
-Include a link to the credential when available.
+2019
+→ 365 LABS
+→ Senior Software Development Engineer
 
-Additional Claude certifications can be added later.
+2023
+→ SPARQ
+→ Senior Software Engineer Consultant
+
+2026
+→ Open to Opportunities
+
+Keep the timeline simple and accessible.
