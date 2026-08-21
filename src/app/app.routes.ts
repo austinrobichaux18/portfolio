@@ -4,6 +4,7 @@ import { Contact } from './pages/contact/contact';
 import { Experience } from './pages/experience/experience';
 import { Games } from './pages/games/games';
 import { Home } from './pages/home/home';
+import { ProjectDetail } from './pages/project-detail/project-detail';
 import { Projects } from './pages/projects/projects';
 import { Resume } from './pages/resume/resume';
 
@@ -25,6 +26,12 @@ export const routes: Routes = [
         path: 'projects',
         component: Projects,
         title: 'Projects | Austin Robichaux'
+    },
+
+    {
+        path: 'projects/:id',
+        component: ProjectDetail,
+        title: 'Project Case Study | Austin Robichaux'
     },
 
     {

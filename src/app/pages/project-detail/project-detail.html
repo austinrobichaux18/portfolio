@@ -1,0 +1,195 @@
+@if (project) {
+
+    <section class="page-container project-detail-page">
+
+        <a routerLink="/projects" class="back-link"> ← Back to Projects </a>
+
+        <header class="page-header">
+
+            @if (project.status) {
+
+                <span class="status">{{ project.status }}</span>
+
+            }
+
+            <h1>{{ project.title }}</h1>
+
+            <p>{{ project.description }}</p>
+
+            <div class="tags">
+
+                @for (tag of project.tags; track tag) {
+
+                    <span>{{ tag }}</span>
+
+                }
+
+            </div>
+
+        </header>
+
+        @if (project.architecture?.length) {
+
+            <section class="detail-section">
+
+                <p class="section-label">Architecture</p>
+
+                <div class="architecture-diagram">
+
+                    @for (step of project.architecture; track step; let last = $last) {
+
+                        <div class="arch-step">{{ step }}</div>
+
+                        @if (!last) {
+
+                            <div class="arch-arrow">↓</div>
+
+                        }
+
+                    }
+
+                </div>
+
+            </section>
+
+        }
+
+        @if (project.overview?.length) {
+
+            <section class="detail-section">
+
+                <p class="section-label">Overview</p>
+
+                @for (paragraph of project.overview; track paragraph) {
+
+                    <p>{{ paragraph }}</p>
+
+                }
+
+            </section>
+
+        }
+
+        @if (project.myRole) {
+
+            <section class="detail-section">
+
+                <p class="section-label">My Role</p>
+
+                <p>{{ project.myRole }}</p>
+
+            </section>
+
+        }
+
+        @if (project.technicalChallenges?.length) {
+
+            <section class="detail-section">
+
+                <p class="section-label">Technical Challenges</p>
+
+                <div class="challenge-grid">
+
+                    @for (challenge of project.technicalChallenges; track challenge.title) {
+
+                        <div class="challenge-card">
+
+                            <h3>{{ challenge.title }}</h3>
+
+                            <p>{{ challenge.description }}</p>
+
+                        </div>
+
+                    }
+
+                </div>
+
+            </section>
+
+        }
+
+        <section class="detail-section">
+
+            <p class="section-label">Technologies</p>
+
+            <div class="tags">
+
+                @for (tag of project.tags; track tag) {
+
+                    <span>{{ tag }}</span>
+
+                }
+
+            </div>
+
+        </section>
+
+        @if (project.result) {
+
+            <section class="detail-section">
+
+                <p class="section-label">Results</p>
+
+                <p class="result">{{ project.result }}</p>
+
+            </section>
+
+        }
+
+        @if (project.links) {
+
+            <section class="detail-section">
+
+                <p class="section-label">Links</p>
+
+                <div class="project-links">
+
+                    @if (project.links.github) {
+
+                        <a [href]="project.links.github" target="_blank" rel="noopener" class="secondary">
+                            GitHub
+                        </a>
+
+                    }
+
+                    @if (project.links.demo) {
+
+                        <a [href]="project.links.demo" target="_blank" rel="noopener" class="secondary">
+                            Live Demo
+                        </a>
+
+                    }
+
+                    @if (project.links.docs) {
+
+                        <a [href]="project.links.docs" target="_blank" rel="noopener" class="secondary">
+                            Documentation
+                        </a>
+
+                    }
+
+                    @if (project.links.video) {
+
+                        <a [href]="project.links.video" target="_blank" rel="noopener" class="secondary">
+                            Video
+                        </a>
+
+                    }
+
+                    @if (project.links.steam) {
+
+                        <a [href]="project.links.steam" target="_blank" rel="noopener" class="secondary">
+                            Steam
+                        </a>
+
+                    }
+
+                </div>
+
+            </section>
+
+        }
+
+    </section>
+
+}

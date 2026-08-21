@@ -20,4 +20,20 @@ export interface Project {
 
     featured?: boolean;
 
+    overview?: string[];
+
+    myRole?: string;
+
+    technicalChallenges?: { title: string; description: string }[];
+
+    architecture?: string[];
+
+    links?: {
+        github?: string;
+        demo?: string;
+        docs?: string;
+        video?: string;
+        steam?: string;
+    };
+
 }

@@ -355,6 +355,34 @@ h1 {
 
 }
 
+.skill-group {
+
+    margin-bottom:28px;
+
+    &:last-child {
+
+        margin-bottom:0;
+
+    }
+
+}
+
+.skill-group h3 {
+
+    margin-bottom:14px;
+
+    color:#748092;
+
+    font-size:.8rem;
+
+    font-weight:600;
+
+    text-transform:uppercase;
+
+    letter-spacing:.05em;
+
+}
+
 .skill-list {
 
     display:flex;

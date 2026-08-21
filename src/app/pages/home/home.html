@@ -194,15 +194,17 @@
 <section class="skills">
   <h2>Technical Stack</h2>
 
-  <div class="skill-list">
-    <app-skill-chip name="C#" level=".NET"> </app-skill-chip>
+  @for (group of skillCategories; track group.category) {
+    <div class="skill-group">
+      <h3>{{ group.category }}</h3>
 
-    <app-skill-chip name="Angular" level="Frontend"> </app-skill-chip>
-
-    <app-skill-chip name="Azure" level="Cloud"> </app-skill-chip>
-
-    <app-skill-chip name="Godot" level="Game Dev"> </app-skill-chip>
-  </div>
+      <div class="skill-list">
+        @for (skill of group.skills; track skill.id) {
+          <app-skill-chip [name]="skill.name" [level]="skill.level ?? ''"> </app-skill-chip>
+        }
+      </div>
+    </div>
+  }
 </section>
 
 <section class="cta">

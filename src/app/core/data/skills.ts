@@ -164,6 +164,20 @@ export const skills: Skill[] = [
     },
 
     {
+        id: 'github-actions',
+        name: 'GitHub Actions',
+        category: 'DevOps',
+        level: 'Advanced'
+    },
+
+    {
+        id: 'software-architecture',
+        name: 'Software Architecture',
+        category: 'Architecture',
+        level: 'Advanced'
+    },
+
+    {
         id: 'rest-apis',
         name: 'REST APIs',
         category: 'Architecture',
