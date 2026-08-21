@@ -12,4 +12,6 @@ import { RouterLink } from '@angular/router';
 })
 export class NavbarComponent {
 
+  menuOpen = false;
+
 }

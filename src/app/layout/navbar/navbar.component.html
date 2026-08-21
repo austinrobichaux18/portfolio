@@ -1,6 +1,6 @@
 <header class="navbar">
 
-    <a routerLink="/" class="logo">
+    <a routerLink="/" class="logo" (click)="menuOpen = false">
         <span class="logo-mark">
             AR
         </span>
@@ -10,27 +10,40 @@
         </span>
     </a>
 
-    <nav>
+    <button
+        type="button"
+        class="menu-toggle"
+        (click)="menuOpen = !menuOpen"
+        [attr.aria-expanded]="menuOpen"
+        aria-controls="primary-nav"
+        aria-label="Toggle navigation menu"
+    >
+        <span></span>
+        <span></span>
+        <span></span>
+    </button>
 
-        <a routerLink="/experience">
+    <nav id="primary-nav" [class.open]="menuOpen">
+
+        <a routerLink="/experience" (click)="menuOpen = false">
             Experience
         </a>
 
-        <a routerLink="/projects">
+        <a routerLink="/projects" (click)="menuOpen = false">
             Projects
         </a>
 
-        <a routerLink="/games">
+        <a routerLink="/games" (click)="menuOpen = false">
             Games
         </a>
 
-        <a routerLink="/contact">
+        <a routerLink="/contact" (click)="menuOpen = false">
             Contact
         </a>
-    </nav>
 
-    <a routerLink="/resume" class="resume-link" >
-        Resume
-    </a>
+        <a routerLink="/resume" class="resume-link" (click)="menuOpen = false">
+            Resume
+        </a>
+    </nav>
 
 </header>

@@ -8,9 +8,9 @@
   <section class="contact-card">
     <form [formGroup]="contactForm" (ngSubmit)="submit()">
       <div class="form-group">
-        <label> Name </label>
+        <label for="contact-name"> Name </label>
 
-        <input type="text" formControlName="name" placeholder="Your name" />
+        <input id="contact-name" type="text" formControlName="name" placeholder="Your name" />
 
         @if (f.name.touched && f.name.invalid) {
           <span class="error"> Please enter your name. </span>
@@ -18,9 +18,14 @@
       </div>
 
       <div class="form-group">
-        <label> Email </label>
+        <label for="contact-email"> Email </label>
 
-        <input type="email" formControlName="email" placeholder="you@example.com" />
+        <input
+          id="contact-email"
+          type="email"
+          formControlName="email"
+          placeholder="you@example.com"
+        />
 
         @if (f.email.touched && f.email.invalid) {
           <span class="error"> Please enter a valid email address. </span>
@@ -28,18 +33,24 @@
       </div>
 
       <div class="form-group">
-        <label>
+        <label for="contact-company">
           Company
           <span> (optional) </span>
         </label>
 
-        <input type="text" formControlName="company" placeholder="Company name" />
+        <input
+          id="contact-company"
+          type="text"
+          formControlName="company"
+          placeholder="Company name"
+        />
       </div>
 
       <div class="form-group">
-        <label> Message </label>
+        <label for="contact-message"> Message </label>
 
         <textarea
+          id="contact-message"
           rows="6"
           formControlName="message"
           placeholder="Tell me about your project or opportunity..."
@@ -51,12 +62,17 @@
         }
       </div>
 
-      <ngx-turnstile
-        siteKey="0x4AAAAAAEJVg_Hz1IalcQj8"
-        (resolved)="onTurnstileSuccess($event)"
-        (expired)="onTurnstileExpired()"
-      >
-      </ngx-turnstile>
+      <div class="form-group">
+        <span id="turnstile-label"> Verification </span>
+
+        <ngx-turnstile
+          siteKey="0x4AAAAAAEJVg_Hz1IalcQj8"
+          aria-labelledby="turnstile-label"
+          (resolved)="onTurnstileSuccess($event)"
+          (expired)="onTurnstileExpired()"
+        >
+        </ngx-turnstile>
+      </div>
 
       @if (errorMessage) {
         <span class="error">

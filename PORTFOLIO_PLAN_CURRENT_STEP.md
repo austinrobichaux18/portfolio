@@ -1,144 +1,89 @@
 
-PHASE 2 — Indie Development
-20. Reframe /games
+25. Improve CI/CD
 
-The game section should support the professional engineering story.
+Current state:
 
-Position it as:
+Firebase Hosting automatically deploys
+Cloud Functions deployed manually
 
-Indie Development
+Future desired pipeline:
 
-Possible introductory text:
+Pull Request
+    ↓
+Tests
+    ↓
+Build
+    ↓
+Firebase Preview Deployment
 
-Outside of enterprise software development, I build and publish my own software and games.
+Merge to master
+    ↓
+Tests
+    ↓
+Build
+    ↓
+Firebase Hosting Deployment
+    ↓
+Cloud Functions Deployment
 
-The section should communicate:
+Before implementing automatic Function deployment:
 
-C#
-Godot
-Architecture
-UI
-Data modeling
-Algorithms
-Systems design
-Independent product development
+Confirm secrets are configured correctly.
+Confirm production function deployment is safe.
+Ensure failures stop the deployment.
+Do not deploy Functions from pull-request preview workflows unless intentionally designed.
+26. Accessibility
 
-Do not let games dominate the primary professional narrative.
+Audit the entire application.
 
-21. Create a Dedicated Hexing Case Study
+Check:
 
-Hexing should receive its own detailed project presentation.
+Semantic HTML
+Keyboard navigation
+Focus states
+Heading hierarchy
+Alt text
+Form labels
+Screen reader compatibility
+Color contrast
+Reduced-motion preference
 
-Suggested structure:
+Do not sacrifice accessibility for visual effects.
 
-Hexing
+27. Responsive Design
 
-Dungeon Manager · Godot 4 · C#
+Test at minimum:
 
-A roguelike strategy game built from the ground up in Godot using C#.
+320px
+375px
+390px
+768px
+1024px
+1440px+
 
-Sections:
+Critical pages:
 
-Game
+Home
+Experience
+Projects
+Resume
+Contact
 
-Screenshots and/or video.
+Mobile should not feel like an afterthought.
 
-Engineering
+28. Performance
 
-Potential topics:
+Evaluate:
 
-Hex-grid system
-Card system
-Combat system
-Save system
-Data-driven game objects
-Procedural systems
-UI architecture
-Architecture
+Bundle size
+Image optimization
+Lazy loading
+Route-level loading
+Font loading
+Large media
+Animation performance
+Lighthouse scores
 
-Explain major systems.
+Use lazy loading for large project/game content where appropriate.
 
-Development
-
-Show development progression if useful:
-
-Prototype → Systems → Alpha → Release
-
-Technology
-
-Godot C# .NET JSON
-
-Results
-
-Include Steam, GitHub, player metrics, release information, etc. when available.
-
-22. Feature Wordle Solver
-
-The Wordle project can demonstrate algorithmic thinking.
-
-Highlight:
-
-Automated gameplay
-Search/guess strategy
-Scoring system
-Average of approximately 3.6 guesses, if still accurate
-Theoretical comparison to the 3Blue1Brown discussion of Wordle strategy
-GitHub source
-Demo/video where useful
-
-Use this as an algorithmic/software-engineering project rather than presenting it primarily as a game.
-
-PHASE 2 — Portfolio Architecture Case Study
-23. Add "How This Site Works"
-
-Create a small technical page or section explaining the portfolio itself.
-
-Potential architecture:
-
-Angular 22
-     ↓
-Firebase Hosting
-     ↓
-Firebase Cloud Functions
-     ↓
-Cloudflare Turnstile
-     ↓
-Resend
-
-Explain:
-
-Why Angular
-Why Firebase
-Contact form architecture
-Bot protection
-Secret management
-CI/CD
-Testing
-Deployment
-
-This makes the portfolio itself an interview talking point.
-
-PHASE 3 — Engineering Quality
-24. Automated Testing
-
-Increase test coverage around meaningful behavior.
-
-At minimum consider:
-
-Component tests
-Contact form tests
-Service tests
-Data/model tests
-Cloud Function tests
-
-CI should run:
-
-npm test
-
-and:
-
-npm run build
-
-before deployment.
-
-Do not chase arbitrary percentage coverage. Focus on meaningful behavior.
+Do not add unnecessary third-party dependencies.
