@@ -151,45 +151,6 @@ Priority: Highest
 
 These changes should be completed first.
 
-1. Redesign the Home Page
-
-The home page should immediately communicate:
-
-Who Austin is
-What he does
-What technologies he specializes in
-Why he is credible
-That he is currently open to opportunities
-How to contact him
-Hero
-
-Recommended structure:
-
-Austin Robichaux
-
-Senior Software Engineer
-
-.NET • C# • Angular • SQL Server • Azure • AI-Assisted Development
-
-Professional summary:
-
-Senior Software Engineer with 6+ years of experience building, modernizing, and deploying enterprise software. Specializing in the Microsoft .NET ecosystem, full-stack development, cloud applications, and modern development practices.
-
-Primary CTA buttons:
-
-View Experience
-View Projects
-Download Resume
-Contact Me
-
-Secondary links:
-
-LinkedIn
-GitHub
-Email
-
-Do not overwhelm the hero with too many buttons.
-
 2. Add a Proof / Metrics Strip
 
 Immediately below the hero, add concise credibility indicators.
