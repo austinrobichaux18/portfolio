@@ -106,6 +106,10 @@ export class Quiz {
 
   revealCurrent = signal(false);
 
+  hideAnswers = signal(false);
+
+  private answersRevealedForCurrent = signal(false);
+
   score = signal(0);
 
   errorMessage = signal('');
@@ -125,6 +129,8 @@ export class Quiz {
     if (!options) return [];
     return ALL_OPTION_KEYS.filter((k) => options[k] !== undefined);
   });
+
+  readonly showOptions = computed(() => !this.hideAnswers() || this.answersRevealedForCurrent());
 
   constructor() {
     if (this.viewState() === 'idle') {
@@ -295,10 +301,21 @@ export class Quiz {
     this.immediateFeedback.set((event.target as HTMLInputElement).checked);
   }
 
+  onToggleHideAnswers(event: Event): void {
+    this.hideAnswers.set((event.target as HTMLInputElement).checked);
+    this.answersRevealedForCurrent.set(false);
+  }
+
+  revealAnswersForCurrent(): void {
+    this.answersRevealedForCurrent.set(true);
+  }
+
   startQuiz(): void {
     this.currentIndex.set(0);
     this.answers.set(new Array(this.questions().length).fill(null));
     this.revealCurrent.set(false);
+    this.hideAnswers.set(false);
+    this.answersRevealedForCurrent.set(false);
     this.saveWarning.set('');
     this.resultNotice.set('');
     this.viewState.set('taking-quiz');
@@ -350,6 +367,7 @@ export class Quiz {
     if (index < 0 || index >= this.questions().length) return;
     this.currentIndex.set(index);
     this.revealCurrent.set(this.immediateFeedback() && this.answers()[index] !== null);
+    this.answersRevealedForCurrent.set(this.answers()[index] !== null);
   }
 
   previousQuestion(): void {

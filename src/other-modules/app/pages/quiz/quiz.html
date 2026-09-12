@@ -163,30 +163,54 @@
         </aside>
 
         <div class="quiz-main">
-          <div class="progress">Question {{ currentIndex() + 1 }} of {{ questions().length }}</div>
+          <div class="quiz-main-header">
+            <div class="progress">
+              Question {{ currentIndex() + 1 }} of {{ questions().length }}
+            </div>
+            <label class="toggle-row compact-toggle">
+              <input
+                type="checkbox"
+                class="toggle-input"
+                [checked]="hideAnswers()"
+                (change)="onToggleHideAnswers($event)"
+              />
+              <span class="toggle-track"><span class="toggle-thumb"></span></span>
+              <span class="toggle-label">Hide Answers</span>
+            </label>
+          </div>
+
           <h2>{{ questions()[currentIndex()].question }}</h2>
 
-          <div class="options">
-            @for (key of currentOptionKeys(); track key) {
-              <button
-                type="button"
-                class="option"
-                [class.selected]="answers()[currentIndex()] === key"
-                [class.correct]="
-                  revealCurrent() && key === questions()[currentIndex()].correctAnswer
-                "
-                [class.incorrect]="
-                  revealCurrent() &&
-                  answers()[currentIndex()] === key &&
-                  key !== questions()[currentIndex()].correctAnswer
-                "
-                [disabled]="revealCurrent()"
-                (click)="selectAnswer(key)"
-              >
-                {{ questions()[currentIndex()].options[key] }}
+          @if (showOptions()) {
+            <div class="options">
+              @for (key of currentOptionKeys(); track key) {
+                <button
+                  type="button"
+                  class="option"
+                  [class.selected]="answers()[currentIndex()] === key"
+                  [class.correct]="
+                    revealCurrent() && key === questions()[currentIndex()].correctAnswer
+                  "
+                  [class.incorrect]="
+                    revealCurrent() &&
+                    answers()[currentIndex()] === key &&
+                    key !== questions()[currentIndex()].correctAnswer
+                  "
+                  [disabled]="revealCurrent()"
+                  (click)="selectAnswer(key)"
+                >
+                  {{ questions()[currentIndex()].options[key] }}
+                </button>
+              }
+            </div>
+          } @else {
+            <div class="hidden-options">
+              <p>Answer options are hidden. Try to recall the answer, then reveal when ready.</p>
+              <button type="button" class="secondary" (click)="revealAnswersForCurrent()">
+                Reveal Options
               </button>
-            }
-          </div>
+            </div>
+          }
 
           @if (revealCurrent()) {
             <div class="explanation">
