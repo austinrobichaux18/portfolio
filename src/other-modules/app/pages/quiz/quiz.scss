@@ -12,7 +12,6 @@ h1 {
 
 .status-card,
 .quiz-list,
-.quiz-selected,
 .taking-quiz,
 .results {
   max-width: 800px;
@@ -255,6 +254,12 @@ button {
   flex-wrap: wrap;
 }
 
+.quiz-main-toggles {
+  display: flex;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
 .compact-toggle {
   gap: 10px;
 
@@ -262,6 +267,21 @@ button {
     font-size: 0.85rem;
     font-weight: 400;
     color: #b8c1ce;
+  }
+}
+
+.timer-chip {
+  padding: 8px 14px;
+  background: #111827;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 999px;
+  color: #b8c1ce;
+  font-size: 0.85rem;
+  font-variant-numeric: tabular-nums;
+
+  &:hover {
+    border-color: #49c6ff;
+    color: #49c6ff;
   }
 }
 
@@ -434,6 +454,45 @@ button {
   gap: 16px;
 }
 
+.review-item-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.time-tag {
+  flex-shrink: 0;
+  color: #8f9bad;
+  font-size: 0.8rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.time-summary {
+  display: flex;
+  gap: 24px;
+  flex-wrap: wrap;
+
+  > div {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+}
+
+.time-summary-label {
+  color: #8f9bad;
+  font-size: 0.8rem;
+}
+
+.time-summary-value {
+  color: #49c6ff;
+  font-size: 1.3rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
 .review-item {
   padding: 20px;
   background: #111827;
@@ -445,7 +504,7 @@ button {
   }
 
   h3 {
-    margin: 0 0 10px;
+    margin: 0;
     font-size: 1rem;
   }
 

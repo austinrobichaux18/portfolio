@@ -1,4 +1,4 @@
-import { Component, HostListener, computed, inject, signal } from '@angular/core';
+import { Component, HostListener, OnDestroy, computed, inject, signal } from '@angular/core';
 import { DatePipe } from '@angular/common';
 import { AnalyticsService } from '../../../../app/core/services/analytics';
 import { QuizQuestion } from '../../core/models/QuizQuestion';
@@ -23,7 +23,6 @@ type QuizViewState =
   | 'sample-list'
   | 'loading-folder'
   | 'quiz-list'
-  | 'quiz-selected'
   | 'taking-quiz'
   | 'results';
 
@@ -57,6 +56,18 @@ function optionKeysForQuestion(question: QuizQuestion | undefined): AnswerKey[] 
   return ALL_OPTION_KEYS.filter((k) => question.options[k] !== undefined);
 }
 
+function formatDuration(totalSeconds: number): string {
+  const s = Math.max(0, Math.round(totalSeconds));
+  const hours = Math.floor(s / 3600);
+  const minutes = Math.floor((s % 3600) / 60);
+  const seconds = s % 60;
+  const ss = String(seconds).padStart(2, '0');
+  if (hours > 0) {
+    return `${hours}:${String(minutes).padStart(2, '0')}:${ss}`;
+  }
+  return `${minutes}:${ss}`;
+}
+
 function isValidQuizAttempt(item: unknown): item is QuizAttempt {
   if (typeof item !== 'object' || item === null) return false;
   const a = item as Record<string, unknown>;
@@ -74,7 +85,7 @@ function isValidQuizAttempt(item: unknown): item is QuizAttempt {
   templateUrl: './quiz.html',
   styleUrl: './quiz.scss',
 })
-export class Quiz {
+export class Quiz implements OnDestroy {
   private readonly analytics = inject(AnalyticsService);
 
   viewState = signal<QuizViewState>('showDirectoryPicker' in window ? 'idle' : 'unsupported');
@@ -123,6 +134,29 @@ export class Quiz {
 
   resultNotice = signal('');
 
+  private quizStartTime: number | null = null;
+
+  private questionStartTime: number | null = null;
+
+  private timerIntervalId: ReturnType<typeof setInterval> | null = null;
+
+  elapsedSeconds = signal(0);
+
+  showTimer = signal(true);
+
+  questionTimesMs = signal<number[]>([]);
+
+  totalTimeMs = signal(0);
+
+  readonly elapsedDisplay = computed(() => formatDuration(this.elapsedSeconds()));
+
+  readonly totalTimeDisplay = computed(() => formatDuration(this.totalTimeMs() / 1000));
+
+  readonly averageTimeDisplay = computed(() => {
+    const total = this.questions().length;
+    return formatDuration(total ? this.totalTimeMs() / total / 1000 : 0);
+  });
+
   readonly formatExample = JSON.stringify([sampleQuizzes[0].questions[0]], null, 2);
 
   readonly scorePercent = computed(() =>
@@ -137,6 +171,44 @@ export class Quiz {
 
   optionKeysFor(question: QuizQuestion): AnswerKey[] {
     return optionKeysForQuestion(question);
+  }
+
+  timeForQuestion(index: number): string {
+    return formatDuration((this.questionTimesMs()[index] ?? 0) / 1000);
+  }
+
+  toggleTimerVisibility(): void {
+    this.showTimer.update((visible) => !visible);
+  }
+
+  private recordTimeForCurrentQuestion(): void {
+    if (this.questionStartTime === null) return;
+    const elapsed = Date.now() - this.questionStartTime;
+    const index = this.currentIndex();
+    this.questionTimesMs.update((times) => {
+      const next = [...times];
+      next[index] = (next[index] ?? 0) + elapsed;
+      return next;
+    });
+  }
+
+  private startTimerInterval(): void {
+    this.stopTimerInterval();
+    this.timerIntervalId = setInterval(() => {
+      if (this.quizStartTime === null) return;
+      this.elapsedSeconds.set(Math.floor((Date.now() - this.quizStartTime) / 1000));
+    }, 1000);
+  }
+
+  private stopTimerInterval(): void {
+    if (this.timerIntervalId !== null) {
+      clearInterval(this.timerIntervalId);
+      this.timerIntervalId = null;
+    }
+  }
+
+  ngOnDestroy(): void {
+    this.stopTimerInterval();
   }
 
   constructor() {
@@ -172,8 +244,8 @@ export class Quiz {
     this.questions.set(sample.questions);
     this.selectedQuizFileName.set(sample.title);
     this.pastAttemptsForSelected.set([]);
-    this.viewState.set('quiz-selected');
     this.analytics.track('quiz_sample_started', { sampleId: sample.id });
+    this.startQuiz();
   }
 
   downloadSample(sample: SampleQuiz): void {
@@ -301,11 +373,13 @@ export class Quiz {
         .filter((a) => a.quizFileName === fileName)
         .sort((a, b) => b.timestamp.localeCompare(a.timestamp)),
     );
-    this.viewState.set('quiz-selected');
+    this.startQuiz();
   }
 
   onToggleImmediateFeedback(event: Event): void {
-    this.immediateFeedback.set((event.target as HTMLInputElement).checked);
+    const checked = (event.target as HTMLInputElement).checked;
+    this.immediateFeedback.set(checked);
+    this.revealCurrent.set(checked && this.answers()[this.currentIndex()] !== null);
   }
 
   onToggleHideAnswers(event: Event): void {
@@ -321,12 +395,21 @@ export class Quiz {
     this.currentIndex.set(0);
     this.answers.set(new Array(this.questions().length).fill(null));
     this.revealCurrent.set(false);
+    this.immediateFeedback.set(false);
     this.hideAnswers.set(false);
     this.answersRevealedForCurrent.set(false);
     this.saveWarning.set('');
     this.resultNotice.set('');
     this.viewState.set('taking-quiz');
     this.analytics.track('quiz_started', { quizFileName: this.selectedQuizFileName() });
+
+    this.questionTimesMs.set(new Array(this.questions().length).fill(0));
+    this.totalTimeMs.set(0);
+    this.elapsedSeconds.set(0);
+    this.showTimer.set(true);
+    this.quizStartTime = Date.now();
+    this.questionStartTime = Date.now();
+    this.startTimerInterval();
   }
 
   @HostListener('document:mouseup', ['$event'])
@@ -336,7 +419,7 @@ export class Quiz {
       if (state === 'taking-quiz') {
         event.preventDefault();
         this.previousQuestion();
-      } else if (state === 'results' || state === 'quiz-selected') {
+      } else if (state === 'results') {
         event.preventDefault();
         this.backToQuizList();
       } else if (state === 'quiz-list') {
@@ -372,7 +455,9 @@ export class Quiz {
 
   goToQuestion(index: number): void {
     if (index < 0 || index >= this.questions().length) return;
+    this.recordTimeForCurrentQuestion();
     this.currentIndex.set(index);
+    this.questionStartTime = Date.now();
     this.revealCurrent.set(this.immediateFeedback() && this.answers()[index] !== null);
     this.answersRevealedForCurrent.set(this.answers()[index] !== null);
   }
@@ -386,6 +471,12 @@ export class Quiz {
   }
 
   async finishQuiz(): Promise<void> {
+    this.recordTimeForCurrentQuestion();
+    this.stopTimerInterval();
+    if (this.quizStartTime !== null) {
+      this.totalTimeMs.set(Date.now() - this.quizStartTime);
+    }
+
     const questions = this.questions();
     const answers = this.answers();
     const finalScore = questions.filter((q, i) => answers[i] === q.correctAnswer).length;
@@ -412,6 +503,11 @@ export class Quiz {
       total: questions.length,
     };
     this.allAttempts.push(attempt);
+    this.pastAttemptsForSelected.set(
+      this.allAttempts
+        .filter((a) => a.quizFileName === attempt.quizFileName)
+        .sort((a, b) => b.timestamp.localeCompare(a.timestamp)),
+    );
 
     try {
       const fileHandle = await this.dirHandle.getFileHandle(SCORES_FILE_NAME, { create: true });
@@ -426,6 +522,7 @@ export class Quiz {
   }
 
   backToQuizList(): void {
+    this.stopTimerInterval();
     this.errorMessage.set('');
     if (this.isSampleMode()) {
       this.viewState.set('sample-list');

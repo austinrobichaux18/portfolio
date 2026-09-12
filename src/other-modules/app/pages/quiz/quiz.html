@@ -109,44 +109,12 @@
         }
       }
     </div>
-  } @else if (viewState() === 'quiz-selected') {
-    <div class="quiz-selected">
-      <h2>{{ selectedQuizFileName() }}</h2>
-      <p>{{ questions().length }} question{{ questions().length === 1 ? '' : 's' }}</p>
-
-      @if (pastAttemptsForSelected().length) {
-        <div class="past-attempts">
-          <h3>Past Attempts</h3>
-          @for (attempt of pastAttemptsForSelected(); track attempt.timestamp) {
-            <div class="attempt-row">
-              <span>{{ attempt.timestamp | date: 'medium' }}</span>
-              <span>{{ attempt.score }} / {{ attempt.total }}</span>
-            </div>
-          }
-        </div>
-      }
-
-      <label class="toggle-row">
-        <input
-          type="checkbox"
-          class="toggle-input"
-          [checked]="immediateFeedback()"
-          (change)="onToggleImmediateFeedback($event)"
-        />
-        <span class="toggle-track"><span class="toggle-thumb"></span></span>
-        <span class="toggle-label">
-          Show answer immediately
-          <small>Reveal correct/incorrect and the explanation right after each question</small>
-        </span>
-      </label>
-
-      <button type="button" class="primary" (click)="startQuiz()">Start Quiz</button>
+  } @else if (viewState() === 'taking-quiz') {
+    <div class="taking-quiz">
       <button type="button" class="secondary" (click)="backToQuizList()">
         {{ isSampleMode() ? 'Back to Sample Quizzes' : hasFolder() ? 'Back to Quiz List' : 'Back' }}
       </button>
-    </div>
-  } @else if (viewState() === 'taking-quiz') {
-    <div class="taking-quiz">
+
       <div class="quiz-body">
         <aside class="question-nav">
           @for (q of questions(); track q.question; let i = $index) {
@@ -167,16 +135,35 @@
             <div class="progress">
               Question {{ currentIndex() + 1 }} of {{ questions().length }}
             </div>
-            <label class="toggle-row compact-toggle">
-              <input
-                type="checkbox"
-                class="toggle-input"
-                [checked]="hideAnswers()"
-                (change)="onToggleHideAnswers($event)"
-              />
-              <span class="toggle-track"><span class="toggle-thumb"></span></span>
-              <span class="toggle-label">Hide Answers</span>
-            </label>
+            <div class="quiz-main-toggles">
+              <label class="toggle-row compact-toggle">
+                <input
+                  type="checkbox"
+                  class="toggle-input"
+                  [checked]="immediateFeedback()"
+                  (change)="onToggleImmediateFeedback($event)"
+                />
+                <span class="toggle-track"><span class="toggle-thumb"></span></span>
+                <span class="toggle-label">Show Answer</span>
+              </label>
+              <label class="toggle-row compact-toggle">
+                <input
+                  type="checkbox"
+                  class="toggle-input"
+                  [checked]="hideAnswers()"
+                  (change)="onToggleHideAnswers($event)"
+                />
+                <span class="toggle-track"><span class="toggle-thumb"></span></span>
+                <span class="toggle-label">Hide Answers</span>
+              </label>
+              <button type="button" class="timer-chip" (click)="toggleTimerVisibility()">
+                @if (showTimer()) {
+                  ⏱ {{ elapsedDisplay() }}
+                } @else {
+                  Show Timer
+                }
+              </button>
+            </div>
           </div>
 
           <h2>{{ questions()[currentIndex()].question }}</h2>
@@ -251,11 +238,35 @@
   } @else if (viewState() === 'results') {
     <div class="results">
       <h2>Score: {{ score() }} / {{ questions().length }} ({{ scorePercent() }}%)</h2>
+
+      <div class="time-summary">
+        <div>
+          <span class="time-summary-label">Total Time</span>
+          <span class="time-summary-value">{{ totalTimeDisplay() }}</span>
+        </div>
+        <div>
+          <span class="time-summary-label">Avg. per Question</span>
+          <span class="time-summary-value">{{ averageTimeDisplay() }}</span>
+        </div>
+      </div>
+
       @if (saveWarning()) {
         <span class="error">{{ saveWarning() }}</span>
       }
       @if (resultNotice()) {
         <span class="notice">{{ resultNotice() }}</span>
+      }
+
+      @if (pastAttemptsForSelected().length) {
+        <div class="past-attempts">
+          <h3>Past Attempts</h3>
+          @for (attempt of pastAttemptsForSelected(); track attempt.timestamp) {
+            <div class="attempt-row">
+              <span>{{ attempt.timestamp | date: 'medium' }}</span>
+              <span>{{ attempt.score }} / {{ attempt.total }}</span>
+            </div>
+          }
+        </div>
       }
 
       <div class="review-list">
@@ -265,7 +276,10 @@
             [class.correct]="answers()[i] === q.correctAnswer"
             [class.incorrect]="answers()[i] !== q.correctAnswer"
           >
-            <h3>{{ i + 1 }}. {{ q.question }}</h3>
+            <div class="review-item-header">
+              <h3>{{ i + 1 }}. {{ q.question }}</h3>
+              <span class="time-tag">{{ timeForQuestion(i) }}</span>
+            </div>
 
             <div class="review-options">
               @for (key of optionKeysFor(q); track key) {
