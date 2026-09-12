@@ -52,6 +52,11 @@ function isValidQuizQuestionArray(data: unknown): data is QuizQuestion[] {
   return Array.isArray(data) && data.length > 0 && data.every(isValidQuizQuestion);
 }
 
+function optionKeysForQuestion(question: QuizQuestion | undefined): AnswerKey[] {
+  if (!question) return [];
+  return ALL_OPTION_KEYS.filter((k) => question.options[k] !== undefined);
+}
+
 function isValidQuizAttempt(item: unknown): item is QuizAttempt {
   if (typeof item !== 'object' || item === null) return false;
   const a = item as Record<string, unknown>;
@@ -124,13 +129,15 @@ export class Quiz {
     this.questions().length ? Math.round((this.score() / this.questions().length) * 100) : 0,
   );
 
-  readonly currentOptionKeys = computed<AnswerKey[]>(() => {
-    const options = this.questions()[this.currentIndex()]?.options;
-    if (!options) return [];
-    return ALL_OPTION_KEYS.filter((k) => options[k] !== undefined);
-  });
+  readonly currentOptionKeys = computed<AnswerKey[]>(() =>
+    optionKeysForQuestion(this.questions()[this.currentIndex()]),
+  );
 
   readonly showOptions = computed(() => !this.hideAnswers() || this.answersRevealedForCurrent());
+
+  optionKeysFor(question: QuizQuestion): AnswerKey[] {
+    return optionKeysForQuestion(question);
+  }
 
   constructor() {
     if (this.viewState() === 'idle') {

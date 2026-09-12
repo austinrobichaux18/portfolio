@@ -266,8 +266,28 @@
             [class.incorrect]="answers()[i] !== q.correctAnswer"
           >
             <h3>{{ i + 1 }}. {{ q.question }}</h3>
-            <p>Your answer: {{ answers()[i] ? q.options[answers()[i]!] : '(no answer)' }}</p>
-            <p>Correct answer: {{ q.options[q.correctAnswer] }}</p>
+
+            <div class="review-options">
+              @for (key of optionKeysFor(q); track key) {
+                <div
+                  class="option"
+                  [class.correct]="key === q.correctAnswer"
+                  [class.incorrect]="answers()[i] === key && key !== q.correctAnswer"
+                >
+                  <span>{{ q.options[key] }}</span>
+                  @if (key === q.correctAnswer) {
+                    <span class="tag">Correct</span>
+                  } @else if (answers()[i] === key) {
+                    <span class="tag">Your answer</span>
+                  }
+                </div>
+              }
+            </div>
+
+            @if (!answers()[i]) {
+              <p class="notice">You didn't answer this question.</p>
+            }
+
             <p class="explanation">{{ q.explanation }}</p>
           </div>
         }
