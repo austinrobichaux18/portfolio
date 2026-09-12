@@ -50,6 +50,12 @@ export const routes: Routes = [
         loadComponent: () => import('./pages/how-it-works/how-it-works').then((m) => m.HowItWorks),
         title: 'How This Site Works | Austin Robichaux'
     },
+
+    {
+        path: 'other-modules',
+        loadChildren: () =>
+            import('../other-modules/app/other-modules.routes').then((m) => m.routes)
+    },
     {
         path: '**',
         redirectTo: ''

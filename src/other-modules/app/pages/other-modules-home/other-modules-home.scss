@@ -1,0 +1,41 @@
+.page-header {
+  margin-bottom: 32px;
+}
+
+h1 {
+  font-size: 3rem;
+}
+
+p {
+  color: #8f9bad;
+}
+
+.module-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 24px;
+}
+
+.module-card {
+  display: block;
+  padding: 32px;
+  background: rgba(23, 31, 43, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 20px;
+  color: inherit;
+  text-decoration: none;
+  transition: 0.2s;
+
+  &:hover {
+    border-color: #49c6ff;
+  }
+
+  h2 {
+    margin: 0 0 12px;
+    color: #49c6ff;
+  }
+
+  p {
+    margin: 0;
+  }
+}

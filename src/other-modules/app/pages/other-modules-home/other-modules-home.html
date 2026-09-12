@@ -1,0 +1,15 @@
+<section class="page-container other-modules-page">
+  <header class="page-header">
+    <h1>Other Modules</h1>
+    <p>Small standalone tools, separate from the rest of the portfolio.</p>
+  </header>
+
+  <div class="module-grid">
+    @for (m of modules; track m.id) {
+      <a class="module-card" [routerLink]="['/other-modules', m.route]">
+        <h2>{{ m.title }}</h2>
+        <p>{{ m.description }}</p>
+      </a>
+    }
+  </div>
+</section>

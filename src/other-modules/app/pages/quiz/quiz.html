@@ -1,0 +1,257 @@
+<section class="page-container quiz-page">
+  <header class="page-header">
+    <h1>Quiz</h1>
+    <p>Pick a folder of quiz JSON files, test yourself, and track your score over time.</p>
+  </header>
+
+  @if (viewState() === 'unsupported') {
+    <div class="status-card unsupported">
+      <p>
+        This feature requires a Chromium-based desktop browser (Chrome, Edge, or Opera) that
+        supports the File System Access API. Please try again in one of those browsers.
+      </p>
+    </div>
+  } @else if (viewState() === 'idle') {
+    <div class="status-card">
+      @if (lastFolderName()) {
+        <p>Continue with your last folder, or pick a different one.</p>
+
+        <div class="idle-actions">
+          <button type="button" class="primary" (click)="continueWithLastFolder()">
+            Continue with "{{ lastFolderName() }}"
+          </button>
+        </div>
+
+        <div class="idle-actions">
+          <button type="button" class="secondary" (click)="pickFolder()">
+            Choose a Different Folder
+          </button>
+          <button type="button" class="secondary" (click)="showSampleQuizzes()">
+            Sample Quizzes
+          </button>
+        </div>
+      } @else {
+        <p>Pick a folder containing one or more quiz JSON files to get started.</p>
+
+        <div class="idle-actions">
+          <button type="button" class="primary" (click)="pickFolder()">Choose Folder</button>
+          <button type="button" class="secondary" (click)="showSampleQuizzes()">
+            Sample Quizzes
+          </button>
+        </div>
+      }
+
+      <p class="notice">
+        If nothing happens after choosing a folder, try a different browser. Known supported
+        browsers: Chrome, Edge, Opera (desktop).
+      </p>
+
+      @if (errorMessage()) {
+        <span class="error">{{ errorMessage() }}</span>
+      }
+
+      <div class="format-help">
+        <h3>What goes in the folder?</h3>
+        <p>
+          Any number of <code>.json</code> files, each containing an array of questions shaped like
+          this:
+        </p>
+        <pre><code>{{ formatExample }}</code></pre>
+        <p class="tip">
+          Tip: <code>options</code> defaults to four choices (<code>a</code>–<code>d</code>), but
+          you can use up to eight — just add <code>e</code>, <code>f</code>, <code>g</code>, and/or
+          <code>h</code> and make sure <code>correctAnswer</code> matches one of the keys you
+          included.
+        </p>
+        <p>
+          A file named <code>quiz-scores.json</code> is reserved — it's created and updated
+          automatically to store your score history, so don't name a quiz file that.
+        </p>
+      </div>
+    </div>
+  } @else if (viewState() === 'sample-list') {
+    <div class="quiz-list">
+      <button type="button" class="secondary" (click)="backToIdle()">Back</button>
+
+      @for (sample of sampleQuizzes; track sample.id) {
+        <div class="sample-card">
+          <div class="sample-card-info">
+            <strong>{{ sample.title }}</strong>
+            <span>{{ sample.questions.length }} questions</span>
+          </div>
+          <div class="sample-card-actions">
+            <button type="button" class="primary" (click)="trySample(sample)">Try</button>
+            <button type="button" class="secondary" (click)="downloadSample(sample)">
+              Download
+            </button>
+          </div>
+        </div>
+      }
+    </div>
+  } @else if (viewState() === 'loading-folder') {
+    <div class="status-card">
+      <p>Reading folder…</p>
+    </div>
+  } @else if (viewState() === 'quiz-list') {
+    <div class="quiz-list">
+      <button type="button" class="secondary" (click)="chooseDifferentFolder()">Back</button>
+
+      @if (errorMessage()) {
+        <span class="error">{{ errorMessage() }}</span>
+      }
+      @if (quizFiles().length === 0) {
+        <p>No quiz JSON files found in that folder.</p>
+      } @else {
+        @for (fileName of quizFiles(); track fileName) {
+          <button type="button" class="quiz-file-card" (click)="selectQuiz(fileName)">
+            {{ fileName }}
+          </button>
+        }
+      }
+    </div>
+  } @else if (viewState() === 'quiz-selected') {
+    <div class="quiz-selected">
+      <h2>{{ selectedQuizFileName() }}</h2>
+      <p>{{ questions().length }} question{{ questions().length === 1 ? '' : 's' }}</p>
+
+      @if (pastAttemptsForSelected().length) {
+        <div class="past-attempts">
+          <h3>Past Attempts</h3>
+          @for (attempt of pastAttemptsForSelected(); track attempt.timestamp) {
+            <div class="attempt-row">
+              <span>{{ attempt.timestamp | date: 'medium' }}</span>
+              <span>{{ attempt.score }} / {{ attempt.total }}</span>
+            </div>
+          }
+        </div>
+      }
+
+      <label class="toggle-row">
+        <input
+          type="checkbox"
+          class="toggle-input"
+          [checked]="immediateFeedback()"
+          (change)="onToggleImmediateFeedback($event)"
+        />
+        <span class="toggle-track"><span class="toggle-thumb"></span></span>
+        <span class="toggle-label">
+          Show answer immediately
+          <small>Reveal correct/incorrect and the explanation right after each question</small>
+        </span>
+      </label>
+
+      <button type="button" class="primary" (click)="startQuiz()">Start Quiz</button>
+      <button type="button" class="secondary" (click)="backToQuizList()">
+        {{ isSampleMode() ? 'Back to Sample Quizzes' : hasFolder() ? 'Back to Quiz List' : 'Back' }}
+      </button>
+    </div>
+  } @else if (viewState() === 'taking-quiz') {
+    <div class="taking-quiz">
+      <div class="quiz-body">
+        <aside class="question-nav">
+          @for (q of questions(); track q.question; let i = $index) {
+            <button
+              type="button"
+              class="q-nav-btn"
+              [class.current]="i === currentIndex()"
+              [class.answered]="answers()[i] !== null"
+              (click)="goToQuestion(i)"
+            >
+              {{ i + 1 }}
+            </button>
+          }
+        </aside>
+
+        <div class="quiz-main">
+          <div class="progress">Question {{ currentIndex() + 1 }} of {{ questions().length }}</div>
+          <h2>{{ questions()[currentIndex()].question }}</h2>
+
+          <div class="options">
+            @for (key of currentOptionKeys(); track key) {
+              <button
+                type="button"
+                class="option"
+                [class.selected]="answers()[currentIndex()] === key"
+                [class.correct]="
+                  revealCurrent() && key === questions()[currentIndex()].correctAnswer
+                "
+                [class.incorrect]="
+                  revealCurrent() &&
+                  answers()[currentIndex()] === key &&
+                  key !== questions()[currentIndex()].correctAnswer
+                "
+                [disabled]="revealCurrent()"
+                (click)="selectAnswer(key)"
+              >
+                {{ questions()[currentIndex()].options[key] }}
+              </button>
+            }
+          </div>
+
+          @if (revealCurrent()) {
+            <div class="explanation">
+              <p class="verdict">
+                {{
+                  answers()[currentIndex()] === questions()[currentIndex()].correctAnswer
+                    ? 'Correct!'
+                    : 'Incorrect.'
+                }}
+              </p>
+              <p>{{ questions()[currentIndex()].explanation }}</p>
+            </div>
+          }
+
+          <div class="nav-controls">
+            <button
+              type="button"
+              class="secondary"
+              (click)="previousQuestion()"
+              [disabled]="currentIndex() === 0"
+            >
+              ← Previous
+            </button>
+            <button
+              type="button"
+              class="secondary"
+              (click)="nextQuestion()"
+              [disabled]="currentIndex() === questions().length - 1"
+            >
+              Next →
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <button type="button" class="primary finish-btn" (click)="finishQuiz()">Finish Quiz</button>
+    </div>
+  } @else if (viewState() === 'results') {
+    <div class="results">
+      <h2>Score: {{ score() }} / {{ questions().length }} ({{ scorePercent() }}%)</h2>
+      @if (saveWarning()) {
+        <span class="error">{{ saveWarning() }}</span>
+      }
+      @if (resultNotice()) {
+        <span class="notice">{{ resultNotice() }}</span>
+      }
+
+      <div class="review-list">
+        @for (q of questions(); track q.question; let i = $index) {
+          <div
+            class="review-item"
+            [class.correct]="answers()[i] === q.correctAnswer"
+            [class.incorrect]="answers()[i] !== q.correctAnswer"
+          >
+            <h3>{{ i + 1 }}. {{ q.question }}</h3>
+            <p>Your answer: {{ answers()[i] ? q.options[answers()[i]!] : '(no answer)' }}</p>
+            <p>Correct answer: {{ q.options[q.correctAnswer] }}</p>
+            <p class="explanation">{{ q.explanation }}</p>
+          </div>
+        }
+      </div>
+
+      <button type="button" class="primary" (click)="backToQuizList()">
+        {{ isSampleMode() ? 'Try Another Sample' : hasFolder() ? 'Choose Another Quiz' : 'Back' }}
+      </button>
+    </div>
+  }
+</section>
