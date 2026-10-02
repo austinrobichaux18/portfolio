@@ -1,0 +1,262 @@
+<section class="page-container kana-page">
+  <header class="page-header">
+    <h1>Kana</h1>
+    <p>Drill hiragana and katakana. Practice leans toward the characters you miss most.</p>
+  </header>
+
+  @if (viewState() === 'setup') {
+    <div class="setup-card">
+      <p>Tap kana to build a practice set — mix hiragana and katakana freely.</p>
+
+      @if (historySummary(); as summary) {
+        <div class="history-section">
+          <div class="history-summary-header">
+            <h3>Session History</h3>
+            <span class="history-summary-stats">
+              {{ summary.sessions }} session{{ summary.sessions === 1 ? '' : 's' }} ·
+              {{ summary.accuracyPercent }}% overall accuracy ·
+              {{ summary.totalAttempts }} kana answered
+            </span>
+          </div>
+          <div class="history-list">
+            @for (entry of historyDescending(); track entry.timestamp) {
+              <div class="history-row">
+                <span>{{ entry.timestamp | date: 'medium' }}</span>
+                <span>{{ entry.correctAttempts }} / {{ entry.totalAttempts }} correct</span>
+                <span>{{ entry.charCount }} kana</span>
+                <span>{{ formatSeconds(entry.avgTimeMsPerChar) }}s avg</span>
+              </div>
+            }
+          </div>
+        </div>
+      }
+
+      @if (worstChars().length) {
+        <button type="button" class="most-missed-btn" (click)="selectMostMissed()">
+          ⭐ Select My {{ worstChars().length }} Most-Missed Kana
+        </button>
+      }
+
+      <div class="script-columns">
+        <div class="script-column">
+          <div class="script-column-header">
+            <h3>Hiragana ({{ selectedCountForScript('hiragana') }}/{{ totalForScript('hiragana') }})</h3>
+            <div class="script-actions">
+              <button type="button" class="link-btn" (click)="selectAllForScript('hiragana')">
+                Select All
+              </button>
+              <button type="button" class="link-btn" (click)="clearAllForScript('hiragana')">
+                Clear
+              </button>
+            </div>
+          </div>
+          @for (section of rowSections; track section.label) {
+            <div class="row-section-header">
+              <h4 class="row-section-label">
+                {{ section.label }} ({{ categorySelectedCount('hiragana', section.rows) }}/{{
+                  categoryTotalCount('hiragana', section.rows)
+                }})
+              </h4>
+              <div class="row-section-actions">
+                <button type="button" class="link-btn" (click)="selectCategory('hiragana', section.rows)">
+                  Select
+                </button>
+                <button type="button" class="link-btn" (click)="clearCategory('hiragana', section.rows)">
+                  Clear
+                </button>
+              </div>
+            </div>
+            @for (row of section.rows; track row.id) {
+              <div class="tile-row">
+                <button
+                  type="button"
+                  class="row-select-chip"
+                  [class.active]="isRowFullySelected('hiragana', row.id)"
+                  (click)="toggleRow('hiragana', row.id)"
+                  title="Select whole row"
+                >
+                  {{ row.id }}
+                </button>
+                @for (c of charsForRow('hiragana', row.id); track c.id) {
+                  <button
+                    type="button"
+                    class="kana-tile"
+                    [class.selected]="isCharSelected(c.id)"
+                    (click)="toggleChar(c.id)"
+                  >
+                    <span class="tile-char">{{ c.char }}</span>
+                    <span class="tile-romaji">{{ c.romaji }}</span>
+                  </button>
+                }
+              </div>
+            }
+          }
+        </div>
+
+        <div class="script-column">
+          <div class="script-column-header">
+            <h3>Katakana ({{ selectedCountForScript('katakana') }}/{{ totalForScript('katakana') }})</h3>
+            <div class="script-actions">
+              <button type="button" class="link-btn" (click)="selectAllForScript('katakana')">
+                Select All
+              </button>
+              <button type="button" class="link-btn" (click)="clearAllForScript('katakana')">
+                Clear
+              </button>
+            </div>
+          </div>
+          @for (section of rowSections; track section.label) {
+            <div class="row-section-header">
+              <h4 class="row-section-label">
+                {{ section.label }} ({{ categorySelectedCount('katakana', section.rows) }}/{{
+                  categoryTotalCount('katakana', section.rows)
+                }})
+              </h4>
+              <div class="row-section-actions">
+                <button type="button" class="link-btn" (click)="selectCategory('katakana', section.rows)">
+                  Select
+                </button>
+                <button type="button" class="link-btn" (click)="clearCategory('katakana', section.rows)">
+                  Clear
+                </button>
+              </div>
+            </div>
+            @for (row of section.rows; track row.id) {
+              <div class="tile-row">
+                <button
+                  type="button"
+                  class="row-select-chip"
+                  [class.active]="isRowFullySelected('katakana', row.id)"
+                  (click)="toggleRow('katakana', row.id)"
+                  title="Select whole row"
+                >
+                  {{ row.id }}
+                </button>
+                @for (c of charsForRow('katakana', row.id); track c.id) {
+                  <button
+                    type="button"
+                    class="kana-tile"
+                    [class.selected]="isCharSelected(c.id)"
+                    (click)="toggleChar(c.id)"
+                  >
+                    <span class="tile-char">{{ c.char }}</span>
+                    <span class="tile-romaji">{{ c.romaji }}</span>
+                  </button>
+                }
+              </div>
+            }
+          }
+        </div>
+      </div>
+
+      <button type="button" class="primary" [disabled]="!canStart()" (click)="startSession()">
+        Start Practice ({{ selectedChars().length }} kana selected)
+      </button>
+    </div>
+  } @else if (viewState() === 'practice' || viewState() === 'paused') {
+    <div class="practice-card">
+      <div class="practice-header">
+        <div class="stat-chip">⏱ {{ elapsedDisplay() }}</div>
+        <div class="stat-chip">{{ sessionCorrect() }} / {{ sessionAttempts() }} correct</div>
+        <div class="stat-chip">Avg {{ liveAvgTimeDisplay() }}s / kana</div>
+
+        @if (viewState() === 'practice') {
+          <button type="button" class="secondary" (click)="pause()">Pause</button>
+        } @else {
+          <button type="button" class="primary" (click)="resume()">Resume</button>
+        }
+        <button type="button" class="secondary" (click)="endSession()">End &amp; Save</button>
+      </div>
+
+      @if (currentChar(); as char) {
+        <div
+          class="kana-display"
+          [class.correct]="feedback() === 'correct'"
+          [class.incorrect]="feedback() === 'incorrect'"
+        >
+          {{ char.char }}
+        </div>
+
+        @if (viewState() === 'paused') {
+          <p class="reveal-tag">Paused</p>
+        } @else if (revealedRomaji()) {
+          <p class="reveal-tag">{{ revealedRomaji() }}</p>
+        }
+
+        <input
+          #kanaInput
+          type="text"
+          class="romaji-input"
+          autocomplete="off"
+          autocapitalize="off"
+          spellcheck="false"
+          placeholder="type romaji…"
+          [value]="inputValue()"
+          [disabled]="viewState() === 'paused' || feedback() === 'incorrect'"
+          (input)="onInput(kanaInput.value)"
+        />
+      }
+    </div>
+  } @else if (viewState() === 'results') {
+    <div class="results-card">
+      <h2>Session Complete</h2>
+
+      <div class="time-summary">
+        <div>
+          <span class="time-summary-label">Accuracy</span>
+          <span class="time-summary-value">{{ resultsAccuracyPercent() }}%</span>
+        </div>
+        <div>
+          <span class="time-summary-label">Total Time</span>
+          <span class="time-summary-value">{{ resultsTotalTimeDisplay() }}</span>
+        </div>
+        <div>
+          <span class="time-summary-label">Avg. per Kana</span>
+          <span class="time-summary-value">{{ resultsAvgTimeDisplay() }}s</span>
+        </div>
+      </div>
+
+      @if (sessionMissedChars().length) {
+        <div class="missed-section">
+          <h3>Missed This Session</h3>
+          <p class="notice">Every kana you got wrong, most-missed first.</p>
+          <div class="missed-list">
+            @for (entry of sessionMissedChars(); track entry.char.id) {
+              <div class="missed-row">
+                <span class="missed-char">{{ entry.char.char }}</span>
+                <span class="missed-romaji">{{ entry.char.romaji }}</span>
+                <span class="missed-count">missed {{ entry.missCount }}×</span>
+              </div>
+            }
+          </div>
+        </div>
+      }
+
+      @if (worstChars().length) {
+        <div class="retention-section">
+          <h3>Kana You Frequently Forget</h3>
+          <p class="notice">Based on all-time accuracy across every session (3+ attempts).</p>
+          <div class="retention-chart">
+            @for (entry of worstChars(); track entry.char.id) {
+              <div class="retention-row" [class.severity-serious]="entry.accuracyPercent >= 50">
+                <span class="retention-char">{{ entry.char.char }}</span>
+                <span class="retention-romaji">{{ entry.char.romaji }}</span>
+                <div class="retention-bar-track">
+                  <div class="retention-bar-fill" [style.width.%]="entry.accuracyPercent"></div>
+                </div>
+                <span class="retention-pct">{{ entry.accuracyPercent }}%</span>
+              </div>
+            }
+          </div>
+        </div>
+      }
+
+      <div class="results-actions">
+        <button type="button" class="primary" (click)="practiceAgain()">Practice Again</button>
+        <button type="button" class="secondary" (click)="backToSetup()">Change Selection</button>
+        <button type="button" class="secondary" (click)="downloadJson()">Download JSON</button>
+        <a routerLink="/other-modules" class="back-link">← Back to Other Modules</a>
+      </div>
+    </div>
+  }
+</section>

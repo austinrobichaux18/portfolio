@@ -17,4 +17,9 @@ export const routes: Routes = [
     loadComponent: () => import('./pages/localflix/localflix').then((m) => m.LocalFlix),
     title: 'LocalFlix | Austin Robichaux',
   },
+  {
+    path: 'kana',
+    loadComponent: () => import('./pages/kana/kana').then((m) => m.Kana),
+    title: 'Kana | Austin Robichaux',
+  },
 ];
