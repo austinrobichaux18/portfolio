@@ -16,7 +16,7 @@ export const modules: Module[] = [
   },
   {
     id: 'kana',
-    title: 'Kana',
+    title: 'Japanese Kana',
     description:
       'Drill hiragana and katakana with adaptive practice that focuses on the characters you miss most.',
     route: 'kana',

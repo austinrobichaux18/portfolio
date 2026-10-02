@@ -23,7 +23,10 @@ import {
   downloadStatsAsJson,
   loadCharStats,
   loadHistory,
+  mergeCharStats,
+  mergeHistory,
   mergeSessionIntoStats,
+  parseImportPayload,
   saveCharStats,
   saveHistory,
 } from './kana-storage';
@@ -78,6 +81,31 @@ function formatClock(totalSeconds: number): string {
 function elapsedMs(accumulated: number, segmentStart: number | null): number {
   return accumulated + (segmentStart !== null ? Date.now() - segmentStart : 0);
 }
+
+function formatShortDate(timestamp: string): string {
+  return new Date(timestamp).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+}
+
+interface TrendPoint {
+  x: number;
+  y: number;
+  accuracyPercent: number;
+  dateLabel: string;
+}
+
+interface TrendChart {
+  points: TrendPoint[];
+  linePath: string;
+  width: number;
+  height: number;
+  left: number;
+  right: number;
+  gridLines: { y: number; label: string }[];
+}
+
+const TREND_CHART_WIDTH = 640;
+const TREND_CHART_HEIGHT = 160;
+const TREND_CHART_MARGIN = { top: 16, right: 16, bottom: 16, left: 34 };
 
 /** Raw (unrounded) miss rate — used for threshold comparisons so a display-only rounding never shifts which side of a cutoff a stat falls on. */
 function rawMissPercent(stat: KanaCharStat): number {
@@ -145,6 +173,51 @@ export class Kana implements OnDestroy {
     };
   });
 
+  hoveredTrendIndex = signal<number | null>(null);
+
+  accuracyTrend = computed<TrendChart | null>(() => {
+    const sessions = this.history();
+    if (sessions.length === 0) return null;
+
+    const { top, right, bottom, left } = TREND_CHART_MARGIN;
+    const plotWidth = TREND_CHART_WIDTH - left - right;
+    const plotHeight = TREND_CHART_HEIGHT - top - bottom;
+
+    const points: TrendPoint[] = sessions.map((s, i) => {
+      const accuracyPercent = this.accuracyPercentFor(s);
+      const x =
+        sessions.length > 1 ? left + (i / (sessions.length - 1)) * plotWidth : left + plotWidth / 2;
+      const y = top + (1 - accuracyPercent / 100) * plotHeight;
+      return { x, y, accuracyPercent, dateLabel: formatShortDate(s.timestamp) };
+    });
+
+    const linePath = points
+      .map((p, i) => `${i === 0 ? 'M' : 'L'}${p.x.toFixed(1)},${p.y.toFixed(1)}`)
+      .join(' ');
+
+    const gridLines = [0, 50, 100].map((pct) => ({
+      y: top + (1 - pct / 100) * plotHeight,
+      label: `${pct}%`,
+    }));
+
+    return {
+      points,
+      linePath,
+      width: TREND_CHART_WIDTH,
+      height: TREND_CHART_HEIGHT,
+      left,
+      right,
+      gridLines,
+    };
+  });
+
+  hoveredTrendPoint = computed<TrendPoint | null>(() => {
+    const i = this.hoveredTrendIndex();
+    const trend = this.accuracyTrend();
+    if (i === null || !trend) return null;
+    return trend.points[i] ?? null;
+  });
+
   toggleHistoryEntry(timestamp: string): void {
     this.expandedHistoryTimestamp.update((current) => (current === timestamp ? null : timestamp));
   }
@@ -171,6 +244,36 @@ export class Kana implements OnDestroy {
     downloadSessionAsJson(entry);
   }
 
+  importMessage = signal<{ text: string; isError: boolean } | null>(null);
+
+  async importFromFile(file: File): Promise<void> {
+    const raw = await file.text();
+    const payload = parseImportPayload(raw);
+    if (!payload) {
+      this.importMessage.set({ text: 'That file could not be read as Kana stats.', isError: true });
+      return;
+    }
+
+    const previousSessionCount = this.history().length;
+    const mergedStats = mergeCharStats(this.charStats(), payload.charStats);
+    const mergedHistory = mergeHistory(this.history(), payload.history);
+    this.charStats.set(mergedStats);
+    this.history.set(mergedHistory);
+    saveCharStats(mergedStats);
+    saveHistory(mergedHistory);
+
+    const newSessions = mergedHistory.length - previousSessionCount;
+    this.importMessage.set({
+      text: `Imported ${payload.history.length} session${payload.history.length === 1 ? '' : 's'} from the file (${newSessions} new after de-duplication).`,
+      isError: false,
+    });
+  }
+
+  onImportFileSelected(files: FileList | null): void {
+    const file = files?.[0];
+    if (file) this.importFromFile(file);
+  }
+
   currentChar = signal<KanaChar | null>(null);
 
   inputValue = signal('');
@@ -180,6 +283,10 @@ export class Kana implements OnDestroy {
   revealedRomaji = signal<string | null>(null);
 
   hintVisible = signal(false);
+
+  autoPronounce = signal(false);
+
+  speechSupported = typeof window !== 'undefined' && 'speechSynthesis' in window;
 
   currentRowChars = computed(() => {
     const char = this.currentChar();
@@ -291,6 +398,7 @@ export class Kana implements OnDestroy {
   ngOnDestroy(): void {
     this.stopTimerInterval();
     this.clearPendingAdvance();
+    if (this.speechSupported) speechSynthesis.cancel();
   }
 
   @HostListener('document:keydown', ['$event'])
@@ -306,6 +414,8 @@ export class Kana implements OnDestroy {
       }
     } else if (event.key === 'Shift') {
       this.handleShiftPress();
+    } else if (event.key === 'CapsLock') {
+      this.toggleAutoPronounce();
     }
   }
 
@@ -333,6 +443,27 @@ export class Kana implements OnDestroy {
     const next = !this.hintVisible();
     this.hintVisible.set(next);
     if (next) this.hintUsedForCurrentChar = true;
+  }
+
+  /** Toggles reading each kana aloud as it appears — on, it also speaks the current one immediately for confirmation. */
+  toggleAutoPronounce(): void {
+    if (!this.currentChar()) return;
+    const next = !this.autoPronounce();
+    this.autoPronounce.set(next);
+    if (next) this.pronounceCurrent();
+  }
+
+  pronounceCurrent(): void {
+    const char = this.currentChar();
+    if (char) this.speak(char.char);
+  }
+
+  private speak(text: string): void {
+    if (!this.speechSupported) return;
+    speechSynthesis.cancel();
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.lang = 'ja-JP';
+    speechSynthesis.speak(utterance);
   }
 
   toggleChar(id: string): void {
@@ -395,6 +526,14 @@ export class Kana implements OnDestroy {
     let count = 0;
     for (const c of KANA_CHARS) {
       if (c.script === script && ids.has(c.id)) count++;
+    }
+    return count;
+  }
+
+  masteredCountForScript(script: KanaScript): number {
+    let count = 0;
+    for (const c of KANA_CHARS) {
+      if (c.script === script && this.tileBadgeFor(c.id) === 'mastered') count++;
     }
     return count;
   }
@@ -502,6 +641,14 @@ export class Kana implements OnDestroy {
     this.viewState.set('practice');
   }
 
+  /** Space repeats the current kana's audio instead of being typed — it's never a valid romaji character anyway. */
+  onRomajiKeyDown(event: KeyboardEvent): void {
+    if (event.key === ' ') {
+      event.preventDefault();
+      this.pronounceCurrent();
+    }
+  }
+
   onInput(value: string): void {
     if (this.viewState() !== 'practice') return;
     this.inputValue.set(value);
@@ -532,6 +679,7 @@ export class Kana implements OnDestroy {
     }
     this.clearPendingAdvance();
     this.stopTimerInterval();
+    if (this.speechSupported) speechSynthesis.cancel();
     this.viewState.set('paused');
   }
 
@@ -596,8 +744,29 @@ export class Kana implements OnDestroy {
     this.viewState.set('setup');
   }
 
+  /** The practice screen's "back to selection" shortcut — saves the in-progress session first, same as End & Save. */
+  exitPracticeToSetup(): void {
+    if (this.viewState() === 'practice' || this.viewState() === 'paused') {
+      this.endSession();
+    }
+    this.backToSetup();
+  }
+
   downloadJson(): void {
     downloadStatsAsJson(this.charStats(), this.history());
+  }
+
+  clearHistory(): void {
+    const confirmed = confirm(
+      'Clear all Kana practice history and character stats? This cannot be undone — consider downloading a backup first.',
+    );
+    if (!confirmed) return;
+
+    this.charStats.set({});
+    this.history.set([]);
+    saveCharStats({});
+    saveHistory([]);
+    this.importMessage.set(null);
   }
 
   private recordAttempt(char: KanaChar, correct: boolean): void {
@@ -638,6 +807,8 @@ export class Kana implements OnDestroy {
     // `inputValue` signal reset into the field, leaving the old text in place.
     const inputEl = this.kanaInput()?.nativeElement;
     if (inputEl) inputEl.value = '';
+
+    if (this.autoPronounce()) this.speak(next.char);
 
     this.focusInput();
   }

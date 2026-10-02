@@ -20,6 +20,6 @@ export const routes: Routes = [
   {
     path: 'kana',
     loadComponent: () => import('./pages/kana/kana').then((m) => m.Kana),
-    title: 'Kana | Austin Robichaux',
+    title: 'Japanese Kana | Austin Robichaux',
   },
 ];

@@ -1,6 +1,6 @@
 <section class="page-container kana-page">
   <header class="page-header">
-    <h1>Kana</h1>
+    <h1>Japanese Kana</h1>
     <p>Drill hiragana and katakana. Practice leans toward the characters you miss most.</p>
   </header>
 
@@ -8,19 +8,119 @@
     <div class="setup-card">
       <p>Tap kana to build a practice set — mix hiragana and katakana freely.</p>
 
-      @if (historySummary(); as summary) {
-        <div class="history-section">
-          <div class="history-summary-header">
-            <h3>Session History</h3>
+      <div class="history-section">
+        <div class="history-summary-header">
+          <h3>Session History</h3>
+          @if (historySummary(); as summary) {
             <span class="history-summary-stats">
               {{ summary.sessions }} session{{ summary.sessions === 1 ? '' : 's' }} ·
               {{ summary.accuracyPercent }}% overall accuracy ·
               {{ summary.totalAttempts }} kana answered
             </span>
-          </div>
-          <button type="button" class="link-btn history-download-all" (click)="downloadJson()">
-            Download All History
+          } @else {
+            <span class="history-summary-stats">
+              No sessions yet — practice, or import a backup below.
+            </span>
+          }
+        </div>
+
+        <div class="history-io-actions">
+          @if (historySummary()) {
+            <button type="button" class="link-btn" (click)="downloadJson()">
+              Download All History
+            </button>
+          }
+          <input
+            #importFileInput
+            type="file"
+            accept="application/json"
+            class="visually-hidden"
+            (change)="onImportFileSelected(importFileInput.files); importFileInput.value = ''"
+          />
+          <button type="button" class="link-btn" (click)="importFileInput.click()">
+            Import From File
           </button>
+          @if (historySummary()) {
+            <button type="button" class="link-btn danger-link" (click)="clearHistory()">
+              Clear History
+            </button>
+          }
+        </div>
+
+        @if (importMessage(); as msg) {
+          <p class="notice" [class.error-text]="msg.isError">{{ msg.text }}</p>
+        }
+
+        @if (accuracyTrend(); as trend) {
+          <div class="trend-chart-wrap">
+            <p class="row-section-label">Accuracy Trend</p>
+            <svg
+              [attr.viewBox]="'0 0 ' + trend.width + ' ' + trend.height"
+              class="trend-chart"
+              preserveAspectRatio="none"
+              role="img"
+              [attr.aria-label]="
+                'Accuracy across ' +
+                trend.points.length +
+                ' sessions, most recently ' +
+                trend.points[trend.points.length - 1].accuracyPercent +
+                ' percent'
+              "
+            >
+              @for (g of trend.gridLines; track g.label) {
+                <line
+                  class="trend-gridline"
+                  [attr.x1]="trend.left"
+                  [attr.x2]="trend.width - trend.right"
+                  [attr.y1]="g.y"
+                  [attr.y2]="g.y"
+                />
+                <text class="trend-axis-label" x="2" [attr.y]="g.y + 3">{{ g.label }}</text>
+              }
+
+              @if (trend.points.length > 1) {
+                <path class="trend-line" [attr.d]="trend.linePath" fill="none" />
+              }
+
+              @for (p of trend.points; track $index; let i = $index) {
+                <circle class="trend-dot" [attr.cx]="p.x" [attr.cy]="p.y" r="4"></circle>
+                <circle
+                  class="trend-dot-hit"
+                  [attr.cx]="p.x"
+                  [attr.cy]="p.y"
+                  r="12"
+                  tabindex="0"
+                  [attr.aria-label]="p.dateLabel + ', ' + p.accuracyPercent + ' percent'"
+                  (mouseenter)="hoveredTrendIndex.set(i)"
+                  (mouseleave)="hoveredTrendIndex.set(null)"
+                  (focus)="hoveredTrendIndex.set(i)"
+                  (blur)="hoveredTrendIndex.set(null)"
+                ></circle>
+              }
+
+              <text
+                class="trend-endpoint-label"
+                [attr.x]="trend.points[trend.points.length - 1].x"
+                [attr.y]="trend.points[trend.points.length - 1].y - 10"
+                text-anchor="end"
+              >
+                {{ trend.points[trend.points.length - 1].accuracyPercent }}%
+              </text>
+            </svg>
+
+            @if (hoveredTrendPoint(); as hp) {
+              <div
+                class="trend-tooltip"
+                [style.left.%]="(hp.x / trend.width) * 100"
+                [style.top.%]="(hp.y / trend.height) * 100"
+              >
+                {{ hp.dateLabel }} — {{ hp.accuracyPercent }}%
+              </div>
+            }
+          </div>
+        }
+
+        @if (historySummary()) {
           <div class="history-list">
             @for (entry of historyDescending(); track entry.timestamp) {
               <div class="history-entry">
@@ -84,8 +184,8 @@
               </div>
             }
           </div>
-        </div>
-      }
+        }
+      </div>
 
       <button type="button" class="primary" [disabled]="!canStart()" (click)="startSession()">
         Start Practice ({{ selectedChars().length }} kana selected)
@@ -106,7 +206,13 @@
             }
           </button>
           <div class="script-column-header">
-            <h3>Hiragana ({{ selectedCountForScript('hiragana') }}/{{ totalForScript('hiragana') }})</h3>
+            <h3>
+              Hiragana ({{ selectedCountForScript('hiragana') }}/{{ totalForScript('hiragana') }})
+              <span class="mastery-count">
+                ○ {{ masteredCountForScript('hiragana') }}/{{ totalForScript('hiragana') }}
+              </span>
+              <span class="jp-name">ひらがな</span>
+            </h3>
             <div class="script-actions">
               <button type="button" class="link-btn" (click)="selectAllForScript('hiragana')">
                 Select All
@@ -178,7 +284,13 @@
             }
           </button>
           <div class="script-column-header">
-            <h3>Katakana ({{ selectedCountForScript('katakana') }}/{{ totalForScript('katakana') }})</h3>
+            <h3>
+              Katakana ({{ selectedCountForScript('katakana') }}/{{ totalForScript('katakana') }})
+              <span class="mastery-count">
+                ○ {{ masteredCountForScript('katakana') }}/{{ totalForScript('katakana') }}
+              </span>
+              <span class="jp-name">カタカナ</span>
+            </h3>
             <div class="script-actions">
               <button type="button" class="link-btn" (click)="selectAllForScript('katakana')">
                 Select All
@@ -239,10 +351,24 @@
     </div>
   } @else if (viewState() === 'practice' || viewState() === 'paused') {
     <div class="practice-card">
+      <button type="button" class="back-link" (click)="exitPracticeToSetup()">
+        ← Back to Selection (saves progress)
+      </button>
+
       <div class="practice-header">
         <div class="stat-chip">⏱ {{ elapsedDisplay() }}</div>
         <div class="stat-chip">{{ sessionCorrect() }} / {{ sessionAttempts() }} correct</div>
         <div class="stat-chip">Avg {{ liveAvgTimeDisplay() }}s / kana</div>
+        @if (speechSupported) {
+          <button
+            type="button"
+            class="stat-chip stat-chip-toggle"
+            [class.active]="autoPronounce()"
+            (click)="toggleAutoPronounce()"
+          >
+            🔊 Auto {{ autoPronounce() ? 'On' : 'Off' }} (Caps Lock)
+          </button>
+        }
 
         @if (viewState() === 'practice') {
           <button type="button" class="secondary" (click)="pause()">Pause (Ctrl)</button>
@@ -256,15 +382,31 @@
 
       <p class="shortcut-hint">
         ⇧ Tap Shift for a hint (reveals the answer and its row — counts as a miss)
+        @if (speechSupported) {
+          <br />
+          ⇪ Space repeats the audio
+        }
       </p>
 
       @if (currentChar(); as char) {
-        <div
-          class="kana-display"
-          [class.correct]="feedback() === 'correct'"
-          [class.incorrect]="feedback() === 'incorrect'"
-        >
-          {{ char.char }}
+        <div class="kana-display-row">
+          <div
+            class="kana-display"
+            [class.correct]="feedback() === 'correct'"
+            [class.incorrect]="feedback() === 'incorrect'"
+          >
+            {{ char.char }}
+          </div>
+          @if (speechSupported) {
+            <button
+              type="button"
+              class="pronounce-btn"
+              (click)="pronounceCurrent()"
+              title="Pronounce this kana"
+            >
+              🔊
+            </button>
+          }
         </div>
 
         @if (viewState() === 'paused') {
@@ -286,6 +428,7 @@
           [value]="inputValue()"
           [disabled]="viewState() === 'paused' || feedback() === 'incorrect'"
           (input)="onInput(kanaInput.value)"
+          (keydown)="onRomajiKeyDown($event)"
         />
 
         @if (hintVisible() && viewState() === 'practice') {
@@ -305,6 +448,8 @@
     </div>
   } @else if (viewState() === 'results') {
     <div class="results-card">
+      <button type="button" class="back-link" (click)="backToSetup()">← Back to Selection</button>
+
       <h2>Session Complete</h2>
 
       <div class="time-summary">

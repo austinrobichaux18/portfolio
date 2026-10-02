@@ -88,6 +88,52 @@ export function mergeSessionIntoStats(
   return next;
 }
 
+export interface KanaImportPayload {
+  charStats: KanaCharStatsMap;
+  history: KanaSessionSummary[];
+}
+
+export function parseImportPayload(raw: string): KanaImportPayload | null {
+  try {
+    const parsed = JSON.parse(raw);
+    if (typeof parsed !== 'object' || parsed === null) return null;
+    const data = parsed as Record<string, unknown>;
+    const charStats = isValidCharStatsMap(data['charStats']) ? data['charStats'] : {};
+    const history = Array.isArray(data['history'])
+      ? data['history'].filter(isValidSessionSummary)
+      : [];
+    return { charStats, history };
+  } catch {
+    return null;
+  }
+}
+
+/** Sums attempts/correct/time per character — safe because both sides are additive cumulative counters. */
+export function mergeCharStats(a: KanaCharStatsMap, b: KanaCharStatsMap): KanaCharStatsMap {
+  const merged: KanaCharStatsMap = { ...a };
+  for (const [id, stat] of Object.entries(b)) {
+    const prev = merged[id] ?? { attempts: 0, correct: 0, totalTimeMs: 0 };
+    merged[id] = {
+      attempts: prev.attempts + stat.attempts,
+      correct: prev.correct + stat.correct,
+      totalTimeMs: prev.totalTimeMs + stat.totalTimeMs,
+    };
+  }
+  return merged;
+}
+
+/** Concatenates session history, de-duplicating by timestamp so re-importing the same backup is harmless. */
+export function mergeHistory(
+  a: KanaSessionSummary[],
+  b: KanaSessionSummary[],
+): KanaSessionSummary[] {
+  const byTimestamp = new Map(a.map((entry) => [entry.timestamp, entry]));
+  for (const entry of b) {
+    if (!byTimestamp.has(entry.timestamp)) byTimestamp.set(entry.timestamp, entry);
+  }
+  return [...byTimestamp.values()].sort((x, y) => x.timestamp.localeCompare(y.timestamp));
+}
+
 export function downloadStatsAsJson(stats: KanaCharStatsMap, history: KanaSessionSummary[]): void {
   const payload = { exportedAt: new Date().toISOString(), charStats: stats, history };
   const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
