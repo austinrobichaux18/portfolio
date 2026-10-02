@@ -422,8 +422,6 @@
           <p class="reveal-tag">Paused</p>
         } @else if (revealedRomaji()) {
           <p class="reveal-tag">{{ revealedRomaji() }}</p>
-        } @else if (hintVisible()) {
-          <p class="reveal-tag hint-tag">{{ char.romaji }}</p>
         }
 
         <input
@@ -445,7 +443,7 @@
             <p class="notice">{{ currentRowLabel() }}</p>
             <div class="tile-row">
               @for (c of currentRowChars(); track c.id) {
-                <div class="kana-tile" [class.selected]="c.id === char.id">
+                <div class="kana-tile">
                   <span class="tile-char">{{ c.char }}</span>
                   <span class="tile-romaji">{{ c.romaji }}</span>
                 </div>
