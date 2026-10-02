@@ -47,16 +47,16 @@
       <div class="format-help">
         <h3>What goes in the folder?</h3>
         <p>
-          One subfolder per show. Episode <code>.mp4</code> files can sit directly inside the
-          show's folder, or any number of levels deeper in subfolders — for example
+          One subfolder per show. Episode <code>.mp4</code> files can sit directly inside the show's
+          folder, or any number of levels deeper in subfolders — for example
           <code>root/precure/ep1.mp4</code>, or <code>root/pokemon/season1/ep1.mp4</code> and
-          <code>root/pokemon/movies/movie1.mp4</code> side by side. You can browse into and back
-          out of these subfolders from the show's page.
+          <code>root/pokemon/movies/movie1.mp4</code> side by side. You can browse into and back out
+          of these subfolders from the show's page.
         </p>
         <p>
-          A file named <code>history.json</code> is reserved at the top level of each show's
-          folder — it's created and updated automatically to store watch progress for every
-          episode in that show, including ones in subfolders.
+          A file named <code>history.json</code> is reserved at the top level of each show's folder
+          — it's created and updated automatically to store watch progress for every episode in that
+          show, including ones in subfolders.
         </p>
       </div>
     </div>
@@ -114,10 +114,19 @@
             class="list-item-card episode-card"
             (click)="selectEpisode(episode)"
           >
-            <span class="episode-name">{{ episode }}</span>
-            @if (progressTextFor(episode)) {
-              <span class="episode-progress">{{ progressTextFor(episode) }}</span>
-            }
+            <span class="episode-thumb">
+              @if (thumbnailUrls()[relativeKeyFor(episode)]) {
+                <img [src]="thumbnailUrls()[relativeKeyFor(episode)]" alt="" />
+              } @else {
+                <span class="thumb-placeholder">🎬</span>
+              }
+            </span>
+            <span class="episode-info">
+              <span class="episode-name">{{ episode }}</span>
+              @if (progressTextFor(episode)) {
+                <span class="episode-progress">{{ progressTextFor(episode) }}</span>
+              }
+            </span>
           </button>
         }
       }
