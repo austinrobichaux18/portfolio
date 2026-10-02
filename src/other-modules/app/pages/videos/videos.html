@@ -1,0 +1,187 @@
+<section class="page-container videos-page">
+  <header class="page-header">
+    <h1>Videos</h1>
+    <p>Pick a folder of shows and episodes, watch them, and pick up where you left off.</p>
+  </header>
+
+  @if (viewState() === 'unsupported') {
+    <div class="status-card unsupported">
+      <p>
+        This feature requires a Chromium-based desktop browser (Chrome, Edge, or Opera) that
+        supports the File System Access API. Please try again in one of those browsers.
+      </p>
+    </div>
+  } @else if (viewState() === 'idle') {
+    <div class="status-card">
+      @if (lastFolderName()) {
+        <p>Continue with your last folder, or pick a different one.</p>
+
+        <div class="idle-actions">
+          <button type="button" class="primary" (click)="continueWithLastFolder()">
+            Continue with "{{ lastFolderName() }}"
+          </button>
+        </div>
+
+        <div class="idle-actions">
+          <button type="button" class="secondary" (click)="pickFolder()">
+            Choose a Different Folder
+          </button>
+        </div>
+      } @else {
+        <p>Pick a root folder containing one subfolder per show, each with its episode files.</p>
+
+        <div class="idle-actions">
+          <button type="button" class="primary" (click)="pickFolder()">Choose Folder</button>
+        </div>
+      }
+
+      <p class="notice">
+        If nothing happens after choosing a folder, try a different browser. Known supported
+        browsers: Chrome, Edge, Opera (desktop).
+      </p>
+
+      @if (errorMessage()) {
+        <span class="error">{{ errorMessage() }}</span>
+      }
+
+      <div class="format-help">
+        <h3>What goes in the folder?</h3>
+        <p>
+          One subfolder per show. Episode <code>.mp4</code> files can sit directly inside the
+          show's folder, or any number of levels deeper in subfolders — for example
+          <code>root/precure/ep1.mp4</code>, or <code>root/pokemon/season1/ep1.mp4</code> and
+          <code>root/pokemon/movies/movie1.mp4</code> side by side. You can browse into and back
+          out of these subfolders from the show's page.
+        </p>
+        <p>
+          A file named <code>history.json</code> is reserved at the top level of each show's
+          folder — it's created and updated automatically to store watch progress for every
+          episode in that show, including ones in subfolders.
+        </p>
+      </div>
+    </div>
+  } @else if (viewState() === 'loading-folder' || viewState() === 'loading-show') {
+    <div class="status-card">
+      <p>Reading folder…</p>
+    </div>
+  } @else if (viewState() === 'show-list') {
+    <div class="list-view">
+      <button type="button" class="secondary" (click)="chooseDifferentFolder()">Back</button>
+
+      @if (errorMessage()) {
+        <span class="error">{{ errorMessage() }}</span>
+      }
+      @if (shows().length === 0) {
+        <p>No show folders found in that folder.</p>
+      } @else {
+        @for (show of shows(); track show) {
+          <button type="button" class="list-item-card" (click)="selectShow(show)">
+            {{ show }}
+          </button>
+        }
+      }
+    </div>
+  } @else if (viewState() === 'browsing') {
+    <div class="list-view">
+      <div class="browse-nav">
+        <button type="button" class="secondary" (click)="backToShowList()">Back to Shows</button>
+        @if (folderPathSegments().length) {
+          <button type="button" class="secondary" (click)="goUpOneLevel()">Up One Level</button>
+        }
+      </div>
+
+      <h2>
+        {{ selectedShowName() }}
+        @if (folderPathSegments().length) {
+          <span class="path-trail">/ {{ folderPathSegments().join(' / ') }}</span>
+        }
+      </h2>
+
+      @if (errorMessage()) {
+        <span class="error">{{ errorMessage() }}</span>
+      }
+      @if (subfolders().length === 0 && episodes().length === 0) {
+        <p>This folder is empty.</p>
+      } @else {
+        @for (folder of subfolders(); track folder) {
+          <button type="button" class="list-item-card folder-card" (click)="enterSubfolder(folder)">
+            📁 {{ folder }}
+          </button>
+        }
+        @for (episode of episodes(); track episode) {
+          <button
+            type="button"
+            class="list-item-card episode-card"
+            (click)="selectEpisode(episode)"
+          >
+            <span class="episode-name">{{ episode }}</span>
+            @if (progressTextFor(episode)) {
+              <span class="episode-progress">{{ progressTextFor(episode) }}</span>
+            }
+          </button>
+        }
+      }
+    </div>
+  } @else if (viewState() === 'playing') {
+    <div class="player-view">
+      <div class="player-nav">
+        <button type="button" class="secondary" (click)="backToBrowsing()">Back to List</button>
+        <button type="button" class="secondary" (click)="backToShowList()">Back to Shows</button>
+      </div>
+
+      <h2>{{ selectedEpisodeFileName() }}</h2>
+      <p class="path-trail">
+        {{ selectedShowName() }}
+        @if (folderPathSegments().length) {
+          / {{ folderPathSegments().join(' / ') }}
+        }
+      </p>
+
+      <video
+        class="video-el"
+        [src]="videoSrc()"
+        controls
+        autoplay
+        (loadedmetadata)="onLoadedMetadata($event)"
+        (timeupdate)="onTimeUpdate($event)"
+        (pause)="onPause($event)"
+        (ended)="onEnded($event)"
+      ></video>
+
+      <div class="player-controls">
+        <button
+          type="button"
+          class="secondary"
+          (click)="previousEpisode()"
+          [disabled]="!hasPreviousEpisode()"
+        >
+          ← Previous Episode
+        </button>
+
+        <label class="toggle-row compact-toggle">
+          <input
+            type="checkbox"
+            class="toggle-input"
+            [checked]="autoNext()"
+            (change)="onToggleAutoNext($event)"
+          />
+          <span class="toggle-track"><span class="toggle-thumb"></span></span>
+          <span class="toggle-label">Auto Next</span>
+        </label>
+
+        <button
+          type="button"
+          class="secondary"
+          (click)="nextEpisode()"
+          [disabled]="!hasNextEpisode()"
+        >
+          Next Episode →
+        </button>
+      </div>
+
+      @if (saveWarning()) {
+        <span class="error">{{ saveWarning() }}</span>
+      }
+    </div>
+  }
+</section>

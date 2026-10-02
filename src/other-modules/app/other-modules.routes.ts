@@ -12,4 +12,9 @@ export const routes: Routes = [
     loadComponent: () => import('./pages/quiz/quiz').then((m) => m.Quiz),
     title: 'Quiz | Austin Robichaux',
   },
+  {
+    path: 'videos',
+    loadComponent: () => import('./pages/videos/videos').then((m) => m.Videos),
+    title: 'Videos | Austin Robichaux',
+  },
 ];
