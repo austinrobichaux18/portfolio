@@ -4,16 +4,16 @@ import {
   clearLastFolderHandle,
   loadLastFolderHandle,
   saveLastFolderHandle,
-} from './video-folder-store';
+} from './localflix-folder-store';
 
-type VideosViewState =
+type LocalFlixViewState =
   'unsupported' | 'idle' | 'loading-folder' | 'show-list' | 'loading-show' | 'browsing' | 'playing';
 
 const HISTORY_FILE_NAME = 'history.json';
 const THUMBNAIL_DIR_NAME = '.thumbnails';
 const THUMBNAIL_CONCURRENCY = 2;
 const THUMBNAIL_WIDTH = 320;
-const AUTO_NEXT_STORAGE_KEY = 'other-modules-videos:auto-next';
+const AUTO_NEXT_STORAGE_KEY = 'other-modules-localflix:auto-next';
 
 function naturalCompare(a: string, b: string): number {
   return a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' });
@@ -111,14 +111,91 @@ function captureVideoFrame(file: File): Promise<Blob | null> {
   });
 }
 
+/** Reads a cached thumbnail for `name` if one exists, otherwise generates and caches one. Returns a fresh object URL the caller owns, or null on failure. */
+async function getOrCreateThumbnailUrl(
+  dirHandle: FileSystemDirectoryHandle,
+  showHandle: FileSystemDirectoryHandle,
+  name: string,
+  relativeKey: string,
+): Promise<string | null> {
+  const cacheFileName = `${relativeKey.replace(/\//g, '__')}.jpg`;
+
+  try {
+    const thumbsDir = await showHandle.getDirectoryHandle(THUMBNAIL_DIR_NAME, { create: false });
+    const cacheHandle = await thumbsDir.getFileHandle(cacheFileName, { create: false });
+    const cacheFile = await cacheHandle.getFile();
+    return URL.createObjectURL(cacheFile);
+  } catch {
+    // Not cached yet — generate it below.
+  }
+
+  let blob: Blob | null;
+  try {
+    const fileHandle = await dirHandle.getFileHandle(name);
+    const file = await fileHandle.getFile();
+    blob = await captureVideoFrame(file);
+  } catch {
+    return null;
+  }
+  if (!blob) return null;
+
+  try {
+    const thumbsDir = await showHandle.getDirectoryHandle(THUMBNAIL_DIR_NAME, { create: true });
+    const cacheHandle = await thumbsDir.getFileHandle(cacheFileName, { create: true });
+    const writable = await cacheHandle.createWritable();
+    await writable.write(blob);
+    await writable.close();
+  } catch {
+    // Couldn't persist the cache — the thumbnail still shows for this session, it just regenerates next visit.
+  }
+
+  return URL.createObjectURL(blob);
+}
+
+/** Depth-first search for the naturally-first episode under a show's folder, descending into the naturally-first subfolder when a level has no episode files directly in it. */
+async function findFirstEpisodeHandle(
+  dirHandle: FileSystemDirectoryHandle,
+  depth = 0,
+): Promise<{ dirHandle: FileSystemDirectoryHandle; name: string; path: string[] } | null> {
+  if (depth > 6) return null;
+
+  const files: string[] = [];
+  const dirs: string[] = [];
+  for await (const [name, handle] of dirHandle.entries()) {
+    if (handle.kind === 'directory') {
+      if (name !== THUMBNAIL_DIR_NAME) dirs.push(name);
+    } else if (name.toLowerCase().endsWith('.mp4') && name !== HISTORY_FILE_NAME) {
+      files.push(name);
+    }
+  }
+
+  if (files.length > 0) {
+    files.sort(naturalCompare);
+    return { dirHandle, name: files[0], path: [] };
+  }
+
+  dirs.sort(naturalCompare);
+  for (const sub of dirs) {
+    try {
+      const subHandle = await dirHandle.getDirectoryHandle(sub);
+      const result = await findFirstEpisodeHandle(subHandle, depth + 1);
+      if (result) return { ...result, path: [sub, ...result.path] };
+    } catch {
+      // Unreadable subfolder — try the next one.
+    }
+  }
+
+  return null;
+}
+
 @Component({
-  selector: 'app-videos',
+  selector: 'app-localflix',
   imports: [],
-  templateUrl: './videos.html',
-  styleUrl: './videos.scss',
+  templateUrl: './localflix.html',
+  styleUrl: './localflix.scss',
 })
-export class Videos implements OnDestroy {
-  viewState = signal<VideosViewState>('showDirectoryPicker' in window ? 'idle' : 'unsupported');
+export class LocalFlix implements OnDestroy {
+  viewState = signal<LocalFlixViewState>('showDirectoryPicker' in window ? 'idle' : 'unsupported');
 
   private dirHandle: FileSystemDirectoryHandle | null = null;
 
@@ -129,6 +206,14 @@ export class Videos implements OnDestroy {
   hasFolder = signal(false);
 
   shows = signal<string[]>([]);
+
+  /** Poster art for the show grid — each show's first episode's cached thumbnail, keyed by show name. */
+  showPosterUrls = signal<Record<string, string>>({});
+
+  private showPosterObjectUrls: string[] = [];
+
+  /** Bumped every time a new root folder is picked, so a slow poster generation from a previous folder can't write into the current show list. */
+  private posterGeneration = 0;
 
   private showDirHandle: FileSystemDirectoryHandle | null = null;
 
@@ -195,6 +280,7 @@ export class Videos implements OnDestroy {
   ngOnDestroy(): void {
     this.revokeCurrentObjectUrl();
     this.revokeThumbnailUrls();
+    this.revokeShowPosterUrls();
   }
 
   private async checkLastFolder(): Promise<void> {
@@ -259,6 +345,15 @@ export class Videos implements OnDestroy {
     try {
       await this.loadShowList();
       this.viewState.set('show-list');
+
+      this.posterGeneration += 1;
+      const generation = this.posterGeneration;
+      this.revokeShowPosterUrls();
+      const rootHandle = this.dirHandle;
+      const showNames = this.shows();
+      if (rootHandle && showNames.length > 0) {
+        this.generateShowPosters(generation, rootHandle, showNames).catch(() => {});
+      }
     } catch {
       this.errorMessage.set('Unable to read folder contents.');
       this.viewState.set('idle');
@@ -364,9 +459,18 @@ export class Videos implements OnDestroy {
 
   progressTextFor(name: string): string {
     const entry = this.history()[this.relativeKeyFor(name)];
-    if (!entry || entry.durationSeconds <= 0) return '';
-    if (entry.completed) return 'Watched';
+    if (!entry || entry.durationSeconds <= 0 || entry.completed) return '';
     return `${formatDuration(entry.lastPositionSeconds)} / ${formatDuration(entry.durationSeconds)}`;
+  }
+
+  progressRatioFor(name: string): number {
+    const entry = this.history()[this.relativeKeyFor(name)];
+    if (!entry || entry.durationSeconds <= 0) return 0;
+    return Math.min(1, entry.lastPositionSeconds / entry.durationSeconds);
+  }
+
+  isCompletedFor(name: string): boolean {
+    return this.history()[this.relativeKeyFor(name)]?.completed ?? false;
   }
 
   private async generateThumbnailsForFolder(
@@ -399,39 +503,9 @@ export class Videos implements OnDestroy {
     name: string,
     relativeKey: string,
   ): Promise<void> {
-    const cacheFileName = `${relativeKey.replace(/\//g, '__')}.jpg`;
-
-    try {
-      const thumbsDir = await showHandle.getDirectoryHandle(THUMBNAIL_DIR_NAME, { create: false });
-      const cacheHandle = await thumbsDir.getFileHandle(cacheFileName, { create: false });
-      const cacheFile = await cacheHandle.getFile();
-      this.applyThumbnailUrl(generation, relativeKey, URL.createObjectURL(cacheFile));
-      return;
-    } catch {
-      // Not cached yet — generate it below.
-    }
-
-    let blob: Blob | null;
-    try {
-      const fileHandle = await dirHandle.getFileHandle(name);
-      const file = await fileHandle.getFile();
-      blob = await captureVideoFrame(file);
-    } catch {
-      return;
-    }
-    if (!blob) return;
-
-    this.applyThumbnailUrl(generation, relativeKey, URL.createObjectURL(blob));
-
-    try {
-      const thumbsDir = await showHandle.getDirectoryHandle(THUMBNAIL_DIR_NAME, { create: true });
-      const cacheHandle = await thumbsDir.getFileHandle(cacheFileName, { create: true });
-      const writable = await cacheHandle.createWritable();
-      await writable.write(blob);
-      await writable.close();
-    } catch {
-      // Couldn't persist the cache — the thumbnail still shows for this session, it just regenerates next visit.
-    }
+    const url = await getOrCreateThumbnailUrl(dirHandle, showHandle, name, relativeKey);
+    if (!url) return;
+    this.applyThumbnailUrl(generation, relativeKey, url);
   }
 
   private applyThumbnailUrl(generation: number, relativeKey: string, url: string): void {
@@ -449,6 +523,57 @@ export class Videos implements OnDestroy {
     }
     this.thumbnailObjectUrls = [];
     this.thumbnailUrls.set({});
+  }
+
+  private async generateShowPosters(
+    generation: number,
+    rootHandle: FileSystemDirectoryHandle,
+    showNames: string[],
+  ): Promise<void> {
+    let nextIndex = 0;
+    const take = () => nextIndex++;
+
+    const worker = async (): Promise<void> => {
+      for (let i = take(); i < showNames.length; i = take()) {
+        if (generation !== this.posterGeneration) return;
+        const showName = showNames[i];
+
+        try {
+          const showHandle = await rootHandle.getDirectoryHandle(showName);
+          const first = await findFirstEpisodeHandle(showHandle);
+          if (!first) continue;
+
+          const relativeKey = [...first.path, first.name].join('/');
+          const url = await getOrCreateThumbnailUrl(
+            first.dirHandle,
+            showHandle,
+            first.name,
+            relativeKey,
+          );
+          if (!url) continue;
+
+          if (generation !== this.posterGeneration) {
+            URL.revokeObjectURL(url);
+            continue;
+          }
+          this.showPosterObjectUrls.push(url);
+          this.showPosterUrls.update((current) => ({ ...current, [showName]: url }));
+        } catch {
+          // Skip this show's poster — not critical, it just shows a placeholder.
+        }
+      }
+    };
+
+    const workerCount = Math.min(THUMBNAIL_CONCURRENCY, showNames.length);
+    await Promise.all(Array.from({ length: workerCount }, worker));
+  }
+
+  private revokeShowPosterUrls(): void {
+    for (const url of this.showPosterObjectUrls) {
+      URL.revokeObjectURL(url);
+    }
+    this.showPosterObjectUrls = [];
+    this.showPosterUrls.set({});
   }
 
   async selectEpisode(name: string): Promise<void> {
@@ -594,6 +719,8 @@ export class Videos implements OnDestroy {
     this.revokeCurrentObjectUrl();
     this.browseGeneration += 1;
     this.revokeThumbnailUrls();
+    this.posterGeneration += 1;
+    this.revokeShowPosterUrls();
     this.dirHandle = null;
     this.hasFolder.set(false);
     this.shows.set([]);

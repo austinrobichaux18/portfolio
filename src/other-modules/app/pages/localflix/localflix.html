@@ -1,6 +1,6 @@
 <section class="page-container videos-page">
   <header class="page-header">
-    <h1>Videos</h1>
+    <h1>LocalFlix</h1>
     <p>Pick a folder of shows and episodes, watch them, and pick up where you left off.</p>
   </header>
 
@@ -65,7 +65,7 @@
       <p>Reading folder…</p>
     </div>
   } @else if (viewState() === 'show-list') {
-    <div class="list-view">
+    <div class="browse-page">
       <button type="button" class="secondary" (click)="chooseDifferentFolder()">Back</button>
 
       @if (errorMessage()) {
@@ -74,15 +74,24 @@
       @if (shows().length === 0) {
         <p>No show folders found in that folder.</p>
       } @else {
-        @for (show of shows(); track show) {
-          <button type="button" class="list-item-card" (click)="selectShow(show)">
-            {{ show }}
-          </button>
-        }
+        <div class="show-grid">
+          @for (show of shows(); track show) {
+            <button type="button" class="show-card" (click)="selectShow(show)">
+              <span class="show-art">
+                @if (showPosterUrls()[show]) {
+                  <img [src]="showPosterUrls()[show]" alt="" />
+                } @else {
+                  <span class="art-placeholder">🎬</span>
+                }
+              </span>
+              <span class="show-title">{{ show }}</span>
+            </button>
+          }
+        </div>
       }
     </div>
   } @else if (viewState() === 'browsing') {
-    <div class="list-view">
+    <div class="browse-page">
       <div class="browse-nav">
         <button type="button" class="secondary" (click)="backToShowList()">Back to Shows</button>
         @if (folderPathSegments().length) {
@@ -103,31 +112,47 @@
       @if (subfolders().length === 0 && episodes().length === 0) {
         <p>This folder is empty.</p>
       } @else {
-        @for (folder of subfolders(); track folder) {
-          <button type="button" class="list-item-card folder-card" (click)="enterSubfolder(folder)">
-            📁 {{ folder }}
-          </button>
+        @if (subfolders().length) {
+          <div class="subfolder-row">
+            @for (folder of subfolders(); track folder) {
+              <button type="button" class="folder-chip" (click)="enterSubfolder(folder)">
+                📁 {{ folder }}
+              </button>
+            }
+          </div>
         }
-        @for (episode of episodes(); track episode) {
-          <button
-            type="button"
-            class="list-item-card episode-card"
-            (click)="selectEpisode(episode)"
-          >
-            <span class="episode-thumb">
-              @if (thumbnailUrls()[relativeKeyFor(episode)]) {
-                <img [src]="thumbnailUrls()[relativeKeyFor(episode)]" alt="" />
-              } @else {
-                <span class="thumb-placeholder">🎬</span>
-              }
-            </span>
-            <span class="episode-info">
-              <span class="episode-name">{{ episode }}</span>
-              @if (progressTextFor(episode)) {
-                <span class="episode-progress">{{ progressTextFor(episode) }}</span>
-              }
-            </span>
-          </button>
+
+        @if (episodes().length) {
+          <div class="episode-grid">
+            @for (episode of episodes(); track episode) {
+              <button type="button" class="episode-card" (click)="selectEpisode(episode)">
+                <span class="episode-thumb">
+                  @if (thumbnailUrls()[relativeKeyFor(episode)]) {
+                    <img [src]="thumbnailUrls()[relativeKeyFor(episode)]" alt="" />
+                  } @else {
+                    <span class="thumb-placeholder">🎬</span>
+                  }
+                  @if (progressRatioFor(episode) > 0) {
+                    <span class="episode-progress-bar">
+                      <span
+                        class="episode-progress-fill"
+                        [style.width.%]="progressRatioFor(episode) * 100"
+                      ></span>
+                    </span>
+                  }
+                  @if (isCompletedFor(episode)) {
+                    <span class="episode-watched-badge">✓ Watched</span>
+                  }
+                </span>
+                <span class="episode-info">
+                  <span class="episode-name">{{ episode }}</span>
+                  @if (progressTextFor(episode)) {
+                    <span class="episode-progress-text">{{ progressTextFor(episode) }}</span>
+                  }
+                </span>
+              </button>
+            }
+          </div>
         }
       }
     </div>

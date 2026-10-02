@@ -13,8 +13,8 @@ export const routes: Routes = [
     title: 'Quiz | Austin Robichaux',
   },
   {
-    path: 'videos',
-    loadComponent: () => import('./pages/videos/videos').then((m) => m.Videos),
-    title: 'Videos | Austin Robichaux',
+    path: 'localflix',
+    loadComponent: () => import('./pages/localflix/localflix').then((m) => m.LocalFlix),
+    title: 'LocalFlix | Austin Robichaux',
   },
 ];

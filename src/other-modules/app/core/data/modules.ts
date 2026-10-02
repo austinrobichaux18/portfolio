@@ -9,9 +9,9 @@ export const modules: Module[] = [
     route: 'quiz',
   },
   {
-    id: 'videos',
-    title: 'Videos',
+    id: 'localflix',
+    title: 'LocalFlix',
     description: 'Browse a folder of shows and episodes and pick up watching where you left off.',
-    route: 'videos',
+    route: 'localflix',
   },
 ];

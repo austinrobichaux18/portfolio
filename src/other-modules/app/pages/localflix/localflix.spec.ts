@@ -1,13 +1,13 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { Videos } from './videos';
+import { LocalFlix } from './localflix';
 
-describe('Videos', () => {
-  let component: Videos;
-  let fixture: ComponentFixture<Videos>;
+describe('LocalFlix', () => {
+  let component: LocalFlix;
+  let fixture: ComponentFixture<LocalFlix>;
 
   beforeEach(async () => {
-    await TestBed.configureTestingModule({ imports: [Videos] }).compileComponents();
-    fixture = TestBed.createComponent(Videos);
+    await TestBed.configureTestingModule({ imports: [LocalFlix] }).compileComponents();
+    fixture = TestBed.createComponent(LocalFlix);
     component = fixture.componentInstance;
     await fixture.whenStable();
   });

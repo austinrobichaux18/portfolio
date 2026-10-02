@@ -1,4 +1,4 @@
-const DB_NAME = 'other-modules-videos';
+const DB_NAME = 'other-modules-localflix';
 const STORE_NAME = 'handles';
 const LAST_FOLDER_KEY = 'lastFolder';
 
