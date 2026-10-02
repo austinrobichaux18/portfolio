@@ -22,4 +22,12 @@ export const routes: Routes = [
     loadComponent: () => import('./pages/kana/kana').then((m) => m.Kana),
     title: 'Japanese Kana | Austin Robichaux',
   },
+  {
+    path: 'investment-calculator',
+    loadComponent: () =>
+      import('./pages/investment-calculator/investment-calculator').then(
+        (m) => m.InvestmentCalculator,
+      ),
+    title: 'Investment Calculator | Austin Robichaux',
+  },
 ];

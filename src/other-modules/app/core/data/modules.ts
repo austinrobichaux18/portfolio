@@ -21,4 +21,11 @@ export const modules: Module[] = [
       'Drill hiragana and katakana with adaptive practice that focuses on the characters you miss most.',
     route: 'kana',
   },
+  {
+    id: 'investment-calculator',
+    title: 'Investment Calculator',
+    description:
+      'Project ending balance, total contributions, and interest earned from a starting amount and regular contributions.',
+    route: 'investment-calculator',
+  },
 ];

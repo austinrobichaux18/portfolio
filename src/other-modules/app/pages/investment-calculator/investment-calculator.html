@@ -1,0 +1,458 @@
+<section class="page-container investment-page">
+  <header class="page-header">
+    <h1>Investment Calculator</h1>
+    <p>
+      Project how a starting balance plus regular contributions grows over time under
+      compound interest.
+    </p>
+  </header>
+
+  <div class="history-section">
+    <div class="history-header">
+      <h3>Saved Scenarios</h3>
+      <div class="history-actions">
+        <button type="button" class="link-btn" (click)="saveCurrentToHistory()">
+          Save Current Scenario
+        </button>
+        @if (historyDescending().length) {
+          <button type="button" class="link-btn danger-link" (click)="clearHistory()">
+            Clear History
+          </button>
+        }
+      </div>
+    </div>
+
+    @if (historyDescending().length) {
+      <div class="history-list">
+        @for (run of historyDescending(); track run.timestamp) {
+          <div class="history-row">
+            <button type="button" class="history-row-main" (click)="loadFromHistory(run)">
+              <span class="history-row-date">{{ run.timestamp | date: 'medium' }}</span>
+              <span class="history-row-summary">{{ summaryFor(run) }}</span>
+              <span class="history-row-result">{{ formatCurrency(run.endingBalance) }}</span>
+            </button>
+            <button
+              type="button"
+              class="history-delete-btn"
+              title="Delete this scenario"
+              (click)="deleteFromHistory(run.timestamp)"
+            >
+              ✕
+            </button>
+          </div>
+        }
+      </div>
+    } @else {
+      <p class="field-note">
+        No saved scenarios yet — adjust the inputs below, then save one to come back to it later.
+      </p>
+    }
+  </div>
+
+  <div class="calculator-layout">
+    <div class="form-card">
+      <div class="form-row">
+        <label for="starting-amount">Starting Amount</label>
+        <div class="input-prefix">
+          <span>$</span>
+          <input
+            #startingAmountInput
+            id="starting-amount"
+            type="text"
+            inputmode="decimal"
+            [value]="startingAmount()"
+            (input)="setStartingAmount(startingAmountInput.value)"
+          />
+        </div>
+      </div>
+
+      <div class="form-row">
+        <label for="contribution-amount">Contribution</label>
+        <p class="field-note">
+          {{ formatCurrency(contributionBreakdown().monthly) }}/month ·
+          {{ formatCurrency(contributionBreakdown().yearly) }}/year
+        </p>
+        <div class="input-prefix">
+          <span>$</span>
+          <input
+            #contributionAmountInput
+            id="contribution-amount"
+            type="text"
+            inputmode="decimal"
+            [value]="contributionAmount()"
+            (input)="setContributionAmount(contributionAmountInput.value)"
+          />
+        </div>
+        <select
+          #contributionFrequencySelect
+          aria-label="Contribution frequency"
+          [value]="contributionFrequency()"
+          (change)="setContributionFrequency(contributionFrequencySelect.value)"
+        >
+          <option value="monthly">Monthly</option>
+          <option value="annually">Annually</option>
+        </select>
+        <select
+          #contributionTimingSelect
+          aria-label="Contribution timing"
+          [value]="contributionTiming()"
+          (change)="setContributionTiming(contributionTimingSelect.value)"
+        >
+          <option value="end">End of period</option>
+          <option value="beginning">Beginning of period</option>
+        </select>
+      </div>
+
+      <div class="form-row">
+        <label for="interest-rate">Annual Interest Rate</label>
+        <p class="field-note">The S&amp;P 500 has averaged 10–12% annual gains over the past 30 years.</p>
+        <div class="input-suffix">
+          <input
+            #interestRateInput
+            id="interest-rate"
+            type="text"
+            inputmode="decimal"
+            [value]="annualInterestRatePercent()"
+            (input)="setAnnualInterestRatePercent(interestRateInput.value)"
+          />
+          <span>%</span>
+        </div>
+        <select
+          #compoundFrequencySelect
+          aria-label="Compounding frequency"
+          [value]="compoundFrequency()"
+          (change)="setCompoundFrequency(compoundFrequencySelect.value)"
+        >
+          <option value="annually">Compounded annually</option>
+          <option value="semiannually">Compounded semiannually</option>
+          <option value="quarterly">Compounded quarterly</option>
+          <option value="monthly">Compounded monthly</option>
+          <option value="daily">Compounded daily</option>
+          <option value="continuously">Compounded continuously</option>
+        </select>
+      </div>
+
+      <div class="form-row">
+        <label for="years">Time Horizon</label>
+        <div class="input-suffix">
+          <input
+            #yearsInput
+            id="years"
+            type="text"
+            inputmode="numeric"
+            [value]="years()"
+            (input)="setYears(yearsInput.value)"
+          />
+          <span>years</span>
+        </div>
+        <div class="input-suffix">
+          <input
+            #monthsInput
+            id="months"
+            type="text"
+            inputmode="numeric"
+            [value]="months()"
+            (input)="setMonths(monthsInput.value)"
+          />
+          <span>months</span>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <label for="withdrawal-rate">Withdrawal Rate</label>
+        <p class="field-note">
+          3.5%–4% is generally recommended and can be withdrawn from the S&amp;P 500 forever,
+          keeping pace with inflation.
+        </p>
+        <div class="input-suffix">
+          <input
+            #withdrawalRateInput
+            id="withdrawal-rate"
+            type="text"
+            inputmode="decimal"
+            [value]="withdrawalRatePercent()"
+            (input)="setWithdrawalRatePercent(withdrawalRateInput.value)"
+          />
+          <span>%</span>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <label for="current-age">Current Age (optional)</label>
+        <input
+          #currentAgeInput
+          id="current-age"
+          type="text"
+          inputmode="numeric"
+          placeholder="e.g. 30"
+          [value]="currentAge() ?? ''"
+          (input)="setCurrentAge(currentAgeInput.value)"
+        />
+      </div>
+
+      <button type="button" class="secondary reset-btn" (click)="reset()">Reset</button>
+    </div>
+
+    <div class="results-card">
+      <div class="stat-grid">
+        <div class="stat-chip">
+          <span class="stat-label">Starting Amount ({{ totalsBreakdown().startingAmountPercent }}%)</span>
+          <span class="stat-value">{{ formatCurrency(result().startingAmount) }}</span>
+        </div>
+        <div class="stat-chip">
+          <span class="stat-label">
+            Total Contributions ({{ totalsBreakdown().totalContributionsPercent }}%)
+          </span>
+          <span class="stat-value">{{ formatCurrency(result().totalContributions) }}</span>
+        </div>
+        <div class="stat-chip">
+          <span class="stat-label">
+            Total Interest Earned ({{ totalsBreakdown().totalInterestPercent }}%)
+          </span>
+          <span class="stat-value">{{ formatCurrency(result().totalInterest) }}</span>
+        </div>
+        <div class="stat-chip stat-chip-highlight">
+          <span class="stat-label">Ending Balance</span>
+          <span class="stat-value">{{ formatCurrency(result().endingBalance) }}</span>
+        </div>
+      </div>
+
+      @if (pieChart(); as pie) {
+        <div class="pie-section">
+          <p class="section-label">Breakdown</p>
+          <div class="pie-wrap">
+            <svg
+              [attr.viewBox]="'0 0 ' + pie.size + ' ' + pie.size"
+              class="pie-chart"
+              role="img"
+              aria-label="Pie chart of ending balance split into starting amount, contributions, and interest"
+            >
+              @for (slice of pie.slices; track slice.label) {
+                @if (slice.isFullCircle) {
+                  <circle [attr.cx]="pie.center" [attr.cy]="pie.center" [attr.r]="pie.radius" [attr.fill]="slice.color"></circle>
+                } @else {
+                  <path [attr.d]="slice.path" [attr.fill]="slice.color"></path>
+                }
+              }
+            </svg>
+            <div class="pie-legend">
+              @for (slice of pie.slices; track slice.label) {
+                <div class="pie-legend-row">
+                  <span class="legend-dot" [style.background]="slice.color"></span>
+                  <span class="pie-legend-label">{{ slice.label }}</span>
+                  <span class="pie-legend-value">
+                    {{ formatCurrency(slice.value) }} ({{ slice.percent }}%)
+                  </span>
+                </div>
+              }
+            </div>
+          </div>
+        </div>
+      }
+
+      @if (growthChart(); as chart) {
+        <div class="chart-section">
+          <div class="chart-header">
+            <p class="section-label">Growth Over Time</p>
+            <div class="chart-legend">
+              <span class="legend-dot legend-contrib"></span> Principal &amp; contributions
+              <span class="legend-dot legend-interest"></span> Interest
+            </div>
+          </div>
+
+          <div class="chart-wrap">
+            <svg
+              [attr.viewBox]="'0 0 ' + chart.width + ' ' + chart.height"
+              class="growth-chart"
+              preserveAspectRatio="none"
+              role="img"
+              aria-label="Bar chart of account balance by year, split into contributions and interest"
+            >
+              @for (g of chart.gridLines; track g.label) {
+                <line
+                  class="chart-gridline"
+                  [attr.x1]="chart.left"
+                  [attr.x2]="chart.width"
+                  [attr.y1]="g.y"
+                  [attr.y2]="g.y"
+                />
+                <text class="chart-axis-label" x="2" [attr.y]="g.y + 3">{{ g.label }}</text>
+              }
+
+              @for (bar of chart.bars; track bar.year) {
+                <rect
+                  class="chart-bar chart-bar-contrib"
+                  [attr.x]="bar.x"
+                  [attr.y]="bar.contributionsY"
+                  [attr.width]="bar.barWidth"
+                  [attr.height]="bar.contributionsHeight"
+                  tabindex="0"
+                  [attr.aria-label]="'Year ' + bar.year + ', ending balance ' + formatCurrency(bar.endingBalance)"
+                  (mouseenter)="hoveredBarYear.set(bar.year)"
+                  (mouseleave)="hoveredBarYear.set(null)"
+                  (focus)="hoveredBarYear.set(bar.year)"
+                  (blur)="hoveredBarYear.set(null)"
+                ></rect>
+                <rect
+                  class="chart-bar chart-bar-interest"
+                  [attr.x]="bar.x"
+                  [attr.y]="bar.interestY"
+                  [attr.width]="bar.barWidth"
+                  [attr.height]="bar.interestHeight"
+                  tabindex="0"
+                  [attr.aria-label]="'Year ' + bar.year + ', ending balance ' + formatCurrency(bar.endingBalance)"
+                  (mouseenter)="hoveredBarYear.set(bar.year)"
+                  (mouseleave)="hoveredBarYear.set(null)"
+                  (focus)="hoveredBarYear.set(bar.year)"
+                  (blur)="hoveredBarYear.set(null)"
+                ></rect>
+                <text class="chart-year-label" [attr.x]="bar.x + bar.barWidth / 2" [attr.y]="chart.height - 6">
+                  {{ bar.year }}
+                </text>
+              }
+            </svg>
+
+            @if (hoveredBar(); as hb) {
+              <div
+                class="chart-tooltip"
+                [style.left.%]="((hb.x + hb.barWidth / 2) / chart.width) * 100"
+                [style.top.%]="(hb.interestY / chart.height) * 100"
+              >
+                <div class="chart-tooltip-title">Year {{ hb.year }} — {{ formatCurrency(hb.endingBalance) }}</div>
+                <div>Principal &amp; contributions: {{ formatCurrency(hb.principalAndContributions) }}</div>
+                <div>Interest: {{ formatCurrency(hb.interest) }} ({{ hb.interestPercentOfTotal }}% of total)</div>
+              </div>
+            }
+          </div>
+        </div>
+
+        <div class="breakdown-section">
+          <p class="section-label">Year-by-Year Breakdown</p>
+          <div class="breakdown-table">
+            <div class="breakdown-row breakdown-header" [class.breakdown-row-with-age]="currentAge() !== null">
+              <span>Year</span>
+              @if (currentAge() !== null) {
+                <span>Age</span>
+              }
+              <span>Interest (+{{ annualInterestRatePercent() }}%)</span>
+              <span>Withdrawal ({{ withdrawalRatePercent() }}%)</span>
+              <span>Ending Balance</span>
+            </div>
+            @for (row of result().yearRows; track row.year) {
+              <div class="breakdown-row" [class.breakdown-row-with-age]="currentAge() !== null">
+                <span class="breakdown-cell">
+                  {{ row.year }}
+                  @if (isMilestoneYear(row.year)) {
+                    <span class="milestone-badge" [title]="milestoneTitleFor(row.year)">★</span>
+                  }
+                </span>
+                @if (currentAge() !== null) {
+                  <span class="breakdown-cell">
+                    {{ ageAtYear(row.year) }}
+                    @if (isMilestoneYear(row.year)) {
+                      <span class="milestone-badge" [title]="milestoneTitleFor(row.year)">★</span>
+                    }
+                  </span>
+                }
+                <span>{{ formatCurrency(row.interestThisYear) }}</span>
+                <span>{{ formatCurrency(withdrawalAmount(row.endingBalance)) }}</span>
+                <span>{{ formatCurrency(row.endingBalance) }}</span>
+              </div>
+            }
+          </div>
+        </div>
+      }
+    </div>
+  </div>
+
+  <section class="learn-more">
+    <h2>Learn More About These Numbers</h2>
+
+    <div class="edu-block">
+      <h3>Why index funds?</h3>
+      <p>
+        Most individual investors can't reliably beat the market, and fees compound against you
+        over decades. A fund that tracks the S&amp;P 500 gives you ownership in roughly 500 of the
+        largest U.S. companies for a fraction of a percent in annual fees — the "buy the whole
+        market and hold" approach behind the Bogleheads investing philosophy.
+      </p>
+      <p class="edu-sources">
+        Sources:
+        <a
+          href="https://www.investor.gov/introduction-investing/investing-basics/investment-products/mutual-funds-and-exchange-traded-4"
+          target="_blank"
+          rel="noopener"
+          >SEC Investor.gov — Index Funds</a
+        >,
+        <a href="https://www.bogleheads.org/wiki/Three-fund_portfolio" target="_blank" rel="noopener"
+          >Bogleheads Wiki — Three-Fund Portfolio</a
+        >
+      </p>
+    </div>
+
+    <div class="edu-block">
+      <h3>Why 10% by default?</h3>
+      <p>
+        Since 1926, the S&amp;P 500 has returned about 10% a year on average before inflation
+        (roughly 6.5–7% after inflation). Any single year can swing far above or below that — this
+        is a very long-run average, not a guarantee.
+      </p>
+      <p class="edu-sources">
+        Source:
+        <a href="https://www.officialdata.org/us/stocks/s-p-500/1926" target="_blank" rel="noopener"
+          >officialdata.org — S&amp;P 500 Returns Since 1926</a
+        >
+      </p>
+    </div>
+
+    <div class="edu-block">
+      <h3>Why a ~3.5% withdrawal rate instead of the famous 4%?</h3>
+      <p>
+        The "4% rule" comes from William Bengen's 1994 research and the 1998 Trinity Study, both
+        of which tested a 30-year retirement — not an indefinite one. If you want a portfolio to
+        fund withdrawals forever without shrinking, you generally need to withdraw a bit less.
+        Morningstar's own updated retirement-income research has put a sustainable starting rate
+        as low as 3.3% in some years (3.9% in its most recent estimate), depending on
+        forward-looking return and inflation assumptions. At roughly 3.2–3.5%, every $1,000,000
+        invested supports about $32,000–$35,000 a year indefinitely — this calculator defaults to
+        3.5%.
+      </p>
+      <p class="edu-sources">
+        Sources:
+        <a href="https://en.wikipedia.org/wiki/4%25_rule" target="_blank" rel="noopener"
+          >Wikipedia — 4% Rule</a
+        >,
+        <a
+          href="https://www.morningstar.com/retirement/morningstars-retirement-income-research-reevaluating-4-withdrawal-rule"
+          target="_blank"
+          rel="noopener"
+          >Morningstar — Reevaluating the 4% Withdrawal Rule</a
+        >
+      </p>
+    </div>
+
+    <div class="edu-block">
+      <h3>What does this mean for retirement?</h3>
+      <p>
+        The "25x rule" used by the FIRE (Financial Independence, Retire Early) community is just
+        the 4% rule in reverse: save 25 times your annual expenses, and a 4% withdrawal should
+        sustain you indefinitely. In practice, many people consider something in the $1M–$3M range
+        enough to retire comfortably depending on their expenses and location, with $3M+ generally
+        affording a very comfortable lifestyle almost anywhere. Your actual number depends entirely
+        on your own spending, not a fixed dollar amount.
+      </p>
+      <p class="edu-sources">
+        Source:
+        <a href="https://en.wikipedia.org/wiki/FIRE_movement" target="_blank" rel="noopener"
+          >Wikipedia — FIRE Movement</a
+        >
+      </p>
+    </div>
+
+    <p class="edu-disclaimer">
+      This tool is for education and illustration only, not financial advice. Past performance
+      doesn't guarantee future returns, and real portfolios face taxes, fees, sequence-of-returns
+      risk, and volatility this simplified model doesn't capture.
+    </p>
+  </section>
+</section>
