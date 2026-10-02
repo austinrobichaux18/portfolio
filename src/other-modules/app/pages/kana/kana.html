@@ -369,6 +369,14 @@
             🔊 Auto {{ autoPronounce() ? 'On' : 'Off' }} (Caps Lock)
           </button>
         }
+        <button
+          type="button"
+          class="stat-chip stat-chip-toggle"
+          [class.active]="hintVisible()"
+          (click)="toggleHint()"
+        >
+          ⇧ Hint {{ hintVisible() ? 'On' : 'Off' }} (Shift)
+        </button>
 
         @if (viewState() === 'practice') {
           <button type="button" class="secondary" (click)="pause()">Pause (Ctrl)</button>
@@ -381,7 +389,8 @@
       </div>
 
       <p class="shortcut-hint">
-        ⇧ Tap Shift for a hint (reveals the answer and its row — counts as a miss)
+        ⇧ Shift toggles a hint (reveals the answer and its row) — stays on until toggled off,
+        and doesn't affect scoring
         @if (speechSupported) {
           <br />
           ⇪ Space repeats the audio

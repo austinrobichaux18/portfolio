@@ -387,8 +387,6 @@ export class Kana implements OnDestroy {
 
   private pendingAdvanceAfterResume = false;
 
-  private hintUsedForCurrentChar = false;
-
   private lastEnterPressAt = 0;
 
   private timerIntervalId: ReturnType<typeof setInterval> | null = null;
@@ -413,7 +411,7 @@ export class Kana implements OnDestroy {
         this.handleEnterPress();
       }
     } else if (event.key === 'Shift') {
-      this.handleShiftPress();
+      this.toggleHint();
     } else if (event.key === 'CapsLock') {
       this.toggleAutoPronounce();
     }
@@ -437,12 +435,10 @@ export class Kana implements OnDestroy {
     }
   }
 
-  /** Reveals this kana's romaji + row as a hint. Using it marks the current card as a miss, even if typed correctly. */
-  private handleShiftPress(): void {
+  /** Toggles the row hint on/off, persisting across cards like Auto Pronounce — using it no longer affects scoring. */
+  toggleHint(): void {
     if (this.viewState() !== 'practice') return;
-    const next = !this.hintVisible();
-    this.hintVisible.set(next);
-    if (next) this.hintUsedForCurrentChar = true;
+    this.hintVisible.update((v) => !v);
   }
 
   /** Toggles reading each kana aloud as it appears — on, it also speaks the current one immediately for confirmation. */
@@ -656,8 +652,7 @@ export class Kana implements OnDestroy {
     if (!char) return;
 
     if (isExactMatch(value, char)) {
-      // Using the Shift hint always marks the card as a miss, even when typed correctly.
-      this.recordAttempt(char, !this.hintUsedForCurrentChar);
+      this.recordAttempt(char, true);
       this.advanceToNextChar();
     } else if (!isValidPrefix(value, char)) {
       this.recordAttempt(char, false);
@@ -797,8 +792,6 @@ export class Kana implements OnDestroy {
     this.inputValue.set('');
     this.feedback.set('neutral');
     this.revealedRomaji.set(null);
-    this.hintVisible.set(false);
-    this.hintUsedForCurrentChar = false;
     this.charAccumulatedMs = 0;
     this.charSegmentStart = Date.now();
 

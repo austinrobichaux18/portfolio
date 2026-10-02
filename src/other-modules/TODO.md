@@ -6,11 +6,6 @@ holding pen.
 
 ## New module ideas
 
-- **Investment calculator** — like calculator.net's investment calculator
-  (https://www.calculator.net/investment-calculator.html): starting amount, periodic
-  contributions, interest rate, compounding frequency, and time horizon in; ending
-  balance, total contributions, and total interest earned out, ideally with a
-  growth-over-time chart and a year-by-year breakdown table.
 - **Japanese reference charts** — Kana-style reference/quiz modules for other
   vocab categories. Could reuse the Kana module's tile-grid/practice/mastery-badge
   patterns per category rather than building each from scratch. Candidate
@@ -59,6 +54,6 @@ holding pen.
 
 ## Notes
 
-- Existing modules: Quiz, LocalFlix, Japanese Kana.
+- Existing modules: Quiz, LocalFlix, Japanese Kana, Investment Calculator.
 - When picking one up, move it out of this list and into the actual module work —
   don't let this file describe something that's already been built.

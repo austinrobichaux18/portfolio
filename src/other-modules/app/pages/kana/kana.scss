@@ -518,15 +518,21 @@ button {
   font-size: 0.78rem;
 }
 
+// A side column reserved on both edges — matching the pronounce button's width + gap —
+// keeps the kana glyph on the row's true center whether or not the button renders.
 .kana-display-row {
-  display: flex;
+  display: grid;
+  grid-template-columns: 60px 1fr 60px;
   align-items: center;
-  justify-content: center;
-  gap: 16px;
+}
+
+.kana-display {
+  grid-column: 2;
 }
 
 .pronounce-btn {
-  flex-shrink: 0;
+  grid-column: 3;
+  justify-self: start;
   width: 44px;
   height: 44px;
   padding: 0;
