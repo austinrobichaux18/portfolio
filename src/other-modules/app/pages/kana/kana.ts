@@ -23,12 +23,14 @@ import {
   downloadStatsAsJson,
   loadCharStats,
   loadHistory,
+  loadSelectedCharIds,
   mergeCharStats,
   mergeHistory,
   mergeSessionIntoStats,
   parseImportPayload,
   saveCharStats,
   saveHistory,
+  saveSelectedCharIds,
 } from './kana-storage';
 
 type KanaViewState = 'setup' | 'practice' | 'paused' | 'results';
@@ -143,7 +145,7 @@ export class Kana implements OnDestroy {
 
   viewState = signal<KanaViewState>('setup');
 
-  selectedCharIds = signal<Set<string>>(new Set());
+  selectedCharIds = signal<Set<string>>(new Set(loadSelectedCharIds()));
 
   selectedChars = computed(() => {
     const ids = this.selectedCharIds();
@@ -462,8 +464,16 @@ export class Kana implements OnDestroy {
     speechSynthesis.speak(utterance);
   }
 
-  toggleChar(id: string): void {
+  private updateSelectedCharIds(updater: (ids: Set<string>) => Set<string>): void {
     this.selectedCharIds.update((ids) => {
+      const next = updater(ids);
+      saveSelectedCharIds(next);
+      return next;
+    });
+  }
+
+  toggleChar(id: string): void {
+    this.updateSelectedCharIds((ids) => {
       const next = new Set(ids);
       if (next.has(id)) {
         next.delete(id);
@@ -494,7 +504,7 @@ export class Kana implements OnDestroy {
   }
 
   selectAllForScript(script: KanaScript): void {
-    this.selectedCharIds.update((ids) => {
+    this.updateSelectedCharIds((ids) => {
       const next = new Set(ids);
       for (const c of KANA_CHARS) {
         if (c.script === script) next.add(c.id);
@@ -504,7 +514,7 @@ export class Kana implements OnDestroy {
   }
 
   clearAllForScript(script: KanaScript): void {
-    this.selectedCharIds.update((ids) => {
+    this.updateSelectedCharIds((ids) => {
       const next = new Set(ids);
       for (const c of KANA_CHARS) {
         if (c.script === script) next.delete(c.id);
@@ -562,7 +572,7 @@ export class Kana implements OnDestroy {
   toggleRow(script: KanaScript, rowId: string): void {
     const chars = charsForRow(script, rowId);
     const allSelected = this.isRowFullySelected(script, rowId);
-    this.selectedCharIds.update((ids) => {
+    this.updateSelectedCharIds((ids) => {
       const next = new Set(ids);
       for (const c of chars) {
         if (allSelected) {
@@ -576,7 +586,7 @@ export class Kana implements OnDestroy {
   }
 
   selectCategory(script: KanaScript, rows: KanaRowGroup[]): void {
-    this.selectedCharIds.update((ids) => {
+    this.updateSelectedCharIds((ids) => {
       const next = new Set(ids);
       for (const row of rows) {
         for (const c of charsForRow(script, row.id)) next.add(c.id);
@@ -586,7 +596,7 @@ export class Kana implements OnDestroy {
   }
 
   clearCategory(script: KanaScript, rows: KanaRowGroup[]): void {
-    this.selectedCharIds.update((ids) => {
+    this.updateSelectedCharIds((ids) => {
       const next = new Set(ids);
       for (const row of rows) {
         for (const c of charsForRow(script, row.id)) next.delete(c.id);
@@ -601,7 +611,7 @@ export class Kana implements OnDestroy {
    */
   selectMostMissedForScript(script: KanaScript): void {
     const ids = this.mostMissedCharsForScript(script).map((entry) => entry.char.id);
-    this.selectedCharIds.update((current) => {
+    this.updateSelectedCharIds((current) => {
       const next = new Set(current);
       for (const c of KANA_CHARS) {
         if (c.script === script) next.delete(c.id);

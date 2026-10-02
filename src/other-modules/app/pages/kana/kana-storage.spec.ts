@@ -1,4 +1,10 @@
-import { mergeCharStats, mergeHistory, parseImportPayload } from './kana-storage';
+import {
+  loadSelectedCharIds,
+  mergeCharStats,
+  mergeHistory,
+  parseImportPayload,
+  saveSelectedCharIds,
+} from './kana-storage';
 import { KanaSessionSummary } from '../../core/models/KanaSessionSummary';
 
 function makeSession(timestamp: string): KanaSessionSummary {
@@ -71,5 +77,31 @@ describe('parseImportPayload', () => {
     const raw = JSON.stringify({ charStats: 'nope', history: 'also nope' });
     const result = parseImportPayload(raw);
     expect(result).toEqual({ charStats: {}, history: [] });
+  });
+});
+
+describe('selected char id persistence', () => {
+  beforeEach(() => localStorage.clear());
+
+  it('round-trips a saved selection', () => {
+    saveSelectedCharIds(new Set(['hiragana:あ', 'hiragana:い']));
+    expect(loadSelectedCharIds().sort()).toEqual(['hiragana:あ', 'hiragana:い']);
+  });
+
+  it('returns an empty selection when nothing has been saved', () => {
+    expect(loadSelectedCharIds()).toEqual([]);
+  });
+
+  it('drops ids that no longer correspond to a known character', () => {
+    localStorage.setItem(
+      'other-modules-kana:selected-char-ids',
+      JSON.stringify(['hiragana:あ', 'not-a-real-char']),
+    );
+    expect(loadSelectedCharIds()).toEqual(['hiragana:あ']);
+  });
+
+  it('ignores malformed JSON', () => {
+    localStorage.setItem('other-modules-kana:selected-char-ids', 'not json');
+    expect(loadSelectedCharIds()).toEqual([]);
   });
 });

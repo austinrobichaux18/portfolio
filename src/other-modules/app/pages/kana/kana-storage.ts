@@ -4,6 +4,7 @@ import { KANA_CHARS } from '../../core/data/kana-chars';
 
 const CHAR_STATS_KEY = 'other-modules-kana:char-stats';
 const HISTORY_KEY = 'other-modules-kana:history';
+const SELECTED_CHAR_IDS_KEY = 'other-modules-kana:selected-char-ids';
 
 function isValidCharStat(item: unknown): item is KanaCharStat {
   if (typeof item !== 'object' || item === null) return false;
@@ -69,6 +70,27 @@ export function saveHistory(history: KanaSessionSummary[]): void {
     localStorage.setItem(HISTORY_KEY, JSON.stringify(history));
   } catch {
     // Same as above — persistence is best-effort.
+  }
+}
+
+export function loadSelectedCharIds(): string[] {
+  try {
+    const raw = localStorage.getItem(SELECTED_CHAR_IDS_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return [];
+    const validIds = new Set(KANA_CHARS.map((c) => c.id));
+    return parsed.filter((id): id is string => typeof id === 'string' && validIds.has(id));
+  } catch {
+    return [];
+  }
+}
+
+export function saveSelectedCharIds(ids: Set<string>): void {
+  try {
+    localStorage.setItem(SELECTED_CHAR_IDS_KEY, JSON.stringify([...ids]));
+  } catch {
+    // Selection just won't persist across sessions — not worth surfacing to the user.
   }
 }
 
