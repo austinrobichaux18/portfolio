@@ -1,15 +1,25 @@
-import { Component, ElementRef, OnDestroy, computed, inject, signal, viewChild } from '@angular/core';
+import {
+  Component,
+  ElementRef,
+  HostListener,
+  OnDestroy,
+  computed,
+  inject,
+  signal,
+  viewChild,
+} from '@angular/core';
 import { DatePipe } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { AnalyticsService } from '../../../../app/core/services/analytics';
 import { KanaChar, KanaScript } from '../../core/models/KanaChar';
 import { KanaRowGroup } from '../../core/models/KanaRowGroup';
-import { KanaCharStatsMap } from '../../core/models/KanaCharStats';
-import { KanaSessionSummary } from '../../core/models/KanaSessionSummary';
+import { KanaCharStat, KanaCharStatsMap } from '../../core/models/KanaCharStats';
+import { KanaSessionMissedChar, KanaSessionSummary } from '../../core/models/KanaSessionSummary';
 import { KANA_CHARS, KANA_ROW_GROUPS, charsForRow } from '../../core/data/kana-chars';
 import { isExactMatch, isValidPrefix } from './kana-match';
 import { pickNextChar } from './kana-selector';
 import {
+  downloadSessionAsJson,
   downloadStatsAsJson,
   loadCharStats,
   loadHistory,
@@ -23,6 +33,16 @@ type KanaViewState = 'setup' | 'practice' | 'paused' | 'results';
 const MIN_ATTEMPTS_FOR_RETENTION = 3;
 const WORST_CHARS_LIMIT = 8;
 const INCORRECT_ADVANCE_DELAY_MS = 900;
+const DOUBLE_ENTER_WINDOW_MS = 400;
+// A flat cutoff naturally gives the right shape over time: with just 1 attempt, a single
+// miss is a 100% miss rate (clears the bar immediately), but as attempts accumulate,
+// sustained improvement drags the rate below the cutoff and the kana drops off the list.
+const MOST_MISSED_THRESHOLD_PERCENT = 90;
+// Mirrors the miss-rate cutoff above, but gated by a minimum sample size — a single lucky
+// guess shouldn't earn the "mastered" mark the way a single miss earns "struggling".
+const MASTERED_THRESHOLD_PERCENT = 90;
+
+type TileBadge = 'mastered' | 'struggling' | null;
 
 interface SessionLogEntry {
   charId: string;
@@ -59,6 +79,23 @@ function elapsedMs(accumulated: number, segmentStart: number | null): number {
   return accumulated + (segmentStart !== null ? Date.now() - segmentStart : 0);
 }
 
+/** Raw (unrounded) miss rate — used for threshold comparisons so a display-only rounding never shifts which side of a cutoff a stat falls on. */
+function rawMissPercent(stat: KanaCharStat): number {
+  return ((stat.attempts - stat.correct) / stat.attempts) * 100;
+}
+
+function resolveMissedChars(
+  entries: KanaSessionMissedChar[],
+): { char: KanaChar; missCount: number }[] {
+  const charById = new Map(KANA_CHARS.map((c) => [c.id, c]));
+  const resolved: { char: KanaChar; missCount: number }[] = [];
+  for (const entry of entries) {
+    const char = charById.get(entry.charId);
+    if (char) resolved.push({ char, missCount: entry.missCount });
+  }
+  return resolved.sort((a, b) => b.missCount - a.missCount);
+}
+
 @Component({
   selector: 'app-kana',
   imports: [RouterLink, DatePipe],
@@ -93,6 +130,8 @@ export class Kana implements OnDestroy {
     [...this.history()].sort((a, b) => b.timestamp.localeCompare(a.timestamp)),
   );
 
+  expandedHistoryTimestamp = signal<string | null>(null);
+
   historySummary = computed(() => {
     const entries = this.history();
     if (entries.length === 0) return null;
@@ -106,6 +145,32 @@ export class Kana implements OnDestroy {
     };
   });
 
+  toggleHistoryEntry(timestamp: string): void {
+    this.expandedHistoryTimestamp.update((current) => (current === timestamp ? null : timestamp));
+  }
+
+  isHistoryEntryExpanded(timestamp: string): boolean {
+    return this.expandedHistoryTimestamp() === timestamp;
+  }
+
+  accuracyPercentFor(entry: KanaSessionSummary): number {
+    return entry.totalAttempts > 0
+      ? Math.round((entry.correctAttempts / entry.totalAttempts) * 100)
+      : 0;
+  }
+
+  durationDisplayFor(entry: KanaSessionSummary): string {
+    return formatClock(entry.durationMs / 1000);
+  }
+
+  missedCharsFor(entry: KanaSessionSummary): { char: KanaChar; missCount: number }[] {
+    return resolveMissedChars(entry.missedChars ?? []);
+  }
+
+  downloadSession(entry: KanaSessionSummary): void {
+    downloadSessionAsJson(entry);
+  }
+
   currentChar = signal<KanaChar | null>(null);
 
   inputValue = signal('');
@@ -113,6 +178,19 @@ export class Kana implements OnDestroy {
   feedback = signal<'neutral' | 'correct' | 'incorrect'>('neutral');
 
   revealedRomaji = signal<string | null>(null);
+
+  hintVisible = signal(false);
+
+  currentRowChars = computed(() => {
+    const char = this.currentChar();
+    return char ? charsForRow(char.script, char.rowId) : [];
+  });
+
+  currentRowLabel = computed(() => {
+    const char = this.currentChar();
+    if (!char) return '';
+    return KANA_ROW_GROUPS.find((r) => r.id === char.rowId)?.label ?? '';
+  });
 
   sessionAttempts = signal(0);
 
@@ -148,21 +226,43 @@ export class Kana implements OnDestroy {
 
   resultsAvgTimeDisplay = computed(() => formatSeconds(this.finalSummary()?.avgTimeMsPerChar ?? 0));
 
-  worstChars = computed(() => {
+  worstChars = computed(() => this.rankByMissRate(KANA_CHARS));
+
+  /** Characters you're still genuinely struggling with — a sustained miss rate, not just "worst of the bunch". */
+  mostMissedCharsForScript(
+    script: KanaScript,
+  ): { char: KanaChar; missPercent: number; attempts: number }[] {
     const stats = this.charStats();
-    const entries: { char: KanaChar; accuracyPercent: number; attempts: number }[] = [];
+    const entries: { char: KanaChar; missPercent: number; attempts: number }[] = [];
     for (const c of KANA_CHARS) {
+      if (c.script !== script) continue;
+      const stat = stats[c.id];
+      if (!stat || stat.attempts === 0) continue;
+      if (rawMissPercent(stat) >= MOST_MISSED_THRESHOLD_PERCENT) {
+        entries.push({ char: c, missPercent: Math.round(rawMissPercent(stat)), attempts: stat.attempts });
+      }
+    }
+    return entries.sort((a, b) => b.missPercent - a.missPercent);
+  }
+
+  private rankByMissRate(
+    pool: KanaChar[],
+  ): { char: KanaChar; missPercent: number; attempts: number }[] {
+    const stats = this.charStats();
+    const entries: { char: KanaChar; missPercent: number; attempts: number }[] = [];
+    for (const c of pool) {
       const stat = stats[c.id];
       if (stat && stat.attempts >= MIN_ATTEMPTS_FOR_RETENTION) {
         entries.push({
           char: c,
-          accuracyPercent: Math.round((stat.correct / stat.attempts) * 100),
+          missPercent: Math.round(rawMissPercent(stat)),
           attempts: stat.attempts,
         });
       }
     }
-    return entries.sort((a, b) => a.accuracyPercent - b.accuracyPercent).slice(0, WORST_CHARS_LIMIT);
-  });
+    // Worst (most-missed) first — a longer, more alarming bar for a higher miss rate.
+    return entries.sort((a, b) => b.missPercent - a.missPercent).slice(0, WORST_CHARS_LIMIT);
+  }
 
   private sessionPool: KanaChar[] = [];
 
@@ -180,6 +280,10 @@ export class Kana implements OnDestroy {
 
   private pendingAdvanceAfterResume = false;
 
+  private hintUsedForCurrentChar = false;
+
+  private lastEnterPressAt = 0;
+
   private timerIntervalId: ReturnType<typeof setInterval> | null = null;
 
   private advanceTimeoutId: ReturnType<typeof setTimeout> | null = null;
@@ -187,6 +291,48 @@ export class Kana implements OnDestroy {
   ngOnDestroy(): void {
     this.stopTimerInterval();
     this.clearPendingAdvance();
+  }
+
+  @HostListener('document:keydown', ['$event'])
+  onGlobalKeyDown(event: KeyboardEvent): void {
+    if (event.repeat) return;
+
+    if (event.key === 'Control') {
+      this.handleCtrlPress();
+    } else if (event.key === 'Enter') {
+      if (this.viewState() === 'practice' || this.viewState() === 'paused') {
+        event.preventDefault();
+        this.handleEnterPress();
+      }
+    } else if (event.key === 'Shift') {
+      this.handleShiftPress();
+    }
+  }
+
+  private handleCtrlPress(): void {
+    if (this.viewState() === 'practice') {
+      this.pause();
+    } else if (this.viewState() === 'paused') {
+      this.resume();
+    }
+  }
+
+  private handleEnterPress(): void {
+    const now = Date.now();
+    if (now - this.lastEnterPressAt <= DOUBLE_ENTER_WINDOW_MS) {
+      this.lastEnterPressAt = 0;
+      this.endSession();
+    } else {
+      this.lastEnterPressAt = now;
+    }
+  }
+
+  /** Reveals this kana's romaji + row as a hint. Using it marks the current card as a miss, even if typed correctly. */
+  private handleShiftPress(): void {
+    if (this.viewState() !== 'practice') return;
+    const next = !this.hintVisible();
+    this.hintVisible.set(next);
+    if (next) this.hintUsedForCurrentChar = true;
   }
 
   toggleChar(id: string): void {
@@ -203,6 +349,21 @@ export class Kana implements OnDestroy {
 
   isCharSelected(id: string): boolean {
     return this.selectedCharIds().has(id);
+  }
+
+  /** ○ for mastered, ✕ for struggling — the familiar maru/batsu marks, so the signal is shape, not hue. */
+  tileBadgeFor(charId: string): TileBadge {
+    const stat = this.charStats()[charId];
+    if (!stat || stat.attempts === 0) return null;
+
+    if (rawMissPercent(stat) >= MOST_MISSED_THRESHOLD_PERCENT) return 'struggling';
+
+    if (stat.attempts >= MIN_ATTEMPTS_FOR_RETENTION) {
+      const accuracyPercent = (stat.correct / stat.attempts) * 100;
+      if (accuracyPercent >= MASTERED_THRESHOLD_PERCENT) return 'mastered';
+    }
+
+    return null;
   }
 
   selectAllForScript(script: KanaScript): void {
@@ -299,9 +460,20 @@ export class Kana implements OnDestroy {
     });
   }
 
-  /** Loads the current weakest all-time characters as the selection — a one-click "review my mistakes" preset. */
-  selectMostMissed(): void {
-    this.selectedCharIds.set(new Set(this.worstChars().map((entry) => entry.char.id)));
+  /**
+   * Replaces this script's current selection with its weakest all-time characters — a
+   * one-click "review my mistakes" preset scoped to just this column.
+   */
+  selectMostMissedForScript(script: KanaScript): void {
+    const ids = this.mostMissedCharsForScript(script).map((entry) => entry.char.id);
+    this.selectedCharIds.update((current) => {
+      const next = new Set(current);
+      for (const c of KANA_CHARS) {
+        if (c.script === script) next.delete(c.id);
+      }
+      for (const id of ids) next.add(id);
+      return next;
+    });
   }
 
   startSession(): void {
@@ -316,6 +488,7 @@ export class Kana implements OnDestroy {
     this.elapsedSeconds.set(0);
     this.sessionAccumulatedMs = 0;
     this.pendingAdvanceAfterResume = false;
+    this.lastEnterPressAt = 0;
     this.finalSummary.set(null);
     this.sessionMissedChars.set([]);
 
@@ -336,7 +509,8 @@ export class Kana implements OnDestroy {
     if (!char) return;
 
     if (isExactMatch(value, char)) {
-      this.recordAttempt(char, true);
+      // Using the Shift hint always marks the card as a miss, even when typed correctly.
+      this.recordAttempt(char, !this.hintUsedForCurrentChar);
       this.advanceToNextChar();
     } else if (!isValidPrefix(value, char)) {
       this.recordAttempt(char, false);
@@ -385,6 +559,7 @@ export class Kana implements OnDestroy {
     }
 
     const attempts = this.sessionAttempts();
+    const missedChars = this.computeSessionMissedChars();
     const summary: KanaSessionSummary = {
       timestamp: new Date().toISOString(),
       durationMs: this.sessionAccumulatedMs,
@@ -392,6 +567,7 @@ export class Kana implements OnDestroy {
       correctAttempts: this.sessionCorrect(),
       avgTimeMsPerChar: attempts > 0 ? this.sessionTotalTimeMs() / attempts : 0,
       charCount: this.sessionPool.length,
+      missedChars,
     };
 
     const mergedStats = mergeSessionIntoStats(this.charStats(), this.sessionLog);
@@ -403,7 +579,7 @@ export class Kana implements OnDestroy {
     saveHistory(updatedHistory);
 
     this.finalSummary.set(summary);
-    this.sessionMissedChars.set(this.computeSessionMissedChars());
+    this.sessionMissedChars.set(resolveMissedChars(missedChars));
     this.analytics.track('kana_session_completed', {
       totalAttempts: summary.totalAttempts,
       correctAttempts: summary.correctAttempts,
@@ -432,16 +608,15 @@ export class Kana implements OnDestroy {
     this.sessionTotalTimeMs.update((ms) => ms + timeMs);
   }
 
-  private computeSessionMissedChars(): { char: KanaChar; missCount: number }[] {
+  private computeSessionMissedChars(): KanaSessionMissedChar[] {
     const counts = new Map<string, number>();
     for (const entry of this.sessionLog) {
       if (!entry.correct) {
         counts.set(entry.charId, (counts.get(entry.charId) ?? 0) + 1);
       }
     }
-    const charById = new Map(KANA_CHARS.map((c) => [c.id, c]));
     return [...counts.entries()]
-      .map(([charId, missCount]) => ({ char: charById.get(charId)!, missCount }))
+      .map(([charId, missCount]) => ({ charId, missCount }))
       .sort((a, b) => b.missCount - a.missCount);
   }
 
@@ -453,6 +628,8 @@ export class Kana implements OnDestroy {
     this.inputValue.set('');
     this.feedback.set('neutral');
     this.revealedRomaji.set(null);
+    this.hintVisible.set(false);
+    this.hintUsedForCurrentChar = false;
     this.charAccumulatedMs = 0;
     this.charSegmentStart = Date.now();
 

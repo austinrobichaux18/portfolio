@@ -1,5 +1,6 @@
 import { KanaCharStat, KanaCharStatsMap } from '../../core/models/KanaCharStats';
 import { KanaSessionSummary } from '../../core/models/KanaSessionSummary';
+import { KANA_CHARS } from '../../core/data/kana-chars';
 
 const CHAR_STATS_KEY = 'other-modules-kana:char-stats';
 const HISTORY_KEY = 'other-modules-kana:history';
@@ -28,7 +29,8 @@ function isValidSessionSummary(item: unknown): item is KanaSessionSummary {
     typeof s['totalAttempts'] === 'number' &&
     typeof s['correctAttempts'] === 'number' &&
     typeof s['avgTimeMsPerChar'] === 'number' &&
-    typeof s['charCount'] === 'number'
+    typeof s['charCount'] === 'number' &&
+    (s['missedChars'] === undefined || Array.isArray(s['missedChars']))
   );
 }
 
@@ -93,6 +95,23 @@ export function downloadStatsAsJson(stats: KanaCharStatsMap, history: KanaSessio
   const a = document.createElement('a');
   a.href = url;
   a.download = 'kana-stats.json';
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+export function downloadSessionAsJson(summary: KanaSessionSummary): void {
+  const charById = new Map(KANA_CHARS.map((c) => [c.id, c]));
+  const missedChars = (summary.missedChars ?? []).map((m) => {
+    const char = charById.get(m.charId);
+    return { char: char?.char ?? m.charId, romaji: char?.romaji ?? null, missCount: m.missCount };
+  });
+
+  const payload = { ...summary, missedChars };
+  const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `kana-session-${summary.timestamp.replace(/[:.]/g, '-')}.json`;
   a.click();
   URL.revokeObjectURL(url);
 }

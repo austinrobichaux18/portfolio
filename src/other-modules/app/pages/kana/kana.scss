@@ -137,8 +137,16 @@ button {
   color: #ff6a3d;
   font-weight: 600;
 
-  &:hover {
+  &:hover:not(:disabled) {
     background: rgba(255, 106, 61, 0.16);
+  }
+
+  &:disabled {
+    border-color: rgba(255, 255, 255, 0.12);
+    background: transparent;
+    color: #8f9bad;
+    font-weight: 400;
+    cursor: default;
   }
 }
 
@@ -210,6 +218,7 @@ button {
 }
 
 .kana-tile {
+  position: relative;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -226,6 +235,29 @@ button {
 
   &:hover {
     border-color: #49c6ff;
+  }
+
+  .tile-badge {
+    position: absolute;
+    top: -7px;
+    right: -7px;
+    width: 18px;
+    height: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    background: #1a2332;
+    border: 1.5px solid #4ade80;
+    color: #4ade80;
+    font-size: 0.68rem;
+    font-weight: 700;
+    line-height: 1;
+
+    &.struggling {
+      border-color: #ff7b7b;
+      color: #ff7b7b;
+    }
   }
 
   &.selected {
@@ -278,11 +310,15 @@ button {
   font-size: 0.82rem;
 }
 
+.history-download-all {
+  align-self: flex-start;
+}
+
 .history-list {
   display: flex;
   flex-direction: column;
   gap: 6px;
-  max-height: 260px;
+  max-height: 320px;
   overflow-y: auto;
   padding-right: 4px;
 }
@@ -290,14 +326,51 @@ button {
 .history-row {
   display: flex;
   justify-content: space-between;
+  align-items: center;
   gap: 16px;
   flex-wrap: wrap;
+  width: 100%;
   padding: 10px 14px;
   background: #111827;
   border: 1px solid rgba(255, 255, 255, 0.12);
   border-radius: 8px;
   color: #b8c1ce;
   font-size: 0.82rem;
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+
+  &:hover {
+    border-color: #49c6ff;
+  }
+
+  &.expanded {
+    border-radius: 8px 8px 0 0;
+    border-bottom-color: transparent;
+  }
+}
+
+.history-expand-icon {
+  flex-shrink: 0;
+  color: #8f9bad;
+  font-size: 0.7rem;
+}
+
+.history-detail {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 16px;
+  background: #0d1420;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-top: none;
+  border-radius: 0 0 8px 8px;
+}
+
+.history-download-one {
+  align-self: flex-start;
+  padding: 8px 18px;
+  font-size: 0.85rem;
 }
 
 // Practice screen
@@ -317,6 +390,12 @@ button {
   color: #b8c1ce;
   font-size: 0.85rem;
   font-variant-numeric: tabular-nums;
+}
+
+.shortcut-hint {
+  margin: -8px 0 0;
+  color: #8f9bad;
+  font-size: 0.78rem;
 }
 
 .kana-display {
@@ -357,6 +436,40 @@ button {
   text-align: center;
   color: #8f9bad;
   font-size: 1.1rem;
+
+  &.hint-tag {
+    color: #49c6ff;
+  }
+}
+
+.hint-row-group {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+
+  .notice {
+    margin: 0;
+  }
+
+  .tile-row {
+    justify-content: center;
+    margin-bottom: 0;
+  }
+
+  .kana-tile {
+    cursor: default;
+
+    &:hover {
+      border-color: rgba(255, 255, 255, 0.12);
+    }
+
+    &.selected:hover {
+      border-color: #49c6ff;
+    }
+  }
 }
 
 .romaji-input {

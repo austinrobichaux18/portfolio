@@ -18,27 +18,93 @@
               {{ summary.totalAttempts }} kana answered
             </span>
           </div>
+          <button type="button" class="link-btn history-download-all" (click)="downloadJson()">
+            Download All History
+          </button>
           <div class="history-list">
             @for (entry of historyDescending(); track entry.timestamp) {
-              <div class="history-row">
-                <span>{{ entry.timestamp | date: 'medium' }}</span>
-                <span>{{ entry.correctAttempts }} / {{ entry.totalAttempts }} correct</span>
-                <span>{{ entry.charCount }} kana</span>
-                <span>{{ formatSeconds(entry.avgTimeMsPerChar) }}s avg</span>
+              <div class="history-entry">
+                <button
+                  type="button"
+                  class="history-row"
+                  [class.expanded]="isHistoryEntryExpanded(entry.timestamp)"
+                  (click)="toggleHistoryEntry(entry.timestamp)"
+                >
+                  <span>{{ entry.timestamp | date: 'medium' }}</span>
+                  <span>{{ entry.correctAttempts }} / {{ entry.totalAttempts }} correct</span>
+                  <span>{{ entry.charCount }} kana</span>
+                  <span>{{ formatSeconds(entry.avgTimeMsPerChar) }}s avg</span>
+                  <span class="history-expand-icon">
+                    {{ isHistoryEntryExpanded(entry.timestamp) ? '▲' : '▼' }}
+                  </span>
+                </button>
+
+                @if (isHistoryEntryExpanded(entry.timestamp)) {
+                  <div class="history-detail">
+                    <div class="time-summary">
+                      <div>
+                        <span class="time-summary-label">Accuracy</span>
+                        <span class="time-summary-value">{{ accuracyPercentFor(entry) }}%</span>
+                      </div>
+                      <div>
+                        <span class="time-summary-label">Total Time</span>
+                        <span class="time-summary-value">{{ durationDisplayFor(entry) }}</span>
+                      </div>
+                      <div>
+                        <span class="time-summary-label">Avg. per Kana</span>
+                        <span class="time-summary-value">
+                          {{ formatSeconds(entry.avgTimeMsPerChar) }}s
+                        </span>
+                      </div>
+                    </div>
+
+                    @if (missedCharsFor(entry).length) {
+                      <div class="missed-list">
+                        @for (m of missedCharsFor(entry); track m.char.id) {
+                          <div class="missed-row">
+                            <span class="missed-char">{{ m.char.char }}</span>
+                            <span class="missed-romaji">{{ m.char.romaji }}</span>
+                            <span class="missed-count">missed {{ m.missCount }}×</span>
+                          </div>
+                        }
+                      </div>
+                    } @else {
+                      <p class="notice">No misses recorded for this session.</p>
+                    }
+
+                    <button
+                      type="button"
+                      class="secondary history-download-one"
+                      (click)="downloadSession(entry)"
+                    >
+                      Download This Session
+                    </button>
+                  </div>
+                }
               </div>
             }
           </div>
         </div>
       }
 
-      @if (worstChars().length) {
-        <button type="button" class="most-missed-btn" (click)="selectMostMissed()">
-          ⭐ Select My {{ worstChars().length }} Most-Missed Kana
-        </button>
-      }
+      <button type="button" class="primary" [disabled]="!canStart()" (click)="startSession()">
+        Start Practice ({{ selectedChars().length }} kana selected)
+      </button>
 
       <div class="script-columns">
         <div class="script-column">
+          <button
+            type="button"
+            class="most-missed-btn"
+            [disabled]="!mostMissedCharsForScript('hiragana').length"
+            (click)="selectMostMissedForScript('hiragana')"
+          >
+            @if (mostMissedCharsForScript('hiragana').length; as count) {
+              ⭐ Select My {{ count }} Most-Missed Hiragana
+            } @else {
+              ⭐ No Struggling Hiragana Yet
+            }
+          </button>
           <div class="script-column-header">
             <h3>Hiragana ({{ selectedCountForScript('hiragana') }}/{{ totalForScript('hiragana') }})</h3>
             <div class="script-actions">
@@ -84,6 +150,11 @@
                     [class.selected]="isCharSelected(c.id)"
                     (click)="toggleChar(c.id)"
                   >
+                    @if (tileBadgeFor(c.id); as badge) {
+                      <span class="tile-badge" [class.struggling]="badge === 'struggling'">
+                        {{ badge === 'mastered' ? '○' : '✕' }}
+                      </span>
+                    }
                     <span class="tile-char">{{ c.char }}</span>
                     <span class="tile-romaji">{{ c.romaji }}</span>
                   </button>
@@ -94,6 +165,18 @@
         </div>
 
         <div class="script-column">
+          <button
+            type="button"
+            class="most-missed-btn"
+            [disabled]="!mostMissedCharsForScript('katakana').length"
+            (click)="selectMostMissedForScript('katakana')"
+          >
+            @if (mostMissedCharsForScript('katakana').length; as count) {
+              ⭐ Select My {{ count }} Most-Missed Katakana
+            } @else {
+              ⭐ No Struggling Katakana Yet
+            }
+          </button>
           <div class="script-column-header">
             <h3>Katakana ({{ selectedCountForScript('katakana') }}/{{ totalForScript('katakana') }})</h3>
             <div class="script-actions">
@@ -139,6 +222,11 @@
                     [class.selected]="isCharSelected(c.id)"
                     (click)="toggleChar(c.id)"
                   >
+                    @if (tileBadgeFor(c.id); as badge) {
+                      <span class="tile-badge" [class.struggling]="badge === 'struggling'">
+                        {{ badge === 'mastered' ? '○' : '✕' }}
+                      </span>
+                    }
                     <span class="tile-char">{{ c.char }}</span>
                     <span class="tile-romaji">{{ c.romaji }}</span>
                   </button>
@@ -148,10 +236,6 @@
           }
         </div>
       </div>
-
-      <button type="button" class="primary" [disabled]="!canStart()" (click)="startSession()">
-        Start Practice ({{ selectedChars().length }} kana selected)
-      </button>
     </div>
   } @else if (viewState() === 'practice' || viewState() === 'paused') {
     <div class="practice-card">
@@ -161,12 +245,18 @@
         <div class="stat-chip">Avg {{ liveAvgTimeDisplay() }}s / kana</div>
 
         @if (viewState() === 'practice') {
-          <button type="button" class="secondary" (click)="pause()">Pause</button>
+          <button type="button" class="secondary" (click)="pause()">Pause (Ctrl)</button>
         } @else {
-          <button type="button" class="primary" (click)="resume()">Resume</button>
+          <button type="button" class="primary" (click)="resume()">Resume (Ctrl)</button>
         }
-        <button type="button" class="secondary" (click)="endSession()">End &amp; Save</button>
+        <button type="button" class="secondary" (click)="endSession()">
+          End &amp; Save (Enter ×2)
+        </button>
       </div>
+
+      <p class="shortcut-hint">
+        ⇧ Tap Shift for a hint (reveals the answer and its row — counts as a miss)
+      </p>
 
       @if (currentChar(); as char) {
         <div
@@ -181,6 +271,8 @@
           <p class="reveal-tag">Paused</p>
         } @else if (revealedRomaji()) {
           <p class="reveal-tag">{{ revealedRomaji() }}</p>
+        } @else if (hintVisible()) {
+          <p class="reveal-tag hint-tag">{{ char.romaji }}</p>
         }
 
         <input
@@ -195,6 +287,20 @@
           [disabled]="viewState() === 'paused' || feedback() === 'incorrect'"
           (input)="onInput(kanaInput.value)"
         />
+
+        @if (hintVisible() && viewState() === 'practice') {
+          <div class="hint-row-group">
+            <p class="notice">{{ currentRowLabel() }}</p>
+            <div class="tile-row">
+              @for (c of currentRowChars(); track c.id) {
+                <div class="kana-tile" [class.selected]="c.id === char.id">
+                  <span class="tile-char">{{ c.char }}</span>
+                  <span class="tile-romaji">{{ c.romaji }}</span>
+                </div>
+              }
+            </div>
+          </div>
+        }
       }
     </div>
   } @else if (viewState() === 'results') {
@@ -235,16 +341,16 @@
       @if (worstChars().length) {
         <div class="retention-section">
           <h3>Kana You Frequently Forget</h3>
-          <p class="notice">Based on all-time accuracy across every session (3+ attempts).</p>
+          <p class="notice">All-time miss rate across every session (3+ attempts) — longer bar, worse.</p>
           <div class="retention-chart">
             @for (entry of worstChars(); track entry.char.id) {
-              <div class="retention-row" [class.severity-serious]="entry.accuracyPercent >= 50">
+              <div class="retention-row" [class.severity-serious]="entry.missPercent <= 50">
                 <span class="retention-char">{{ entry.char.char }}</span>
                 <span class="retention-romaji">{{ entry.char.romaji }}</span>
                 <div class="retention-bar-track">
-                  <div class="retention-bar-fill" [style.width.%]="entry.accuracyPercent"></div>
+                  <div class="retention-bar-fill" [style.width.%]="entry.missPercent"></div>
                 </div>
-                <span class="retention-pct">{{ entry.accuracyPercent }}%</span>
+                <span class="retention-pct">{{ entry.missPercent }}%</span>
               </div>
             }
           </div>
