@@ -1,3 +1,5 @@
+import { HouseholdBudgetSnapshot } from './HouseholdBudget';
+
 export type ContributionFrequency = 'monthly' | 'annually';
 
 export type ContributionTiming = 'beginning' | 'end';
@@ -19,6 +21,8 @@ export interface InvestmentInputs {
   compoundFrequency: CompoundFrequency;
   years: number;
   months: number;
+  /** Months where the contribution is diverted to savings/checking buffers instead of invested. */
+  contributionDelayMonths?: number;
 }
 
 export interface InvestmentYearRow {
@@ -42,4 +46,6 @@ export interface InvestmentRun {
   withdrawalRatePercent: number;
   currentAge: number | null;
   endingBalance: number;
+  /** Only present when the "How Much Can You Invest?" widget had something entered. */
+  householdBudget?: HouseholdBudgetSnapshot;
 }

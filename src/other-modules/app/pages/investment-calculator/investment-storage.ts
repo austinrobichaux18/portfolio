@@ -5,6 +5,7 @@ import {
   InvestmentInputs,
   InvestmentRun,
 } from '../../core/models/Investment';
+import { HouseholdBudgetSnapshot, PayFrequency } from '../../core/models/HouseholdBudget';
 
 const HISTORY_KEY = 'other-modules-investment:history';
 
@@ -17,6 +18,13 @@ const COMPOUND_FREQUENCIES: CompoundFrequency[] = [
   'monthly',
   'daily',
   'continuously',
+];
+const PAY_FREQUENCIES: PayFrequency[] = [
+  'weekly',
+  'biweekly',
+  'semimonthly',
+  'monthly',
+  'annually',
 ];
 
 function isValidInputs(item: unknown): item is InvestmentInputs {
@@ -34,6 +42,21 @@ function isValidInputs(item: unknown): item is InvestmentInputs {
   );
 }
 
+function isValidHouseholdBudgetSnapshot(item: unknown): item is HouseholdBudgetSnapshot {
+  if (typeof item !== 'object' || item === null) return false;
+  const b = item as Record<string, unknown>;
+  return (
+    Array.isArray(b['incomeEntries']) &&
+    typeof b['selectedStateCode'] === 'string' &&
+    typeof b['stateTaxRatePercent'] === 'number' &&
+    typeof b['withholdingsAmount'] === 'number' &&
+    PAY_FREQUENCIES.includes(b['withholdingsFrequency'] as PayFrequency) &&
+    typeof b['monthlyCostOfLiving'] === 'number' &&
+    typeof b['currentCheckingBalance'] === 'number' &&
+    typeof b['currentSavingsBalance'] === 'number'
+  );
+}
+
 function isValidRun(item: unknown): item is InvestmentRun {
   if (typeof item !== 'object' || item === null) return false;
   const r = item as Record<string, unknown>;
@@ -42,7 +65,8 @@ function isValidRun(item: unknown): item is InvestmentRun {
     isValidInputs(r['inputs']) &&
     typeof r['withdrawalRatePercent'] === 'number' &&
     (r['currentAge'] === null || typeof r['currentAge'] === 'number') &&
-    typeof r['endingBalance'] === 'number'
+    typeof r['endingBalance'] === 'number' &&
+    (r['householdBudget'] === undefined || isValidHouseholdBudgetSnapshot(r['householdBudget']))
   );
 }
 

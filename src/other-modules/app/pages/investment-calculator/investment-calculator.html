@@ -50,7 +50,8 @@
   </div>
 
   <div class="calculator-layout">
-    <div class="form-card">
+    <div class="left-column">
+      <div class="form-card">
       <div class="form-row">
         <label for="starting-amount">Starting Amount</label>
         <div class="input-prefix">
@@ -101,6 +102,56 @@
           <option value="end">End of period</option>
           <option value="beginning">Beginning of period</option>
         </select>
+      </div>
+
+      <div class="form-row">
+        <label>Already Saved (optional)</label>
+        <p class="field-note">
+          Recommended buffers from your cost of living:
+          {{ formatCurrency(checkingBufferTarget()) }} in checking (3 months),
+          {{ formatCurrency(savingsBufferTarget()) }} in a HYSA (6 months).
+        </p>
+
+        <div class="saved-balance-row">
+          <div class="input-prefix">
+            <span>$</span>
+            <input
+              #checkingBalanceInput
+              type="text"
+              inputmode="decimal"
+              aria-label="Current checking balance"
+              [value]="currentCheckingBalance()"
+              (input)="setCurrentCheckingBalance(checkingBalanceInput.value)"
+            />
+          </div>
+          <span class="saved-balance-label">in checking</span>
+        </div>
+
+        <div class="saved-balance-row">
+          <div class="input-prefix">
+            <span>$</span>
+            <input
+              #savingsBalanceInput
+              type="text"
+              inputmode="decimal"
+              aria-label="Current HYSA/savings balance"
+              [value]="currentSavingsBalance()"
+              (input)="setCurrentSavingsBalance(savingsBalanceInput.value)"
+            />
+          </div>
+          <span class="saved-balance-label">in a HYSA</span>
+        </div>
+
+        @if (contributionDelayMonths() > 0) {
+          <p class="field-note buffer-delay-note">
+            You're {{ formatCurrency(bufferGapRemaining()) }} short of those buffers — at your
+            current contribution, that's about {{ contributionDelayMonths() }}
+            month{{ contributionDelayMonths() === 1 ? '' : 's' }} of filling savings/checking
+            before the projection below starts investing.
+          </p>
+        } @else {
+          <p class="field-note">Buffers fully funded — contributions go straight to investing.</p>
+        }
       </div>
 
       <div class="form-row">
@@ -191,6 +242,363 @@
       </div>
 
       <button type="button" class="secondary reset-btn" (click)="reset()">Reset</button>
+      </div>
+
+      <div class="budget-card">
+        <h2 class="card-title">How Much Can You Invest?</h2>
+        <p class="field-note">
+          Estimate your monthly leftover income from your paycheck, then send it to the
+          Contribution field above.
+        </p>
+
+        <div class="form-row">
+          <div class="label-with-info">
+            <label for="household-preset">Quick Fill (optional)</label>
+            <div class="info-popover-wrap">
+              <button
+                type="button"
+                class="info-btn"
+                aria-label="What does Quick Fill do?"
+                (click)="toggleInfoPopover('quickFill')"
+              >
+                i
+              </button>
+              @if (isInfoPopoverOpen('quickFill')) {
+                <div class="info-popover">
+                  <button
+                    type="button"
+                    class="info-popover-close"
+                    aria-label="Close"
+                    (click)="closeInfoPopover()"
+                  >
+                    ✕
+                  </button>
+                  <p>
+                    Picks a household type and prefills the income entries and cost of living
+                    below with reasonable averages for it, so you have a starting point to tweak
+                    instead of entering everything from scratch.
+                  </p>
+                </div>
+              }
+            </div>
+          </div>
+          <select
+            #presetSelect
+            id="household-preset"
+            (change)="applyHouseholdPreset(presetSelect.value); presetSelect.value = ''"
+          >
+            <option value="" disabled selected>Choose a household type…</option>
+            @for (preset of householdPresets; track preset.id) {
+              <option [value]="preset.id">{{ preset.label }}</option>
+            }
+          </select>
+          @if (lastAppliedPresetLabel(); as label) {
+            <p class="field-note">Last applied: {{ label }}</p>
+          }
+        </div>
+
+        @for (entry of incomeEntries(); track entry.id; let i = $index) {
+          <div class="form-row income-entry">
+            <div class="label-with-info">
+              <label [for]="'income-' + entry.id">{{ incomeEntryLabel(i) }}</label>
+              <div class="income-entry-controls">
+                <select
+                  #incomeModeSelect
+                  class="income-mode-select"
+                  [attr.aria-label]="incomeEntryLabel(i) + ' input type'"
+                  [value]="entry.mode"
+                  (change)="setIncomeEntryMode(entry.id, incomeModeSelect.value)"
+                >
+                  <option value="yearly">Yearly salary</option>
+                  <option value="hourly">Hourly wage</option>
+                </select>
+                @if (canRemoveIncomeEntry()) {
+                  <button
+                    type="button"
+                    class="income-remove-btn"
+                    aria-label="Remove this income"
+                    (click)="removeIncomeEntry(entry.id)"
+                  >
+                    ✕
+                  </button>
+                }
+              </div>
+            </div>
+
+            @if (entry.mode === 'yearly') {
+              <div class="input-prefix">
+                <span>$</span>
+                <input
+                  #yearlyAmountInput
+                  [id]="'income-' + entry.id"
+                  type="text"
+                  inputmode="decimal"
+                  [value]="entry.yearlyAmount"
+                  (input)="setIncomeEntryYearlyAmount(entry.id, yearlyAmountInput.value)"
+                />
+              </div>
+            } @else {
+              <div class="hourly-rate-wrap">
+                <span class="prefix">$</span>
+                <input
+                  #hourlyRateInput
+                  [id]="'income-' + entry.id"
+                  type="text"
+                  inputmode="decimal"
+                  [value]="entry.hourlyRate"
+                  (input)="setIncomeEntryHourlyRate(entry.id, hourlyRateInput.value)"
+                />
+                <span class="suffix">/hr</span>
+              </div>
+              <div class="income-hourly-sub-row">
+                <div class="input-suffix">
+                  <input
+                    #hoursPerWeekInput
+                    type="text"
+                    inputmode="decimal"
+                    [value]="entry.hoursPerWeek"
+                    (input)="setIncomeEntryHoursPerWeek(entry.id, hoursPerWeekInput.value)"
+                  />
+                  <span>hrs/wk</span>
+                </div>
+                <div class="input-suffix">
+                  <input
+                    #weeksPerYearInput
+                    type="text"
+                    inputmode="decimal"
+                    [value]="entry.weeksPerYear"
+                    (input)="setIncomeEntryWeeksPerYear(entry.id, weeksPerYearInput.value)"
+                  />
+                  <span>wks/yr</span>
+                </div>
+              </div>
+              <p class="field-note">
+                = {{ formatCurrency(incomeEntryAnnualAmount(entry)) }}/year
+              </p>
+            }
+          </div>
+        }
+
+        @if (canAddIncomeEntry()) {
+          <button type="button" class="secondary add-income-btn" (click)="addIncomeEntry()">
+            + Add Income Source
+          </button>
+        }
+
+        <div class="form-row">
+          <div class="label-with-info">
+            <label for="budget-state">State</label>
+            <select
+              #stateSortSelect
+              class="state-sort-select"
+              aria-label="Sort states by"
+              [value]="stateSortOrder()"
+              (change)="setStateSortOrder(stateSortSelect.value)"
+            >
+              <option value="alphabetical">Sort: A–Z</option>
+              <option value="taxRateAsc">Sort: Tax % ↑</option>
+            </select>
+          </div>
+          <select
+            #budgetStateSelect
+            id="budget-state"
+            [value]="selectedStateCode()"
+            (change)="onStateSelected(budgetStateSelect.value)"
+          >
+            <option value="">Select your state…</option>
+            @for (state of sortedStateTaxRates(); track state.code) {
+              <option [value]="state.code">{{ state.name }} ({{ state.rate }}%)</option>
+            }
+          </select>
+        </div>
+
+        <div class="form-row">
+          <label for="state-tax-rate">State Tax Rate</label>
+          <p class="field-note">
+            Prefilled from your state's top income tax rate — an approximation that overstates
+            the burden for states with graduated brackets. Adjust if you know your actual
+            effective rate.
+          </p>
+          <div class="input-suffix">
+            <input
+              #stateTaxRateInput
+              id="state-tax-rate"
+              type="text"
+              inputmode="decimal"
+              [value]="stateTaxRatePercent()"
+              (input)="setStateTaxRatePercent(stateTaxRateInput.value)"
+            />
+            <span>%</span>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="label-with-info">
+            <label for="withholdings">Income Withholdings</label>
+            <div class="info-popover-wrap">
+              <button
+                type="button"
+                class="info-btn"
+                aria-label="What counts as income withholdings?"
+                (click)="toggleInfoPopover('withholdings')"
+              >
+                i
+              </button>
+              @if (isInfoPopoverOpen('withholdings')) {
+                <div class="info-popover">
+                  <button
+                    type="button"
+                    class="info-popover-close"
+                    aria-label="Close"
+                    (click)="closeInfoPopover()"
+                  >
+                    ✕
+                  </button>
+                  <p>
+                    Anything taken out of your paycheck before you see it — pre-tax deductions
+                    like 401(k)/403(b) contributions, health/dental/vision insurance premiums,
+                    and HSA or FSA contributions, as well as post-tax deductions like
+                    court-ordered child support or other wage garnishments.
+                  </p>
+                  <p>
+                    Enter the amount taken out <strong>each pay period</strong>, and pick how
+                    often you're paid. For simplicity, this estimate doesn't adjust your tax
+                    bracket for the pre-tax items, so your real take-home pay may be a little
+                    higher than shown.
+                  </p>
+                </div>
+              }
+            </div>
+          </div>
+          <div class="input-prefix">
+            <span>$</span>
+            <input
+              #withholdingsInput
+              id="withholdings"
+              type="text"
+              inputmode="decimal"
+              [value]="withholdingsAmount()"
+              (input)="setWithholdingsAmount(withholdingsInput.value)"
+            />
+          </div>
+          <select
+            #withholdingsFrequencySelect
+            aria-label="Withholdings pay period"
+            [value]="withholdingsFrequency()"
+            (change)="setWithholdingsFrequency(withholdingsFrequencySelect.value)"
+          >
+            <option value="weekly">Weekly</option>
+            <option value="biweekly">Biweekly</option>
+            <option value="semimonthly">Semimonthly</option>
+            <option value="monthly">Monthly</option>
+            <option value="annually">Annually</option>
+          </select>
+        </div>
+
+        <div class="form-row">
+          <div class="label-with-info">
+            <label for="cost-of-living">Cost of Living</label>
+            <div class="info-popover-wrap">
+              <button
+                type="button"
+                class="info-btn"
+                aria-label="What counts as cost of living?"
+                (click)="toggleInfoPopover('costOfLiving')"
+              >
+                i
+              </button>
+              @if (isInfoPopoverOpen('costOfLiving')) {
+                <div class="info-popover">
+                  <button
+                    type="button"
+                    class="info-popover-close"
+                    aria-label="Close"
+                    (click)="closeInfoPopover()"
+                  >
+                    ✕
+                  </button>
+                  <p>
+                    Everything you spend to live — rent or mortgage, utilities and other bills,
+                    groceries, childcare, gas or transit, and discretionary "fun" spending like
+                    dining out or entertainment. Enter it as a monthly or yearly total.
+                  </p>
+                </div>
+              }
+            </div>
+          </div>
+          <div class="input-prefix">
+            <span>$</span>
+            <input
+              #costOfLivingInput
+              id="cost-of-living"
+              type="text"
+              inputmode="decimal"
+              [value]="costOfLivingDisplayAmount()"
+              (input)="setCostOfLivingAmount(costOfLivingInput.value)"
+            />
+          </div>
+          <select
+            #costOfLivingFrequencySelect
+            aria-label="Cost of living period"
+            [value]="costOfLivingFrequency()"
+            (change)="setCostOfLivingFrequency(costOfLivingFrequencySelect.value)"
+          >
+            <option value="monthly">Monthly</option>
+            <option value="yearly">Yearly</option>
+          </select>
+        </div>
+
+        <div class="budget-result">
+          <div class="budget-result-row">
+            <span>Gross Household Income</span>
+            <span>{{ formatCurrency(householdBudget().grossHouseholdIncome) }}</span>
+          </div>
+          <div class="budget-result-row">
+            <span>Est. Federal Tax ({{ householdBudget().federalEffectiveRatePercent }}%)</span>
+            <span>−{{ formatCurrency(householdBudget().federalTax) }}</span>
+          </div>
+          <div class="budget-result-row">
+            <span>FICA (Social Security + Medicare)</span>
+            <span>−{{ formatCurrency(householdBudget().ficaTax) }}</span>
+          </div>
+          <div class="budget-result-row">
+            <span>Est. State Tax</span>
+            <span>−{{ formatCurrency(householdBudget().stateTax) }}</span>
+          </div>
+          <div class="budget-result-row budget-result-subtotal">
+            <span>Post-Tax Income</span>
+            <span>{{ formatCurrency(householdBudget().postTaxIncome) }}</span>
+          </div>
+          <div class="budget-result-row">
+            <span>Withholdings</span>
+            <span>−{{ formatCurrency(householdBudget().annualWithholdings) }}</span>
+          </div>
+          <div class="budget-result-row">
+            <span>Cost of Living</span>
+            <span>−{{ formatCurrency(householdBudget().annualCostOfLiving) }}</span>
+          </div>
+          <div class="budget-result-row budget-result-final">
+            <span>Discretionary Income</span>
+            <span>{{ formatCurrency(householdBudget().discretionaryMonthly) }}/mo</span>
+          </div>
+        </div>
+
+        @if (householdBudget().discretionaryMonthly <= 0) {
+          <p class="field-note budget-warning">
+            Estimated expenses meet or exceed take-home pay with these numbers — there's nothing
+            left over to invest.
+          </p>
+        }
+
+        <button
+          type="button"
+          class="primary"
+          [disabled]="householdBudget().discretionaryMonthly <= 0"
+          (click)="useDiscretionaryIncomeAsContribution()"
+        >
+          Use as Monthly Contribution ↑
+        </button>
+      </div>
     </div>
 
     <div class="results-card">
@@ -212,7 +620,12 @@
           <span class="stat-value">{{ formatCurrency(result().totalInterest) }}</span>
         </div>
         <div class="stat-chip stat-chip-highlight">
-          <span class="stat-label">Ending Balance</span>
+          <span class="stat-label">
+            Ending Balance
+            @if (finalAge(); as age) {
+              (Age: {{ age }})
+            }
+          </span>
           <span class="stat-value">{{ formatCurrency(result().endingBalance) }}</span>
         </div>
       </div>
@@ -331,10 +744,10 @@
           <div class="breakdown-table">
             <div class="breakdown-row breakdown-header" [class.breakdown-row-with-age]="currentAge() !== null">
               <span>Year</span>
+              <span>Interest (+{{ annualInterestRatePercent() }}%)</span>
               @if (currentAge() !== null) {
                 <span>Age</span>
               }
-              <span>Interest (+{{ annualInterestRatePercent() }}%)</span>
               <span>Withdrawal ({{ withdrawalRatePercent() }}%)</span>
               <span>Ending Balance</span>
             </div>
@@ -346,6 +759,7 @@
                     <span class="milestone-badge" [title]="milestoneTitleFor(row.year)">★</span>
                   }
                 </span>
+                <span>{{ formatCurrency(row.interestThisYear) }}</span>
                 @if (currentAge() !== null) {
                   <span class="breakdown-cell">
                     {{ ageAtYear(row.year) }}
@@ -354,8 +768,40 @@
                     }
                   </span>
                 }
-                <span>{{ formatCurrency(row.interestThisYear) }}</span>
-                <span>{{ formatCurrency(withdrawalAmount(row.endingBalance)) }}</span>
+                <span class="withdrawal-cell">
+                  {{ formatCurrency(totalWithdrawal(row.year, row.endingBalance)) }}
+                  @if (isSsEligibleYear(row.year)) {
+                    <span class="info-popover-wrap">
+                      <button
+                        type="button"
+                        class="info-btn"
+                        aria-label="Why is this withdrawal higher?"
+                        (click)="toggleSsInfo(row.year)"
+                      >
+                        i
+                      </button>
+                      @if (isSsInfoOpen(row.year)) {
+                        <div class="info-popover">
+                          <button
+                            type="button"
+                            class="info-popover-close"
+                            aria-label="Close"
+                            (click)="closeSsInfo()"
+                          >
+                            ✕
+                          </button>
+                          <p>
+                            Includes the average Social Security benefit (~{{
+                              formatCurrency(ssAverageAnnualBenefit)
+                            }}/year) on top of your portfolio withdrawal — investment income
+                            doesn't reduce or conflict with Social Security, so the two stack once
+                            you're of full retirement age.
+                          </p>
+                        </div>
+                      }
+                    </span>
+                  }
+                </span>
                 <span>{{ formatCurrency(row.endingBalance) }}</span>
               </div>
             }
@@ -367,6 +813,143 @@
 
   <section class="learn-more">
     <h2>Learn More About These Numbers</h2>
+
+    <div class="tldr-box">
+      <h3>TL;DR</h3>
+      <ol class="tldr-steps">
+        <li>
+          <strong>Pay off all debt.</strong> Debt interest rates are often far higher than you'll
+          ever earn investing — credit cards currently average
+          <a
+            href="https://www.forbes.com/advisor/credit-cards/average-credit-card-interest-rate/"
+            target="_blank"
+            rel="noopener"
+            >over 20% APR</a
+          >.
+        </li>
+        <li>
+          <strong>Open a High-Yield Savings Account</strong> (currently
+          <a
+            href="https://www.bankrate.com/banking/savings/best-high-yield-interests-savings-accounts/"
+            target="_blank"
+            rel="noopener"
+            >4%+ APY</a
+          >) and build up to 6 months of living expenses in it.
+        </li>
+        <li>
+          <strong>Keep up to 3 months of living expenses</strong> in your checking account.
+        </li>
+        <li><strong>Invest the rest.</strong></li>
+      </ol>
+
+      <ul class="tldr-notes">
+        <li>
+          One of the biggest levers in FI/RE: get as much money invested as early as possible,
+          then leave it alone for years. Growth compounds on your <em>whole</em> balance, so it's
+          tiny at first and huge later — a $2M balance growing 10%/year gains ~$200k that single
+          year alone. Time in the market does most of the work — see the Growth Over Time chart
+          above.
+        </li>
+        <li>
+          If your employer offers a 401(k) match, capture the full match before investing
+          anywhere else — it's extra money on top of your own contributions, not counted in this
+          calculator's numbers (see
+          <a
+            href="https://www.cnbc.com/2020/02/24/how-much-money-you-give-up-if-you-dont-grab-employers-401k-match.html"
+            target="_blank"
+            rel="noopener"
+            >CNBC on employer 401(k) matches</a
+          >).
+        </li>
+        <li>
+          Lowball your inputs (contributions, returns) when estimating how long this takes —
+          better to finish a few years earlier than expected than to count on an optimistic number
+          and come up short.
+        </li>
+        <li>Invest in the S&amp;P 500 only — skip individual stocks.</li>
+        <li>
+          Every $1M invested generates roughly $32k/year, post-tax, forever, at an indefinite
+          withdrawal rate (see
+          <a
+            href="https://www.morningstar.com/retirement/morningstars-retirement-income-research-reevaluating-4-withdrawal-rule"
+            target="_blank"
+            rel="noopener"
+            >Morningstar's withdrawal-rate research</a
+          >
+          above).
+        </li>
+        <li>
+          Spending often jumps in the active "go-go" years right after retiring — more travel,
+          more free time to fill — before easing off later and rising again for healthcare in old
+          age (researchers call this the
+          <a href="https://onlinelibrary.wiley.com/doi/10.1002/cfp2.70032" target="_blank" rel="noopener"
+            >"retirement spending smile"</a
+          >). It's not a simple one-way increase, so budget some cushion for that early stretch.
+        </li>
+        <li>
+          Renting is currently cheaper than buying in essentially every major U.S. metro on a
+          monthly basis, thanks to mortgage rates near 6.6% — but that's a 2026 snapshot, not a
+          permanent rule. Selling later also costs real money: realtor commissions plus closing
+          costs typically run 8–10% of the sale price (more with repairs or moving), which comes
+          straight out of any equity you built. That's why buying only tends to pay off once
+          you've stayed long enough to recoup it — nationally that break-even point is roughly
+          5–7 years, though it swings wildly by market (as little as ~3.5 years in affordable
+          metros, decades in places like San Francisco). Moving sooner than that usually means
+          renting would've come out ahead (see
+          <a href="https://www.empower.com/the-currency/life/money/rent-vs-buy-2025-top-50-metros-news" target="_blank" rel="noopener"
+            >Empower's 2026 rent-vs-buy breakdown</a
+          >,
+          <a href="https://www.zillow.com/research/breakeven-time-to-stay-36643/" target="_blank" rel="noopener"
+            >Zillow's break-even research</a
+          >).
+        </li>
+        <li>
+          Be frugal: avoid cars newer than 10 years or pricier than $15–20k, and limit eating out
+          to once or twice a month.
+        </li>
+        <li>
+          Watch for
+          <a href="https://en.wikipedia.org/wiki/Lifestyle_creep" target="_blank" rel="noopener"
+            >lifestyle creep</a
+          >
+          — spending quietly rising to match every raise. Keep your cost of living flat as income
+          grows.
+        </li>
+        <li>
+          Adding a partner's income often multiplies your savings rate 2–4x or more, not just
+          2x — their income skips straight to savings once the first income already covers the
+          household's cost of living. Example: a $70k earner saving ~$8k/year could jump to
+          ~$50k/year saved after adding a $50k partner income, since nearly all of that second
+          income becomes pure savings.
+        </li>
+        <li>
+          California and New York consistently rank among the worst states for
+          income-to-cost-of-living balance — both sit near the top of overall cost-of-living
+          indexes, and New York ranks dead last on housing affordability specifically (see
+          <a href="https://www.visualcapitalist.com/mapped-cost-of-living-by-state-2026/" target="_blank" rel="noopener"
+            >Visual Capitalist's 2026 cost-of-living map</a
+          >).
+        </li>
+        <li>
+          Everywhere else — including other big cities — that ratio tends to land much closer
+          together.
+        </li>
+        <li class="tldr-reality">
+          Investment income doesn't reduce or disqualify Social Security — only wages from a job
+          count against SS before full retirement age, and even that limit disappears entirely
+          once you reach it. So at the right age, your portfolio withdrawals and your SS benefit
+          stack — the
+          <a href="https://www.ssa.gov/faqs/en/questions/KA-01903.html" target="_blank" rel="noopener"
+            >average Social Security check</a
+          >
+          (~$2,071/month, or ~$25k/year, in 2026) comes on top of whatever you've built, like a
+          bonus, not a trade-off. (Source on the earnings rule:
+          <a href="https://www.ssa.gov/faqs/en/questions/KA-01921.html" target="_blank" rel="noopener"
+            >SSA — How work affects your benefits</a
+          >.)
+        </li>
+      </ul>
+    </div>
 
     <div class="edu-block">
       <h3>Why index funds?</h3>
@@ -446,6 +1029,114 @@
         <a href="https://en.wikipedia.org/wiki/FIRE_movement" target="_blank" rel="noopener"
           >Wikipedia — FIRE Movement</a
         >
+      </p>
+    </div>
+
+    <div class="edu-block">
+      <h3>What if I don't want to leave money behind?</h3>
+      <p>
+        This calculator defaults to the perpetual-withdrawal model above — pull a small enough
+        percentage that the balance keeps growing forever. That's the safe default if you want to
+        leave money to heirs or just never risk running out. If you don't care about leaving an
+        inheritance, author Bill Perkins makes the opposite case in <em>Die With Zero</em>:
+        intentionally spend down your "peak" net worth during the years you're healthy enough to
+        enjoy it, rather than dying with a large, unused balance. The tradeoff is longevity
+        risk — spend too aggressively and you can outlive your money, so this only works if
+        you've built in a real safety margin (or still have Social Security as a floor).
+      </p>
+      <p class="edu-sources">
+        Source:
+        <a href="https://diewithzerobook.com/" target="_blank" rel="noopener"
+          >Die With Zero by Bill Perkins</a
+        >
+      </p>
+    </div>
+
+    <div class="edu-block">
+      <h3>What about retiring in a cheaper country?</h3>
+      <p>
+        Every number on this page assumes U.S. costs. Retiring somewhere with a lower cost of
+        living — geographic arbitrage — can stretch the same portfolio much further. South
+        America, Southeast Asia, and Africa in particular tend to run cheapest, often by a wide
+        margin, with Western Europe generally costing more. Requirements and costs vary enormously
+        by country, so treat this as a direction to research, not a number to plan around.
+      </p>
+
+      <p class="geo-list-label">Typical retirement/passive-income visa minimums:</p>
+      <ul class="geo-list">
+        <li>
+          <span class="geo-info">
+            <span class="geo-name">Panama</span>
+            <span class="geo-detail">Pensionado visa — no minimum age</span>
+          </span>
+          <span class="geo-cost">~$1,000/mo (~$12k/yr)</span>
+        </li>
+        <li>
+          <span class="geo-info">
+            <span class="geo-name">Portugal</span>
+            <span class="geo-detail">D7 passive-income visa, path to EU residency</span>
+          </span>
+          <span class="geo-cost">~$1,035/mo (~$12.4k/yr)</span>
+        </li>
+        <li>
+          <span class="geo-info">
+            <span class="geo-name">Mexico</span>
+            <span class="geo-detail">Temporary resident visa (or show ~$74.7k savings)</span>
+          </span>
+          <span class="geo-cost">~$4,400/mo (~$52.8k/yr)</span>
+        </li>
+      </ul>
+
+      <p class="geo-list-label">
+        Example "genuinely upscale" lifestyle costs — usually without needing to learn the local
+        language near an expat community:
+      </p>
+      <ul class="geo-list">
+        <li>
+          <span class="geo-info">
+            <span class="geo-name">Medellín, Colombia</span>
+            <span class="geo-detail">High-rise living in the El Poblado district</span>
+          </span>
+          <span class="geo-cost">$1,500–2,000/mo (~$18–24k/yr)</span>
+        </li>
+        <li>
+          <span class="geo-info">
+            <span class="geo-name">Chiang Mai, Thailand</span>
+            <span class="geo-detail">"Genuine luxury" — eat out every meal, hire a housekeeper</span>
+          </span>
+          <span class="geo-cost">~$1,667/mo (~$20k/yr)</span>
+        </li>
+        <li>
+          <span class="geo-info">
+            <span class="geo-name">Cape Town, South Africa</span>
+            <span class="geo-detail">Full international-standard lifestyle, private health insurance included</span>
+          </span>
+          <span class="geo-cost">$1,100–2,500/mo (~$13–30k/yr)</span>
+        </li>
+        <li>
+          <span class="geo-info">
+            <span class="geo-name">Marrakech, Morocco</span>
+            <span class="geo-detail">Full international-standard lifestyle, private health insurance included</span>
+          </span>
+          <span class="geo-cost">$1,100–2,500/mo (~$13–30k/yr)</span>
+        </li>
+      </ul>
+
+      <p class="edu-sources">
+        Sources:
+        <a href="https://www.embassyofpanama.org/retire-in-panama" target="_blank" rel="noopener"
+          >Embassy of Panama — Pensionado Visa</a
+        >,
+        <a href="https://retirefinder.com/retire-abroad/visas/" target="_blank" rel="noopener"
+          >RetireFinder — Retirement Visa Requirements by Country</a
+        >,
+        <a href="https://internationalliving.com/luxury-living-in-retirement-5-places-for-a-high-end-lifestyle/" target="_blank" rel="noopener"
+          >International Living — Luxury Living in Retirement</a
+        >,
+        <a href="https://globalcostdata.com/retire-in/south-africa/" target="_blank" rel="noopener"
+          >GlobalCostData — Retire in South Africa</a
+        >. Portugal's €920 minimum converted to USD at ~1.12 EUR/USD (October 2026) — it moves
+        with exchange rates.
       </p>
     </div>
 

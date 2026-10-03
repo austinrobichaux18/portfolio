@@ -1,4 +1,4 @@
-import { Component, computed, signal } from '@angular/core';
+import { Component, HostListener, computed, signal } from '@angular/core';
 import { DatePipe } from '@angular/common';
 import {
   CompoundFrequency,
@@ -6,8 +6,30 @@ import {
   ContributionTiming,
   InvestmentRun,
 } from '../../core/models/Investment';
+import {
+  HouseholdBudgetSnapshot,
+  IncomeEntry,
+  IncomeMode,
+  PayFrequency,
+} from '../../core/models/HouseholdBudget';
+import { STATE_TAX_RATES } from '../../core/data/state-tax-rates';
+import { HOUSEHOLD_PRESETS } from '../../core/data/household-presets';
 import { calculateInvestment } from './investment-calc';
+import { calculateHouseholdBudget, incomeEntryAnnualAmount } from './household-budget-calc';
 import { loadHistory, saveHistory } from './investment-storage';
+
+const MAX_INCOME_ENTRIES = 10;
+
+function createIncomeEntry(yearlyAmount = 0): IncomeEntry {
+  return {
+    id: `income-${Math.random().toString(36).slice(2)}-${Date.now().toString(36)}`,
+    mode: 'yearly',
+    yearlyAmount,
+    hourlyRate: 0,
+    hoursPerWeek: 40,
+    weeksPerYear: 52,
+  };
+}
 
 const CHART_WIDTH = 640;
 const CHART_HEIGHT = 220;
@@ -18,6 +40,22 @@ const PIE_RADIUS = 80;
 const PIE_CENTER = PIE_SIZE / 2;
 
 const MILESTONES = [1_000_000, 2_000_000, 3_000_000, 4_000_000, 5_000_000, 10_000_000];
+
+/** Social Security full retirement age for most people today, and its rough average annual benefit. */
+const SS_FULL_RETIREMENT_AGE = 67;
+const SS_AVERAGE_ANNUAL_BENEFIT = 25_000;
+
+type InfoPopoverKey = 'withholdings' | 'costOfLiving' | 'quickFill';
+
+type StateSortOrder = 'alphabetical' | 'taxRateAsc';
+
+const PERIODS_PER_YEAR: Record<PayFrequency, number> = {
+  weekly: 52,
+  biweekly: 26,
+  semimonthly: 24,
+  monthly: 12,
+  annually: 1,
+};
 
 interface ChartBar {
   year: number;
@@ -99,6 +137,8 @@ function formatCurrency(value: number): string {
 export class InvestmentCalculator {
   readonly formatCurrency = formatCurrency;
 
+  readonly ssAverageAnnualBenefit = SS_AVERAGE_ANNUAL_BENEFIT;
+
   startingAmount = signal(1000);
 
   contributionAmount = signal(200);
@@ -125,6 +165,63 @@ export class InvestmentCalculator {
     [...this.history()].sort((a, b) => b.timestamp.localeCompare(a.timestamp)),
   );
 
+  readonly stateTaxRates = STATE_TAX_RATES;
+
+  readonly householdPresets = HOUSEHOLD_PRESETS;
+
+  incomeEntries = signal<IncomeEntry[]>([createIncomeEntry(70000)]);
+
+  incomeAnnualAmounts = computed(() => this.incomeEntries().map(incomeEntryAnnualAmount));
+
+  canAddIncomeEntry = computed(() => this.incomeEntries().length < MAX_INCOME_ENTRIES);
+
+  canRemoveIncomeEntry = computed(() => this.incomeEntries().length > 1);
+
+  selectedStateCode = signal('');
+
+  stateSortOrder = signal<StateSortOrder>('alphabetical');
+
+  sortedStateTaxRates = computed(() => {
+    const sorted = [...this.stateTaxRates];
+    return this.stateSortOrder() === 'taxRateAsc'
+      ? sorted.sort((a, b) => a.rate - b.rate)
+      : sorted.sort((a, b) => a.name.localeCompare(b.name));
+  });
+
+  stateTaxRatePercent = signal(0);
+
+  withholdingsAmount = signal(0);
+
+  withholdingsFrequency = signal<PayFrequency>('monthly');
+
+  annualWithholdings = computed(
+    () => this.withholdingsAmount() * PERIODS_PER_YEAR[this.withholdingsFrequency()],
+  );
+
+  monthlyCostOfLiving = signal(3000);
+
+  costOfLivingFrequency = signal<'monthly' | 'yearly'>('monthly');
+
+  /** The cost-of-living figure shown/entered in whichever unit is currently selected. */
+  costOfLivingDisplayAmount = computed(() =>
+    this.costOfLivingFrequency() === 'yearly'
+      ? this.monthlyCostOfLiving() * 12
+      : this.monthlyCostOfLiving(),
+  );
+
+  openInfoPopover = signal<InfoPopoverKey | null>(null);
+
+  openSsInfoYear = signal<number | null>(null);
+
+  householdBudget = computed(() =>
+    calculateHouseholdBudget({
+      incomes: this.incomeAnnualAmounts(),
+      stateTaxRatePercent: this.stateTaxRatePercent(),
+      annualWithholdings: this.annualWithholdings(),
+      monthlyCostOfLiving: this.monthlyCostOfLiving(),
+    }),
+  );
+
   hoveredBarYear = signal<number | null>(null);
 
   contributionBreakdown = computed(() => {
@@ -132,6 +229,29 @@ export class InvestmentCalculator {
     return this.contributionFrequency() === 'monthly'
       ? { monthly: amount, yearly: amount * 12 }
       : { monthly: amount / 12, yearly: amount };
+  });
+
+  currentCheckingBalance = signal(0);
+
+  currentSavingsBalance = signal(0);
+
+  /** 3 months of cost of living for checking, 6 for a HYSA — the TL;DR's recommended buffers. */
+  checkingBufferTarget = computed(() => this.monthlyCostOfLiving() * 3);
+
+  savingsBufferTarget = computed(() => this.monthlyCostOfLiving() * 6);
+
+  bufferGapRemaining = computed(() => {
+    const checkingGap = Math.max(0, this.checkingBufferTarget() - this.currentCheckingBalance());
+    const savingsGap = Math.max(0, this.savingsBufferTarget() - this.currentSavingsBalance());
+    return checkingGap + savingsGap;
+  });
+
+  /** How many months the contribution gets diverted to filling the buffers before investing starts. */
+  contributionDelayMonths = computed(() => {
+    const gap = this.bufferGapRemaining();
+    const monthly = this.contributionBreakdown().monthly;
+    if (gap <= 0 || monthly <= 0) return 0;
+    return Math.ceil(gap / monthly);
   });
 
   result = computed(() =>
@@ -144,6 +264,7 @@ export class InvestmentCalculator {
       compoundFrequency: this.compoundFrequency(),
       years: this.years(),
       months: this.months(),
+      contributionDelayMonths: this.contributionDelayMonths(),
     }),
   );
 
@@ -248,6 +369,14 @@ export class InvestmentCalculator {
     this.contributionAmount.set(toNonNegativeNumber(raw));
   }
 
+  setCurrentCheckingBalance(raw: string): void {
+    this.currentCheckingBalance.set(toNonNegativeNumber(raw));
+  }
+
+  setCurrentSavingsBalance(raw: string): void {
+    this.currentSavingsBalance.set(toNonNegativeNumber(raw));
+  }
+
   setAnnualInterestRatePercent(raw: string): void {
     this.annualInterestRatePercent.set(toNonNegativeNumber(raw));
   }
@@ -288,6 +417,24 @@ export class InvestmentCalculator {
     return (this.currentAge() ?? 0) + year;
   }
 
+  /** True once this year's age reaches Social Security full retirement age (requires an age entered). */
+  isSsEligibleYear(year: number): boolean {
+    return this.currentAge() !== null && this.ageAtYear(year) >= SS_FULL_RETIREMENT_AGE;
+  }
+
+  /** The portfolio withdrawal plus the average Social Security benefit, once age-eligible. */
+  totalWithdrawal(year: number, endingBalance: number): number {
+    const base = this.withdrawalAmount(endingBalance);
+    return this.isSsEligibleYear(year) ? base + SS_AVERAGE_ANNUAL_BENEFIT : base;
+  }
+
+  /** Age at the final year of the horizon, or null when no age was entered. */
+  finalAge = computed<number | null>(() => {
+    const rows = this.result().yearRows;
+    if (this.currentAge() === null || rows.length === 0) return null;
+    return this.ageAtYear(rows[rows.length - 1].year);
+  });
+
   /** Maps each year that first crosses a milestone balance to the milestone(s) it crossed. */
   milestoneYears = computed<Map<number, number[]>>(() => {
     const rows = this.result().yearRows;
@@ -310,6 +457,150 @@ export class InvestmentCalculator {
     return `${milestones.map((m) => formatCurrency(m)).join(', ')} reached`;
   }
 
+  private updateIncomeEntry(id: string, updater: (entry: IncomeEntry) => IncomeEntry): void {
+    this.incomeEntries.update((entries) =>
+      entries.map((entry) => (entry.id === id ? updater(entry) : entry)),
+    );
+  }
+
+  addIncomeEntry(): void {
+    if (!this.canAddIncomeEntry()) return;
+    this.incomeEntries.update((entries) => [...entries, createIncomeEntry()]);
+  }
+
+  removeIncomeEntry(id: string): void {
+    if (!this.canRemoveIncomeEntry()) return;
+    this.incomeEntries.update((entries) => entries.filter((entry) => entry.id !== id));
+  }
+
+  setIncomeEntryMode(id: string, raw: string): void {
+    this.updateIncomeEntry(id, (entry) => ({ ...entry, mode: raw as IncomeMode }));
+  }
+
+  setIncomeEntryYearlyAmount(id: string, raw: string): void {
+    this.updateIncomeEntry(id, (entry) => ({ ...entry, yearlyAmount: toNonNegativeNumber(raw) }));
+  }
+
+  setIncomeEntryHourlyRate(id: string, raw: string): void {
+    this.updateIncomeEntry(id, (entry) => ({ ...entry, hourlyRate: toNonNegativeNumber(raw) }));
+  }
+
+  setIncomeEntryHoursPerWeek(id: string, raw: string): void {
+    this.updateIncomeEntry(id, (entry) => ({ ...entry, hoursPerWeek: toNonNegativeNumber(raw) }));
+  }
+
+  setIncomeEntryWeeksPerYear(id: string, raw: string): void {
+    this.updateIncomeEntry(id, (entry) => ({ ...entry, weeksPerYear: toNonNegativeNumber(raw) }));
+  }
+
+  incomeEntryAnnualAmount(entry: IncomeEntry): number {
+    return incomeEntryAnnualAmount(entry);
+  }
+
+  incomeEntryLabel(index: number): string {
+    return index === 0 ? 'Your Annual Salary' : `Additional Income #${index + 1} (optional)`;
+  }
+
+  lastAppliedPresetId = signal<string | null>(null);
+
+  lastAppliedPresetLabel = computed(() => {
+    const id = this.lastAppliedPresetId();
+    return this.householdPresets.find((p) => p.id === id)?.label ?? null;
+  });
+
+  applyHouseholdPreset(id: string): void {
+    const preset = this.householdPresets.find((p) => p.id === id);
+    if (!preset) return;
+    this.incomeEntries.set(preset.incomes.map((amount) => createIncomeEntry(amount)));
+    this.monthlyCostOfLiving.set(preset.monthlyCostOfLiving);
+    this.lastAppliedPresetId.set(preset.id);
+  }
+
+  setStateSortOrder(raw: string): void {
+    this.stateSortOrder.set(raw as StateSortOrder);
+  }
+
+  onStateSelected(code: string): void {
+    this.selectedStateCode.set(code);
+    const state = this.stateTaxRates.find((s) => s.code === code);
+    if (state) {
+      this.stateTaxRatePercent.set(state.rate);
+      this.monthlyCostOfLiving.set(state.avgMonthlyCostOfLiving);
+    }
+  }
+
+  setStateTaxRatePercent(raw: string): void {
+    this.stateTaxRatePercent.set(toNonNegativeNumber(raw));
+  }
+
+  setWithholdingsAmount(raw: string): void {
+    this.withholdingsAmount.set(toNonNegativeNumber(raw));
+  }
+
+  setWithholdingsFrequency(raw: string): void {
+    this.withholdingsFrequency.set(raw as PayFrequency);
+  }
+
+  setMonthlyCostOfLiving(raw: string): void {
+    this.monthlyCostOfLiving.set(toNonNegativeNumber(raw));
+  }
+
+  /** Writes the entered amount back as a monthly figure, converting down from yearly if needed. */
+  setCostOfLivingAmount(raw: string): void {
+    const value = toNonNegativeNumber(raw);
+    this.monthlyCostOfLiving.set(this.costOfLivingFrequency() === 'yearly' ? value / 12 : value);
+  }
+
+  setCostOfLivingFrequency(raw: string): void {
+    this.costOfLivingFrequency.set(raw as 'monthly' | 'yearly');
+  }
+
+  isInfoPopoverOpen(key: InfoPopoverKey): boolean {
+    return this.openInfoPopover() === key;
+  }
+
+  toggleInfoPopover(key: InfoPopoverKey): void {
+    this.openInfoPopover.update((current) => (current === key ? null : key));
+  }
+
+  closeInfoPopover(): void {
+    this.openInfoPopover.set(null);
+  }
+
+  isSsInfoOpen(year: number): boolean {
+    return this.openSsInfoYear() === year;
+  }
+
+  toggleSsInfo(year: number): void {
+    this.openSsInfoYear.update((current) => (current === year ? null : year));
+  }
+
+  closeSsInfo(): void {
+    this.openSsInfoYear.set(null);
+  }
+
+  @HostListener('document:click', ['$event'])
+  onDocumentClick(event: MouseEvent): void {
+    if (this.openInfoPopover() === null && this.openSsInfoYear() === null) return;
+    const target = event.target as HTMLElement;
+    if (!target.closest('.info-popover-wrap')) {
+      this.openInfoPopover.set(null);
+      this.openSsInfoYear.set(null);
+    }
+  }
+
+  /** Fills the main contribution field with the estimated monthly leftover from the budget widget. */
+  useDiscretionaryIncomeAsContribution(): void {
+    const monthly = Math.max(0, Math.round(this.householdBudget().discretionaryMonthly));
+    this.contributionAmount.set(monthly);
+    this.contributionFrequency.set('monthly');
+
+    const contributionInput = typeof document !== 'undefined'
+      ? document.getElementById('contribution-amount')
+      : null;
+    contributionInput?.scrollIntoView?.({ behavior: 'smooth', block: 'center' });
+  }
+
   reset(): void {
     this.startingAmount.set(1000);
     this.contributionAmount.set(200);
@@ -321,6 +612,36 @@ export class InvestmentCalculator {
     this.months.set(0);
     this.withdrawalRatePercent.set(3.5);
     this.currentAge.set(null);
+  }
+
+  /** True once the budget widget has anything other than its default single $70k entry. */
+  householdBudgetEntered = computed(() => {
+    const entries = this.incomeEntries();
+    const incomeChanged =
+      entries.length !== 1 ||
+      entries[0].mode !== 'yearly' ||
+      entries[0].yearlyAmount !== 70_000;
+    return (
+      incomeChanged ||
+      this.selectedStateCode() !== '' ||
+      this.withholdingsAmount() > 0 ||
+      this.monthlyCostOfLiving() !== 3_000 ||
+      this.currentCheckingBalance() > 0 ||
+      this.currentSavingsBalance() > 0
+    );
+  });
+
+  private buildHouseholdBudgetSnapshot(): HouseholdBudgetSnapshot {
+    return {
+      incomeEntries: this.incomeEntries(),
+      selectedStateCode: this.selectedStateCode(),
+      stateTaxRatePercent: this.stateTaxRatePercent(),
+      withholdingsAmount: this.withholdingsAmount(),
+      withholdingsFrequency: this.withholdingsFrequency(),
+      monthlyCostOfLiving: this.monthlyCostOfLiving(),
+      currentCheckingBalance: this.currentCheckingBalance(),
+      currentSavingsBalance: this.currentSavingsBalance(),
+    };
   }
 
   saveCurrentToHistory(): void {
@@ -345,6 +666,9 @@ export class InvestmentCalculator {
       withdrawalRatePercent: this.withdrawalRatePercent(),
       currentAge: this.currentAge(),
       endingBalance: this.result().endingBalance,
+      householdBudget: this.householdBudgetEntered()
+        ? this.buildHouseholdBudgetSnapshot()
+        : undefined,
     };
 
     const updated = [...this.history(), run];
@@ -363,6 +687,18 @@ export class InvestmentCalculator {
     this.months.set(run.inputs.months);
     this.withdrawalRatePercent.set(run.withdrawalRatePercent);
     this.currentAge.set(run.currentAge);
+
+    const budget = run.householdBudget;
+    if (budget) {
+      this.incomeEntries.set(budget.incomeEntries);
+      this.selectedStateCode.set(budget.selectedStateCode);
+      this.stateTaxRatePercent.set(budget.stateTaxRatePercent);
+      this.withholdingsAmount.set(budget.withholdingsAmount);
+      this.withholdingsFrequency.set(budget.withholdingsFrequency);
+      this.monthlyCostOfLiving.set(budget.monthlyCostOfLiving);
+      this.currentCheckingBalance.set(budget.currentCheckingBalance);
+      this.currentSavingsBalance.set(budget.currentSavingsBalance);
+    }
   }
 
   deleteFromHistory(timestamp: string): void {
@@ -375,9 +711,10 @@ export class InvestmentCalculator {
     const i = run.inputs;
     const contributionFreq = i.contributionFrequency === 'monthly' ? '/mo' : '/yr';
     const horizon = i.months > 0 ? `${i.years}y ${i.months}m` : `${i.years}y`;
+    const budgetSuffix = run.householdBudget ? ' · incl. budget' : '';
     return (
       `${formatCurrency(i.startingAmount)} start + ${formatCurrency(i.contributionAmount)}` +
-      `${contributionFreq} @ ${i.annualInterestRatePercent}% for ${horizon}`
+      `${contributionFreq} @ ${i.annualInterestRatePercent}% for ${horizon}${budgetSuffix}`
     );
   }
 

@@ -45,6 +45,11 @@ export function calculateInvestment(inputs: InvestmentInputs): InvestmentResult 
       contributionNow = inputs.contributionAmount;
     }
 
+    // While building savings/checking buffers, the contribution is diverted there instead.
+    if (month <= (inputs.contributionDelayMonths ?? 0)) {
+      contributionNow = 0;
+    }
+
     if (inputs.contributionTiming === 'beginning') {
       balance += contributionNow;
       totalContributions += contributionNow;

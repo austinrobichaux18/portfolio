@@ -25,7 +25,7 @@ export const modules: Module[] = [
     id: 'investment-calculator',
     title: 'Investment Calculator',
     description:
-      'Project ending balance, total contributions, and interest earned from a starting amount and regular contributions.',
+      'Project ending balance, contributions, and interest from a starting amount and regular contributions, plus a household budget widget and sourced FIRE/retirement advice.',
     route: 'investment-calculator',
   },
 ];

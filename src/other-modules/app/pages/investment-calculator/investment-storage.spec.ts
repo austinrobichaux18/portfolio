@@ -47,4 +47,30 @@ describe('investment history persistence', () => {
     localStorage.setItem(HISTORY_KEY, 'not json');
     expect(loadHistory()).toEqual([]);
   });
+
+  it('round-trips a run that includes a household budget snapshot', () => {
+    const run: InvestmentRun = {
+      ...makeRun('2026-01-01T00:00:00.000Z'),
+      householdBudget: {
+        incomeEntries: [
+          { id: 'a', mode: 'yearly', yearlyAmount: 70_000, hourlyRate: 0, hoursPerWeek: 40, weeksPerYear: 52 },
+        ],
+        selectedStateCode: 'CA',
+        stateTaxRatePercent: 13.3,
+        withholdingsAmount: 100,
+        withholdingsFrequency: 'monthly',
+        monthlyCostOfLiving: 4000,
+        currentCheckingBalance: 2000,
+        currentSavingsBalance: 5000,
+      },
+    };
+    saveHistory([run]);
+    expect(loadHistory()).toEqual([run]);
+  });
+
+  it('drops a run whose household budget snapshot is malformed', () => {
+    const run = { ...makeRun('2026-01-01T00:00:00.000Z'), householdBudget: { bogus: true } };
+    localStorage.setItem(HISTORY_KEY, JSON.stringify([run]));
+    expect(loadHistory()).toEqual([]);
+  });
 });

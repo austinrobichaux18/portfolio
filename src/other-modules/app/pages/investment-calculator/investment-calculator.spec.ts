@@ -58,6 +58,147 @@ describe('InvestmentCalculator', () => {
     expect(component.ageAtYear(5)).toBe(35);
   });
 
+  it('computes the final age at the end of the horizon, or null with no age entered', () => {
+    expect(component.finalAge()).toBeNull();
+    component.setCurrentAge('30');
+    component.setYears('20');
+    expect(component.finalAge()).toBe(50);
+  });
+
+  it('adds the average Social Security benefit to withdrawals once age 67 is reached', () => {
+    component.setCurrentAge('60');
+    expect(component.isSsEligibleYear(6)).toBe(false); // age 66
+    expect(component.isSsEligibleYear(7)).toBe(true); // age 67
+
+    const base = component.withdrawalAmount(1_000_000);
+    expect(component.totalWithdrawal(6, 1_000_000)).toBeCloseTo(base, 2);
+    expect(component.totalWithdrawal(7, 1_000_000)).toBeCloseTo(base + 25_000, 2);
+  });
+
+  it('never flags Social Security eligibility without an age entered', () => {
+    expect(component.currentAge()).toBeNull();
+    expect(component.isSsEligibleYear(100)).toBe(false);
+  });
+
+  it('toggles the per-row Social Security info popover independently by year', () => {
+    expect(component.isSsInfoOpen(10)).toBe(false);
+    component.toggleSsInfo(10);
+    expect(component.isSsInfoOpen(10)).toBe(true);
+    expect(component.isSsInfoOpen(11)).toBe(false);
+    component.closeSsInfo();
+    expect(component.isSsInfoOpen(10)).toBe(false);
+  });
+
+  it('starts with a single yearly income entry defaulting to $70,000', () => {
+    expect(component.incomeEntries()).toHaveLength(1);
+    expect(component.incomeEntries()[0].mode).toBe('yearly');
+    expect(component.incomeAnnualAmounts()).toEqual([70000]);
+  });
+
+  it('adds up to 10 income entries and no more', () => {
+    for (let i = 0; i < 20; i++) component.addIncomeEntry();
+    expect(component.incomeEntries()).toHaveLength(10);
+    expect(component.canAddIncomeEntry()).toBe(false);
+  });
+
+  it('removes an income entry but never the last one', () => {
+    component.addIncomeEntry();
+    expect(component.incomeEntries()).toHaveLength(2);
+
+    const [first, second] = component.incomeEntries();
+    component.removeIncomeEntry(second.id);
+    expect(component.incomeEntries()).toHaveLength(1);
+
+    component.removeIncomeEntry(first.id);
+    expect(component.incomeEntries()).toHaveLength(1);
+    expect(component.canRemoveIncomeEntry()).toBe(false);
+  });
+
+  it('computes an hourly income entry as rate * hours/week * weeks/year', () => {
+    const id = component.incomeEntries()[0].id;
+    component.setIncomeEntryMode(id, 'hourly');
+    component.setIncomeEntryHourlyRate(id, '25');
+    component.setIncomeEntryHoursPerWeek(id, '40');
+    component.setIncomeEntryWeeksPerYear(id, '50');
+    expect(component.incomeAnnualAmounts()).toEqual([50_000]);
+  });
+
+  it('labels the first entry as the primary salary and the rest as additional income', () => {
+    expect(component.incomeEntryLabel(0)).toBe('Your Annual Salary');
+    expect(component.incomeEntryLabel(1)).toContain('Additional Income #2');
+  });
+
+  it('applies a household preset to income entries and cost of living', () => {
+    component.applyHouseholdPreset('married2Children');
+    expect(component.incomeAnnualAmounts()).toEqual([70_000, 40_000]);
+    expect(component.monthlyCostOfLiving()).toBe(9_180);
+  });
+
+  it('ignores an unknown preset id', () => {
+    const before = component.incomeAnnualAmounts();
+    component.applyHouseholdPreset('not-a-real-preset');
+    expect(component.incomeAnnualAmounts()).toEqual(before);
+  });
+
+  it('includes single-parent presets with a single income entry', () => {
+    component.applyHouseholdPreset('single2Children');
+    expect(component.incomeAnnualAmounts()).toEqual([42_124]);
+    expect(component.monthlyCostOfLiving()).toBe(7_110);
+  });
+
+  it('tracks and labels the last-applied preset', () => {
+    expect(component.lastAppliedPresetLabel()).toBeNull();
+    component.applyHouseholdPreset('single');
+    expect(component.lastAppliedPresetLabel()).toBe('Single');
+    component.applyHouseholdPreset('not-a-real-preset');
+    expect(component.lastAppliedPresetLabel()).toBe('Single');
+  });
+
+  it('displays and accepts cost of living as a yearly amount when toggled', () => {
+    component.setMonthlyCostOfLiving('3000');
+    expect(component.costOfLivingDisplayAmount()).toBe(3000);
+
+    component.setCostOfLivingFrequency('yearly');
+    expect(component.costOfLivingDisplayAmount()).toBe(36_000);
+
+    component.setCostOfLivingAmount('24000');
+    expect(component.monthlyCostOfLiving()).toBe(2000);
+    expect(component.costOfLivingDisplayAmount()).toBe(24_000);
+  });
+
+  it('computes savings/checking buffer targets from monthly cost of living', () => {
+    component.setMonthlyCostOfLiving('3000');
+    expect(component.checkingBufferTarget()).toBe(9_000);
+    expect(component.savingsBufferTarget()).toBe(18_000);
+  });
+
+  it('delays contributions until the savings/checking gap is filled', () => {
+    component.setMonthlyCostOfLiving('1000'); // targets: 3,000 checking + 6,000 HYSA = 9,000 gap
+    component.setContributionAmount('1000');
+    component.contributionFrequency.set('monthly');
+    expect(component.bufferGapRemaining()).toBe(9_000);
+    expect(component.contributionDelayMonths()).toBe(9);
+  });
+
+  it('shrinks the delay as existing checking/HYSA balances are entered', () => {
+    component.setMonthlyCostOfLiving('1000');
+    component.setContributionAmount('1000');
+    component.setCurrentCheckingBalance('3000');
+    component.setCurrentSavingsBalance('6000');
+    expect(component.bufferGapRemaining()).toBe(0);
+    expect(component.contributionDelayMonths()).toBe(0);
+  });
+
+  it('feeds the computed delay into the main investment projection', () => {
+    component.setMonthlyCostOfLiving('1000');
+    component.setContributionAmount('1000');
+    component.contributionFrequency.set('monthly');
+    component.setYears('1');
+    expect(component.contributionDelayMonths()).toBe(9);
+    // Only 3 of 12 months actually contribute (1,000 * 3 = 3,000) once the delay is applied.
+    expect(component.result().totalContributions).toBeCloseTo(3_000, 2);
+  });
+
   it('clears current age when the field is emptied', () => {
     component.setCurrentAge('30');
     component.setCurrentAge('');
@@ -86,6 +227,36 @@ describe('InvestmentCalculator', () => {
     expect(component.currentAge()).toBe(40);
   });
 
+  it('omits the household budget snapshot when that widget is untouched', () => {
+    expect(component.householdBudgetEntered()).toBe(false);
+    component.saveCurrentToHistory();
+    expect(component.history()[0].householdBudget).toBeUndefined();
+  });
+
+  it('saves and restores the household budget widget once it has been entered', () => {
+    component.onStateSelected('CA');
+    component.setWithholdingsAmount('100');
+    component.setMonthlyCostOfLiving('4000');
+    component.setCurrentCheckingBalance('2000');
+    expect(component.householdBudgetEntered()).toBe(true);
+
+    component.saveCurrentToHistory();
+    const saved = component.history()[0];
+    expect(saved.householdBudget).toBeDefined();
+    expect(saved.householdBudget?.selectedStateCode).toBe('CA');
+    expect(saved.householdBudget?.monthlyCostOfLiving).toBe(4000);
+
+    // Mutate the live state, then confirm loading the run restores the snapshot.
+    component.onStateSelected('');
+    component.setMonthlyCostOfLiving('3000');
+    component.setCurrentCheckingBalance('0');
+
+    component.loadFromHistory(saved);
+    expect(component.selectedStateCode()).toBe('CA');
+    expect(component.monthlyCostOfLiving()).toBe(4000);
+    expect(component.currentCheckingBalance()).toBe(2000);
+  });
+
   it('flags only the year that first crosses each milestone balance', () => {
     component.setStartingAmount('0');
     component.setContributionAmount('200000');
@@ -111,5 +282,72 @@ describe('InvestmentCalculator', () => {
     component.deleteFromHistory(first.timestamp);
     expect(component.history()).toHaveLength(1);
     expect(component.history()[0].timestamp).not.toBe(first.timestamp);
+  });
+
+  it('prefills the state tax rate and cost of living when a state is selected', () => {
+    expect(component.stateTaxRatePercent()).toBe(0);
+    component.onStateSelected('CA');
+    expect(component.selectedStateCode()).toBe('CA');
+    expect(component.stateTaxRatePercent()).toBe(13.3);
+    expect(component.monthlyCostOfLiving()).toBe(9180);
+  });
+
+  it('sorts states alphabetically by default', () => {
+    const names = component.sortedStateTaxRates().map((s) => s.name);
+    expect(names).toEqual([...names].sort((a, b) => a.localeCompare(b)));
+  });
+
+  it('sorts states by ascending tax rate when requested', () => {
+    component.setStateSortOrder('taxRateAsc');
+    const rates = component.sortedStateTaxRates().map((s) => s.rate);
+    expect(rates).toEqual([...rates].sort((a, b) => a - b));
+    expect(rates[0]).toBe(0);
+  });
+
+  it('converts withholdings to an annual figure based on the selected pay frequency', () => {
+    component.setWithholdingsAmount('100');
+    component.setWithholdingsFrequency('biweekly');
+    expect(component.annualWithholdings()).toBe(2600);
+
+    component.setWithholdingsFrequency('monthly');
+    expect(component.annualWithholdings()).toBe(1200);
+  });
+
+  it('sends the estimated monthly discretionary income to the contribution field', () => {
+    component.setIncomeEntryYearlyAmount(component.incomeEntries()[0].id, '120000');
+    component.setMonthlyCostOfLiving('3000');
+    component.contributionFrequency.set('annually');
+
+    const expectedMonthly = Math.max(0, Math.round(component.householdBudget().discretionaryMonthly));
+    component.useDiscretionaryIncomeAsContribution();
+
+    expect(component.contributionAmount()).toBe(expectedMonthly);
+    expect(component.contributionFrequency()).toBe('monthly');
+  });
+
+  it('never sends a negative contribution when expenses exceed take-home pay', () => {
+    component.setIncomeEntryYearlyAmount(component.incomeEntries()[0].id, '10000');
+    component.setMonthlyCostOfLiving('5000');
+    expect(component.householdBudget().discretionaryMonthly).toBeLessThan(0);
+
+    component.useDiscretionaryIncomeAsContribution();
+    expect(component.contributionAmount()).toBe(0);
+  });
+
+  it('toggles an info popover open and closed', () => {
+    expect(component.isInfoPopoverOpen('withholdings')).toBe(false);
+    component.toggleInfoPopover('withholdings');
+    expect(component.isInfoPopoverOpen('withholdings')).toBe(true);
+    component.closeInfoPopover();
+    expect(component.isInfoPopoverOpen('withholdings')).toBe(false);
+  });
+
+  it('only shows one info popover at a time', () => {
+    component.toggleInfoPopover('withholdings');
+    expect(component.isInfoPopoverOpen('withholdings')).toBe(true);
+
+    component.toggleInfoPopover('costOfLiving');
+    expect(component.isInfoPopoverOpen('withholdings')).toBe(false);
+    expect(component.isInfoPopoverOpen('costOfLiving')).toBe(true);
   });
 });

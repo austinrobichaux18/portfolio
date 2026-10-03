@@ -92,4 +92,32 @@ describe('calculateInvestment', () => {
     expect(result.yearRows).toHaveLength(2);
     expect(result.yearRows[1].year).toBe(2);
   });
+
+  it('withholds contributions during the delay window, then resumes normally after', () => {
+    const result = calculateInvestment({
+      ...baseInputs,
+      contributionAmount: 100,
+      contributionFrequency: 'monthly',
+      years: 1,
+      contributionDelayMonths: 6,
+    });
+    // 6 months withheld, 6 months contributed: 600 invested, not the full 1200.
+    expect(result.totalContributions).toBeCloseTo(600, 2);
+    expect(result.endingBalance).toBeCloseTo(1000 + 600, 2);
+  });
+
+  it('still grows the starting amount during the contribution delay window', () => {
+    const result = calculateInvestment({
+      ...baseInputs,
+      annualInterestRatePercent: 12,
+      compoundFrequency: 'monthly',
+      contributionAmount: 100,
+      contributionFrequency: 'monthly',
+      years: 1,
+      contributionDelayMonths: 12,
+    });
+    // No contributions land at all (delay covers the whole horizon), but interest still accrues.
+    expect(result.totalContributions).toBeCloseTo(0, 2);
+    expect(result.endingBalance).toBeGreaterThan(1000);
+  });
 });
