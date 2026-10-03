@@ -5,12 +5,7 @@ export type ContributionFrequency = 'monthly' | 'annually';
 export type ContributionTiming = 'beginning' | 'end';
 
 export type CompoundFrequency =
-  | 'annually'
-  | 'semiannually'
-  | 'quarterly'
-  | 'monthly'
-  | 'daily'
-  | 'continuously';
+  'annually' | 'semiannually' | 'quarterly' | 'monthly' | 'daily' | 'continuously';
 
 export interface InvestmentInputs {
   startingAmount: number;
@@ -23,6 +18,8 @@ export interface InvestmentInputs {
   months: number;
   /** Months where the contribution is diverted to savings/checking buffers instead of invested. */
   contributionDelayMonths?: number;
+  /** Annual inflation rate used to express balances in today's purchasing power. */
+  inflationRatePercent?: number;
 }
 
 export interface InvestmentYearRow {
@@ -30,11 +27,15 @@ export interface InvestmentYearRow {
   depositThisYear: number;
   interestThisYear: number;
   endingBalance: number;
+  /** Ending balance discounted by inflation back to today's purchasing power. */
+  endingBalanceReal: number;
 }
 
 export interface InvestmentResult {
   startingAmount: number;
   endingBalance: number;
+  /** Ending balance discounted by inflation back to today's purchasing power. */
+  endingBalanceReal: number;
   totalContributions: number;
   totalInterest: number;
   yearRows: InvestmentYearRow[];

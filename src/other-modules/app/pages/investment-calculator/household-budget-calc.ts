@@ -6,9 +6,14 @@ import {
 } from '../../core/models/HouseholdBudget';
 
 export function incomeEntryAnnualAmount(entry: IncomeEntry): number {
-  return entry.mode === 'yearly'
-    ? entry.yearlyAmount
-    : entry.hourlyRate * entry.hoursPerWeek * entry.weeksPerYear;
+  switch (entry.mode) {
+    case 'yearly':
+      return entry.yearlyAmount;
+    case 'monthly':
+      return entry.monthlyAmount * 12;
+    case 'hourly':
+      return entry.hourlyRate * entry.hoursPerWeek * entry.weeksPerYear;
+  }
 }
 
 interface TaxBracket {
@@ -84,6 +89,10 @@ export function calculateHouseholdBudget(inputs: HouseholdBudgetInputs): Househo
   const ficaTax = earners.reduce((sum, income) => sum + computeFica(income), 0);
   const stateTax = grossHouseholdIncome * (inputs.stateTaxRatePercent / 100);
 
+  const totalTax = federalTax + ficaTax + stateTax;
+  const totalEffectiveTaxRatePercent =
+    grossHouseholdIncome > 0 ? Math.round((totalTax / grossHouseholdIncome) * 1000) / 10 : 0;
+
   const postTaxIncome = Math.max(0, grossHouseholdIncome - federalTax - ficaTax - stateTax);
   const annualCostOfLiving = inputs.monthlyCostOfLiving * 12;
   const discretionaryAnnual = postTaxIncome - inputs.annualWithholdings - annualCostOfLiving;
@@ -95,6 +104,7 @@ export function calculateHouseholdBudget(inputs: HouseholdBudgetInputs): Househo
     federalEffectiveRatePercent,
     ficaTax,
     stateTax,
+    totalEffectiveTaxRatePercent,
     postTaxIncome,
     annualWithholdings: inputs.annualWithholdings,
     annualCostOfLiving,

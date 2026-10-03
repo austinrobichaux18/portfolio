@@ -120,4 +120,22 @@ describe('calculateInvestment', () => {
     expect(result.totalContributions).toBeCloseTo(0, 2);
     expect(result.endingBalance).toBeGreaterThan(1000);
   });
+
+  it('leaves the real ending balance equal to nominal when inflation is zero', () => {
+    const result = calculateInvestment({ ...baseInputs, annualInterestRatePercent: 10, years: 5 });
+    expect(result.endingBalanceReal).toBeCloseTo(result.endingBalance, 6);
+    expect(result.yearRows[0].endingBalanceReal).toBeCloseTo(result.yearRows[0].endingBalance, 6);
+  });
+
+  it('discounts the ending balance by the inflation rate to show real purchasing power', () => {
+    const result = calculateInvestment({
+      ...baseInputs,
+      annualInterestRatePercent: 0,
+      years: 1,
+      inflationRatePercent: 10,
+    });
+    // No growth, no contributions — the real value of $1,000 a year from now at 10% inflation.
+    expect(result.endingBalanceReal).toBeCloseTo(1000 / 1.1, 2);
+    expect(result.yearRows[0].endingBalanceReal).toBeCloseTo(1000 / 1.1, 2);
+  });
 });

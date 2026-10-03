@@ -1,5 +1,5 @@
-import { calculateHouseholdBudget } from './household-budget-calc';
-import { HouseholdBudgetInputs } from '../../core/models/HouseholdBudget';
+import { calculateHouseholdBudget, incomeEntryAnnualAmount } from './household-budget-calc';
+import { HouseholdBudgetInputs, IncomeEntry } from '../../core/models/HouseholdBudget';
 
 const baseInputs: HouseholdBudgetInputs = {
   incomes: [],
@@ -7,6 +7,41 @@ const baseInputs: HouseholdBudgetInputs = {
   annualWithholdings: 0,
   monthlyCostOfLiving: 0,
 };
+
+const baseEntry: IncomeEntry = {
+  id: 'test',
+  mode: 'yearly',
+  yearlyAmount: 0,
+  monthlyAmount: 0,
+  hourlyRate: 0,
+  hoursPerWeek: 40,
+  weeksPerYear: 52,
+};
+
+describe('incomeEntryAnnualAmount', () => {
+  it('uses the yearly amount directly in yearly mode', () => {
+    expect(incomeEntryAnnualAmount({ ...baseEntry, mode: 'yearly', yearlyAmount: 60_000 })).toBe(
+      60_000,
+    );
+  });
+
+  it('multiplies the monthly amount by 12 in monthly mode', () => {
+    expect(incomeEntryAnnualAmount({ ...baseEntry, mode: 'monthly', monthlyAmount: 5_000 })).toBe(
+      60_000,
+    );
+  });
+
+  it('multiplies rate by hours/week by weeks/year in hourly mode', () => {
+    const entry: IncomeEntry = {
+      ...baseEntry,
+      mode: 'hourly',
+      hourlyRate: 25,
+      hoursPerWeek: 40,
+      weeksPerYear: 50,
+    };
+    expect(incomeEntryAnnualAmount(entry)).toBe(50_000);
+  });
+});
 
 describe('calculateHouseholdBudget', () => {
   it('owes no tax and has no discretionary income with zero inputs', () => {
@@ -80,5 +115,22 @@ describe('calculateHouseholdBudget', () => {
       monthlyCostOfLiving: 5_000,
     });
     expect(result.discretionaryAnnual).toBeLessThan(0);
+  });
+
+  it('computes the effective tax rate as all taxes combined over gross income', () => {
+    const result = calculateHouseholdBudget({
+      ...baseInputs,
+      incomes: [80_000],
+      stateTaxRatePercent: 5,
+    });
+    const expectedRate =
+      ((result.federalTax + result.ficaTax + result.stateTax) / result.grossHouseholdIncome) *
+      100;
+    expect(result.totalEffectiveTaxRatePercent).toBeCloseTo(expectedRate, 1);
+  });
+
+  it('reports a zero effective tax rate with no income', () => {
+    const result = calculateHouseholdBudget(baseInputs);
+    expect(result.totalEffectiveTaxRatePercent).toBe(0);
   });
 });

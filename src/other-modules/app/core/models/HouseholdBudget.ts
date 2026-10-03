@@ -9,12 +9,13 @@ export interface StateTaxRate {
   avgMonthlyCostOfLiving: number;
 }
 
-export type IncomeMode = 'yearly' | 'hourly';
+export type IncomeMode = 'yearly' | 'monthly' | 'hourly';
 
 export interface IncomeEntry {
   id: string;
   mode: IncomeMode;
   yearlyAmount: number;
+  monthlyAmount: number;
   hourlyRate: number;
   hoursPerWeek: number;
   weeksPerYear: number;
@@ -32,6 +33,8 @@ export interface HouseholdBudgetSnapshot {
   monthlyCostOfLiving: number;
   currentCheckingBalance: number;
   currentSavingsBalance: number;
+  /** When true, the checking/HYSA buffers are ignored and contributions never get delayed. */
+  ignoreAlreadySaved?: boolean;
 }
 
 export interface HouseholdPreset {
@@ -57,6 +60,8 @@ export interface HouseholdBudgetResult {
   federalEffectiveRatePercent: number;
   ficaTax: number;
   stateTax: number;
+  /** (federalTax + ficaTax + stateTax) / grossHouseholdIncome — the household's real all-in tax bite. */
+  totalEffectiveTaxRatePercent: number;
   postTaxIncome: number;
   annualWithholdings: number;
   annualCostOfLiving: number;

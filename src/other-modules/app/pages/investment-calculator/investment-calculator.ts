@@ -1,4 +1,4 @@
-import { Component, HostListener, computed, signal } from '@angular/core';
+import { Component, HostListener, afterNextRender, computed, signal } from '@angular/core';
 import { DatePipe } from '@angular/common';
 import {
   CompoundFrequency,
@@ -25,6 +25,7 @@ function createIncomeEntry(yearlyAmount = 0): IncomeEntry {
     id: `income-${Math.random().toString(36).slice(2)}-${Date.now().toString(36)}`,
     mode: 'yearly',
     yearlyAmount,
+    monthlyAmount: 0,
     hourlyRate: 0,
     hoursPerWeek: 40,
     weeksPerYear: 52,
@@ -45,7 +46,8 @@ const MILESTONES = [1_000_000, 2_000_000, 3_000_000, 4_000_000, 5_000_000, 10_00
 const SS_FULL_RETIREMENT_AGE = 67;
 const SS_AVERAGE_ANNUAL_BENEFIT = 25_000;
 
-type InfoPopoverKey = 'withholdings' | 'costOfLiving' | 'quickFill';
+type InfoPopoverKey =
+  'withholdings' | 'costOfLiving' | 'quickFill' | 'effectiveTaxRate' | 'inflationRate';
 
 type StateSortOrder = 'alphabetical' | 'taxRateAsc';
 
@@ -96,12 +98,23 @@ interface PieChart {
 }
 
 /** Degrees measured clockwise from 12 o'clock, matching how pie slices are conventionally drawn. */
-function polarToCartesian(cx: number, cy: number, r: number, angleDeg: number): { x: number; y: number } {
+function polarToCartesian(
+  cx: number,
+  cy: number,
+  r: number,
+  angleDeg: number,
+): { x: number; y: number } {
   const angleRad = ((angleDeg - 90) * Math.PI) / 180;
   return { x: cx + r * Math.cos(angleRad), y: cy + r * Math.sin(angleRad) };
 }
 
-function describeArc(cx: number, cy: number, r: number, startAngle: number, endAngle: number): string {
+function describeArc(
+  cx: number,
+  cy: number,
+  r: number,
+  startAngle: number,
+  endAngle: number,
+): string {
   const start = polarToCartesian(cx, cy, r, endAngle);
   const end = polarToCartesian(cx, cy, r, startAngle);
   const largeArcFlag = endAngle - startAngle <= 180 ? '0' : '1';
@@ -109,12 +122,12 @@ function describeArc(cx: number, cy: number, r: number, startAngle: number, endA
 }
 
 function toNonNegativeNumber(raw: string): number {
-  const value = Number(raw);
+  const value = Number(raw.replace(/,/g, ''));
   return Number.isFinite(value) && value >= 0 ? value : 0;
 }
 
 function toNonNegativeIntOrNull(raw: string): number | null {
-  const trimmed = raw.trim();
+  const trimmed = raw.replace(/,/g, '').trim();
   if (trimmed === '') return null;
   const value = Number(trimmed);
   return Number.isFinite(value) && value >= 0 ? Math.round(value) : null;
@@ -128,6 +141,16 @@ function formatCurrency(value: number): string {
   });
 }
 
+/** Reformats a number textbox with thousands separators once the user finishes typing (on blur). */
+function formatNumberInputOnBlur(event: Event): void {
+  const input = event.target as HTMLInputElement;
+  const normalized = input.value.replace(/,/g, '').trim();
+  if (normalized === '') return;
+  const value = Number(normalized);
+  if (!Number.isFinite(value)) return;
+  input.value = value.toLocaleString('en-US', { maximumFractionDigits: 6 });
+}
+
 @Component({
   selector: 'app-investment-calculator',
   imports: [DatePipe],
@@ -137,7 +160,13 @@ function formatCurrency(value: number): string {
 export class InvestmentCalculator {
   readonly formatCurrency = formatCurrency;
 
+  readonly formatNumberInputOnBlur = formatNumberInputOnBlur;
+
   readonly ssAverageAnnualBenefit = SS_AVERAGE_ANNUAL_BENEFIT;
+
+  constructor() {
+    afterNextRender(() => this.formatAllNumericInputsSoon());
+  }
 
   startingAmount = signal(1000);
 
@@ -154,6 +183,9 @@ export class InvestmentCalculator {
   years = signal(20);
 
   months = signal(0);
+
+  /** Historical long-run U.S. inflation is roughly 3%; used to show balances in today's dollars. */
+  inflationRatePercent = signal(3);
 
   withdrawalRatePercent = signal(3.5);
 
@@ -235,6 +267,9 @@ export class InvestmentCalculator {
 
   currentSavingsBalance = signal(0);
 
+  /** When true, the checking/HYSA buffers below are ignored and contributions never get delayed. */
+  ignoreAlreadySaved = signal(false);
+
   /** 3 months of cost of living for checking, 6 for a HYSA — the TL;DR's recommended buffers. */
   checkingBufferTarget = computed(() => this.monthlyCostOfLiving() * 3);
 
@@ -248,6 +283,7 @@ export class InvestmentCalculator {
 
   /** How many months the contribution gets diverted to filling the buffers before investing starts. */
   contributionDelayMonths = computed(() => {
+    if (this.ignoreAlreadySaved()) return 0;
     const gap = this.bufferGapRemaining();
     const monthly = this.contributionBreakdown().monthly;
     if (gap <= 0 || monthly <= 0) return 0;
@@ -265,6 +301,7 @@ export class InvestmentCalculator {
       years: this.years(),
       months: this.months(),
       contributionDelayMonths: this.contributionDelayMonths(),
+      inflationRatePercent: this.inflationRatePercent(),
     }),
   );
 
@@ -377,6 +414,10 @@ export class InvestmentCalculator {
     this.currentSavingsBalance.set(toNonNegativeNumber(raw));
   }
 
+  setIgnoreAlreadySaved(value: boolean): void {
+    this.ignoreAlreadySaved.set(value);
+  }
+
   setAnnualInterestRatePercent(raw: string): void {
     this.annualInterestRatePercent.set(toNonNegativeNumber(raw));
   }
@@ -399,6 +440,10 @@ export class InvestmentCalculator {
 
   setMonths(raw: string): void {
     this.months.set(Math.min(11, toNonNegativeNumber(raw)));
+  }
+
+  setInflationRatePercent(raw: string): void {
+    this.inflationRatePercent.set(toNonNegativeNumber(raw));
   }
 
   setWithdrawalRatePercent(raw: string): void {
@@ -481,6 +526,10 @@ export class InvestmentCalculator {
     this.updateIncomeEntry(id, (entry) => ({ ...entry, yearlyAmount: toNonNegativeNumber(raw) }));
   }
 
+  setIncomeEntryMonthlyAmount(id: string, raw: string): void {
+    this.updateIncomeEntry(id, (entry) => ({ ...entry, monthlyAmount: toNonNegativeNumber(raw) }));
+  }
+
   setIncomeEntryHourlyRate(id: string, raw: string): void {
     this.updateIncomeEntry(id, (entry) => ({ ...entry, hourlyRate: toNonNegativeNumber(raw) }));
   }
@@ -514,6 +563,7 @@ export class InvestmentCalculator {
     this.incomeEntries.set(preset.incomes.map((amount) => createIncomeEntry(amount)));
     this.monthlyCostOfLiving.set(preset.monthlyCostOfLiving);
     this.lastAppliedPresetId.set(preset.id);
+    this.formatAllNumericInputsSoon();
   }
 
   setStateSortOrder(raw: string): void {
@@ -527,6 +577,7 @@ export class InvestmentCalculator {
       this.stateTaxRatePercent.set(state.rate);
       this.monthlyCostOfLiving.set(state.avgMonthlyCostOfLiving);
     }
+    this.formatAllNumericInputsSoon();
   }
 
   setStateTaxRatePercent(raw: string): void {
@@ -589,15 +640,30 @@ export class InvestmentCalculator {
     }
   }
 
+  /**
+   * Reformats every number textbox with thousands separators once Angular has pushed a
+   * programmatic (non-typed) value into the DOM — e.g. after a preset/state prefill, loading a
+   * history entry, or a reset. Deferred so it runs after the current change-detection pass has
+   * already written the raw values into the inputs.
+   */
+  private formatAllNumericInputsSoon(): void {
+    if (typeof document === 'undefined') return;
+    setTimeout(() => {
+      document.querySelectorAll<HTMLInputElement>('input[data-numeric]').forEach((el) => {
+        this.formatNumberInputOnBlur({ target: el } as unknown as Event);
+      });
+    });
+  }
+
   /** Fills the main contribution field with the estimated monthly leftover from the budget widget. */
   useDiscretionaryIncomeAsContribution(): void {
     const monthly = Math.max(0, Math.round(this.householdBudget().discretionaryMonthly));
     this.contributionAmount.set(monthly);
     this.contributionFrequency.set('monthly');
+    this.formatAllNumericInputsSoon();
 
-    const contributionInput = typeof document !== 'undefined'
-      ? document.getElementById('contribution-amount')
-      : null;
+    const contributionInput =
+      typeof document !== 'undefined' ? document.getElementById('contribution-amount') : null;
     contributionInput?.scrollIntoView?.({ behavior: 'smooth', block: 'center' });
   }
 
@@ -610,24 +676,25 @@ export class InvestmentCalculator {
     this.compoundFrequency.set('annually');
     this.years.set(20);
     this.months.set(0);
+    this.inflationRatePercent.set(3);
     this.withdrawalRatePercent.set(3.5);
     this.currentAge.set(null);
+    this.formatAllNumericInputsSoon();
   }
 
   /** True once the budget widget has anything other than its default single $70k entry. */
   householdBudgetEntered = computed(() => {
     const entries = this.incomeEntries();
     const incomeChanged =
-      entries.length !== 1 ||
-      entries[0].mode !== 'yearly' ||
-      entries[0].yearlyAmount !== 70_000;
+      entries.length !== 1 || entries[0].mode !== 'yearly' || entries[0].yearlyAmount !== 70_000;
     return (
       incomeChanged ||
       this.selectedStateCode() !== '' ||
       this.withholdingsAmount() > 0 ||
       this.monthlyCostOfLiving() !== 3_000 ||
       this.currentCheckingBalance() > 0 ||
-      this.currentSavingsBalance() > 0
+      this.currentSavingsBalance() > 0 ||
+      this.ignoreAlreadySaved()
     );
   });
 
@@ -641,6 +708,7 @@ export class InvestmentCalculator {
       monthlyCostOfLiving: this.monthlyCostOfLiving(),
       currentCheckingBalance: this.currentCheckingBalance(),
       currentSavingsBalance: this.currentSavingsBalance(),
+      ignoreAlreadySaved: this.ignoreAlreadySaved(),
     };
   }
 
@@ -662,6 +730,7 @@ export class InvestmentCalculator {
         compoundFrequency: this.compoundFrequency(),
         years: this.years(),
         months: this.months(),
+        inflationRatePercent: this.inflationRatePercent(),
       },
       withdrawalRatePercent: this.withdrawalRatePercent(),
       currentAge: this.currentAge(),
@@ -685,6 +754,7 @@ export class InvestmentCalculator {
     this.compoundFrequency.set(run.inputs.compoundFrequency);
     this.years.set(run.inputs.years);
     this.months.set(run.inputs.months);
+    this.inflationRatePercent.set(run.inputs.inflationRatePercent ?? 3);
     this.withdrawalRatePercent.set(run.withdrawalRatePercent);
     this.currentAge.set(run.currentAge);
 
@@ -698,7 +768,9 @@ export class InvestmentCalculator {
       this.monthlyCostOfLiving.set(budget.monthlyCostOfLiving);
       this.currentCheckingBalance.set(budget.currentCheckingBalance);
       this.currentSavingsBalance.set(budget.currentSavingsBalance);
+      this.ignoreAlreadySaved.set(budget.ignoreAlreadySaved ?? false);
     }
+    this.formatAllNumericInputsSoon();
   }
 
   deleteFromHistory(timestamp: string): void {

@@ -38,11 +38,23 @@ describe('InvestmentCalculator', () => {
     component.setYears('1');
     component.setCurrentAge('30');
     component.setWithdrawalRatePercent('5');
+    component.setInflationRatePercent('0');
     component.reset();
     expect(component.startingAmount()).toBe(1000);
     expect(component.years()).toBe(20);
     expect(component.currentAge()).toBeNull();
     expect(component.withdrawalRatePercent()).toBe(3.5);
+    expect(component.inflationRatePercent()).toBe(3);
+  });
+
+  it('feeds the inflation rate into the projection', () => {
+    component.setInflationRatePercent('4');
+    expect(component.result().endingBalanceReal).toBeLessThan(component.result().endingBalance);
+  });
+
+  it('hides the real-dollars stat once inflation is set to zero', () => {
+    component.setInflationRatePercent('0');
+    expect(component.result().endingBalanceReal).toBeCloseTo(component.result().endingBalance, 6);
   });
 
   it('computes the withdrawal amount as a percentage of the ending balance', () => {
@@ -189,6 +201,16 @@ describe('InvestmentCalculator', () => {
     expect(component.contributionDelayMonths()).toBe(0);
   });
 
+  it('ignores the buffer gap and delay entirely when the "ignore this" toggle is on', () => {
+    component.setMonthlyCostOfLiving('1000'); // targets: 3,000 checking + 6,000 HYSA = 9,000 gap
+    component.setContributionAmount('1000');
+    component.contributionFrequency.set('monthly');
+    expect(component.contributionDelayMonths()).toBe(9);
+
+    component.setIgnoreAlreadySaved(true);
+    expect(component.contributionDelayMonths()).toBe(0);
+  });
+
   it('feeds the computed delay into the main investment projection', () => {
     component.setMonthlyCostOfLiving('1000');
     component.setContributionAmount('1000');
@@ -197,6 +219,58 @@ describe('InvestmentCalculator', () => {
     expect(component.contributionDelayMonths()).toBe(9);
     // Only 3 of 12 months actually contribute (1,000 * 3 = 3,000) once the delay is applied.
     expect(component.result().totalContributions).toBeCloseTo(3_000, 2);
+  });
+
+  it('adds thousands separators to a number textbox once it loses focus', () => {
+    const input = document.createElement('input');
+    input.value = '1000000';
+    component.formatNumberInputOnBlur({ target: input } as unknown as Event);
+    expect(input.value).toBe('1,000,000');
+  });
+
+  it('strips existing commas before reformatting on blur, preserving decimals', () => {
+    const input = document.createElement('input');
+    input.value = '1,234.5';
+    component.formatNumberInputOnBlur({ target: input } as unknown as Event);
+    expect(input.value).toBe('1,234.5');
+  });
+
+  it('leaves an empty or invalid number textbox alone on blur', () => {
+    const input = document.createElement('input');
+    input.value = '';
+    component.formatNumberInputOnBlur({ target: input } as unknown as Event);
+    expect(input.value).toBe('');
+  });
+
+  it('parses a comma-formatted value back into a plain number', () => {
+    component.setStartingAmount('12,500');
+    expect(component.startingAmount()).toBe(12_500);
+  });
+
+  it('formats numeric inputs with commas on first load, before any user interaction', async () => {
+    fixture.detectChanges();
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    const startingAmountInput = fixture.nativeElement.querySelector(
+      '#starting-amount',
+    ) as HTMLInputElement;
+    const incomeInput = fixture.nativeElement.querySelector(
+      `#income-${component.incomeEntries()[0].id}`,
+    ) as HTMLInputElement;
+    expect(startingAmountInput.value).toBe('1,000');
+    expect(incomeInput.value).toBe('70,000');
+  });
+
+  it('formats numeric inputs with commas after a prefill action, not just on blur', async () => {
+    fixture.detectChanges();
+    component.applyHouseholdPreset('married2Children');
+    fixture.detectChanges();
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    const costOfLivingInput = fixture.nativeElement.querySelector(
+      '#cost-of-living',
+    ) as HTMLInputElement;
+    expect(costOfLivingInput.value).toBe('9,180');
   });
 
   it('clears current age when the field is emptied', () => {
@@ -227,6 +301,30 @@ describe('InvestmentCalculator', () => {
     expect(component.currentAge()).toBe(40);
   });
 
+  it('saves and restores the inflation rate with a history entry', () => {
+    component.setInflationRatePercent('2');
+    component.saveCurrentToHistory();
+    const saved = component.history()[0];
+
+    component.reset();
+    expect(component.inflationRatePercent()).toBe(3);
+
+    component.loadFromHistory(saved);
+    expect(component.inflationRatePercent()).toBe(2);
+  });
+
+  it('defaults the inflation rate when loading an older history entry', () => {
+    component.saveCurrentToHistory();
+    const legacyRun = { ...component.history()[0] };
+    const legacyInputs = { ...legacyRun.inputs } as Record<string, unknown>;
+    delete legacyInputs['inflationRatePercent'];
+    legacyRun.inputs = legacyInputs as unknown as typeof legacyRun.inputs;
+
+    component.setInflationRatePercent('9');
+    component.loadFromHistory(legacyRun);
+    expect(component.inflationRatePercent()).toBe(3);
+  });
+
   it('omits the household budget snapshot when that widget is untouched', () => {
     expect(component.householdBudgetEntered()).toBe(false);
     component.saveCurrentToHistory();
@@ -255,6 +353,19 @@ describe('InvestmentCalculator', () => {
     expect(component.selectedStateCode()).toBe('CA');
     expect(component.monthlyCostOfLiving()).toBe(4000);
     expect(component.currentCheckingBalance()).toBe(2000);
+  });
+
+  it('saves and restores the "ignore already saved" toggle with the household budget snapshot', () => {
+    component.setIgnoreAlreadySaved(true);
+    expect(component.householdBudgetEntered()).toBe(true);
+
+    component.saveCurrentToHistory();
+    const saved = component.history()[0];
+    expect(saved.householdBudget?.ignoreAlreadySaved).toBe(true);
+
+    component.setIgnoreAlreadySaved(false);
+    component.loadFromHistory(saved);
+    expect(component.ignoreAlreadySaved()).toBe(true);
   });
 
   it('flags only the year that first crosses each milestone balance', () => {
@@ -318,7 +429,10 @@ describe('InvestmentCalculator', () => {
     component.setMonthlyCostOfLiving('3000');
     component.contributionFrequency.set('annually');
 
-    const expectedMonthly = Math.max(0, Math.round(component.householdBudget().discretionaryMonthly));
+    const expectedMonthly = Math.max(
+      0,
+      Math.round(component.householdBudget().discretionaryMonthly),
+    );
     component.useDiscretionaryIncomeAsContribution();
 
     expect(component.contributionAmount()).toBe(expectedMonthly);

@@ -14,16 +14,26 @@ const COMPOUNDS_PER_YEAR: Record<Exclude<CompoundFrequency, 'continuously'>, num
 };
 
 /** Growth factor for one month, derived from the annual rate and compounding frequency. */
-function monthlyGrowthFactor(annualRatePercent: number, compoundFrequency: CompoundFrequency): number {
+function monthlyGrowthFactor(
+  annualRatePercent: number,
+  compoundFrequency: CompoundFrequency,
+): number {
   const r = annualRatePercent / 100;
   if (compoundFrequency === 'continuously') return Math.exp(r / 12);
   const n = COMPOUNDS_PER_YEAR[compoundFrequency];
   return Math.pow(1 + r / n, n / 12);
 }
 
+/** Discounts a future balance back to today's purchasing power at the given annual inflation rate. */
+function toRealValue(nominalValue: number, inflationRatePercent: number, years: number): number {
+  if (inflationRatePercent === 0) return nominalValue;
+  return nominalValue / Math.pow(1 + inflationRatePercent / 100, years);
+}
+
 export function calculateInvestment(inputs: InvestmentInputs): InvestmentResult {
   const totalMonths = Math.max(0, Math.round(inputs.years * 12 + inputs.months));
   const growth = monthlyGrowthFactor(inputs.annualInterestRatePercent, inputs.compoundFrequency);
+  const inflationRatePercent = inputs.inflationRatePercent ?? 0;
 
   let balance = inputs.startingAmount;
   let totalContributions = 0;
@@ -65,11 +75,13 @@ export function calculateInvestment(inputs: InvestmentInputs): InvestmentResult 
     }
 
     if (isYearEnd) {
+      const year = Math.ceil(month / 12);
       yearRows.push({
-        year: Math.ceil(month / 12),
+        year,
         depositThisYear: yearDeposit,
         interestThisYear: balance - yearStartBalance - yearDeposit,
         endingBalance: balance,
+        endingBalanceReal: toRealValue(balance, inflationRatePercent, year),
       });
       yearStartBalance = balance;
       yearDeposit = 0;
@@ -79,6 +91,7 @@ export function calculateInvestment(inputs: InvestmentInputs): InvestmentResult 
   return {
     startingAmount: inputs.startingAmount,
     endingBalance: balance,
+    endingBalanceReal: toRealValue(balance, inflationRatePercent, totalMonths / 12),
     totalContributions,
     totalInterest: balance - inputs.startingAmount - totalContributions,
     yearRows,

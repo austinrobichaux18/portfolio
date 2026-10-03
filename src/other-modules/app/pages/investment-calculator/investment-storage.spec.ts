@@ -53,7 +53,15 @@ describe('investment history persistence', () => {
       ...makeRun('2026-01-01T00:00:00.000Z'),
       householdBudget: {
         incomeEntries: [
-          { id: 'a', mode: 'yearly', yearlyAmount: 70_000, hourlyRate: 0, hoursPerWeek: 40, weeksPerYear: 52 },
+          {
+            id: 'a',
+            mode: 'yearly',
+            yearlyAmount: 70_000,
+            monthlyAmount: 0,
+            hourlyRate: 0,
+            hoursPerWeek: 40,
+            weeksPerYear: 52,
+          },
         ],
         selectedStateCode: 'CA',
         stateTaxRatePercent: 13.3,
