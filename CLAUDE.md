@@ -60,6 +60,16 @@ Directory layout:
 
 **Styling — `src/styles.scss` is the only stylesheet actually loaded** (per `angular.json`'s `styles` array). It defines its own CSS custom properties (`--bg-primary`, `--text-primary`, `--accent-orange`, `--accent-blue`, `--border`, etc.), global focus-visible/reduced-motion rules, and the animated grid/glow background. The `src/styles/` directory (`_variables.scss`, `_colors.scss`, `_typography.scss`, `_layout.scss`, `_buttons.scss`, `_cards.scss`, `_panels.scss`, `_sections.scss`, `_heroPanel.scss`, `_animations.scss`, `_others.scss`, `_container.scss`) and `theme.scss` are **not imported by anything** — dead legacy files with their own, different set of CSS variable names. Don't assume they're wired up; most components hardcode hex colors directly rather than referencing any variable system. Component-level styles live alongside each component as `<name>.scss`.
 
+### Other Modules (`src/other-modules/`)
+
+A separate tree of small standalone tools (Quiz, LocalFlix, Japanese Kana Trainer, Investment Calculator, US Career Data), lazy-loaded into the main app at `/other-modules` via `loadChildren` in `app.routes.ts` pointing at `other-modules/app/other-modules.routes.ts`. Each tool lives in its own folder under `src/other-modules/app/pages/`, mirrors the main app's model/data/page layout, and is listed on the Other Modules home page (`other-modules-home`) from `src/other-modules/app/core/data/modules.ts`.
+
+**Checklist — whenever a module here is added or meaningfully changed:**
+1. Add or update a matching case-study entry in `src/app/core/data/projects.ts` (the main `/projects` page) — keep it tech-centered (`overview`/`myRole`/`technicalChallenges`/`architecture`/`deepDive`) following the pattern already used for the other Other Modules entries there, with `link: '/projects/<id>'` and `links.demo`/`links.github` pointing at the live route and GitHub subfolder. Describe it as "a self-contained tool in this site's 'Other Modules' section" rather than counting how many tools exist (that count goes stale).
+2. Bump that module's `lastUpdated` date in `src/other-modules/app/core/data/modules.ts` to the current date.
+
+These two files live outside the module's own folder and are easy to forget — the Other Modules home page and the recruiter-facing Projects page both need to stay in sync with what's actually shipped.
+
 ### Contact form flow (frontend ↔ functions)
 
 `pages/contact/contact.ts` is a reactive form (`name`, `email`, `message` — kept deliberately minimal, no `company` field) gated by an `ngx-turnstile` (Cloudflare Turnstile) widget. On submit it POSTs `{ ...formValue, token }` to `functionUrl`, hardcoded to the real deployed function (`https://sendcontactemail-7vohdas4fa-uc.a.run.app`) — this is live and working end-to-end. On success it fires a `contact_form_submit` analytics event.
