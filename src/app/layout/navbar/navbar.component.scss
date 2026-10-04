@@ -35,6 +35,32 @@
 
 }
 
+.navbar.navbar--flush {
+
+    // relative (not static) so it still flows normally with the page but stays
+    // the positioning context for the mobile dropdown's `position: absolute` below
+    position: relative;
+
+    top: auto;
+    left: auto;
+
+    transform: none;
+
+    width: 100%;
+
+    height: auto;
+
+    min-height: 64px;
+
+    border-radius: 0;
+
+    border: none;
+    border-bottom: 1px solid rgba(255,255,255,.08);
+
+    box-shadow: none;
+
+}
+
 .logo {
 
     display:flex;

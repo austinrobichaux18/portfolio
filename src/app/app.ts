@@ -1,7 +1,7 @@
 import { Component, HostListener, inject } from '@angular/core';
-import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
 import { NavigationEnd, Router, RouterOutlet } from '@angular/router';
-import { filter } from 'rxjs';
+import { filter, map, startWith } from 'rxjs';
 
 import { AnalyticsService } from './core/services/analytics';
 import { FooterComponent } from './layout/footer/footer.component';
@@ -22,6 +22,16 @@ export class App {
   private readonly router = inject(Router);
 
   private readonly analytics = inject(AnalyticsService);
+
+  // Signal (not a plain subscription) so this zoneless app's change detection
+  // actually re-renders <main> when the route crosses into /other-modules.
+  isOtherModules = toSignal(
+    this.router.events.pipe(
+      filter((event): event is NavigationEnd => event instanceof NavigationEnd),
+      map((event) => event.urlAfterRedirects.startsWith('/other-modules')),
+      startWith(this.router.url.startsWith('/other-modules'))
+    )
+  );
 
   constructor() {
 

@@ -1,6 +1,6 @@
 <app-navbar></app-navbar>
 
-<main class="page-container">
+<main class="page-container" [class.page-container--flush]="isOtherModules()">
   <router-outlet></router-outlet>
 </main>
 
