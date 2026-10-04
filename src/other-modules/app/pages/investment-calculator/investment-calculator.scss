@@ -323,9 +323,18 @@ h1 {
 
 .history-row-result {
   flex-shrink: 0;
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
   color: #49c6ff;
   font-weight: 600;
   font-variant-numeric: tabular-nums;
+}
+
+.history-row-age {
+  color: #8f9bad;
+  font-size: 0.75rem;
+  font-weight: 400;
 }
 
 .history-delete-btn {

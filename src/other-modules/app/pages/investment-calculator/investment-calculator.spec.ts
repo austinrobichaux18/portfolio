@@ -313,6 +313,22 @@ describe('InvestmentCalculator', () => {
     expect(component.history()[0].inputs.startingAmount).toBe(5000);
   });
 
+  it('computes the age at the end of a saved run\'s horizon', () => {
+    component.setCurrentAge('30');
+    component.setYears('35');
+    component.setMonths('0');
+    component.saveCurrentToHistory();
+    const saved = component.history()[0];
+    expect(component.finalAgeFor(saved)).toBe(65);
+  });
+
+  it('omits the final age for a saved run with no current age entered', () => {
+    component.setCurrentAge('');
+    component.saveCurrentToHistory();
+    const saved = component.history()[0];
+    expect(component.finalAgeFor(saved)).toBeNull();
+  });
+
   it('restores inputs from a saved history entry', () => {
     component.setStartingAmount('5000');
     component.setCurrentAge('40');

@@ -929,6 +929,12 @@ export class InvestmentCalculator {
     saveHistory(updated);
   }
 
+  /** Age at the end of a saved run's horizon, or null when that run had no age entered. */
+  finalAgeFor(run: InvestmentRun): number | null {
+    if (run.currentAge === null) return null;
+    return Math.round(run.currentAge + run.inputs.years + run.inputs.months / 12);
+  }
+
   summaryFor(run: InvestmentRun): string {
     const i = run.inputs;
     const contributionFreq = i.contributionFrequency === 'monthly' ? '/mo' : '/yr';

@@ -62,7 +62,12 @@
             <button type="button" class="history-row-main" (click)="loadFromHistory(run)">
               <span class="history-row-date">{{ run.timestamp | date: 'medium' }}</span>
               <span class="history-row-summary">{{ summaryFor(run) }}</span>
-              <span class="history-row-result">{{ formatCurrency(run.endingBalance) }}</span>
+              <span class="history-row-result">
+                {{ formatCurrency(run.endingBalance) }}
+                @if (finalAgeFor(run); as age) {
+                  <span class="history-row-age">(Age {{ age }})</span>
+                }
+              </span>
             </button>
             <button
               type="button"
@@ -356,6 +361,21 @@
         </div>
 
         <div class="form-row">
+          <label for="current-age">Current Age (optional)</label>
+          <input
+            #currentAgeInput
+            id="current-age"
+            type="text"
+            data-numeric
+            inputmode="numeric"
+            placeholder="e.g. 30"
+            [value]="currentAge() ?? ''"
+            (input)="setCurrentAge(currentAgeInput.value)"
+            (blur)="formatNumberInputOnBlur($event)"
+          />
+        </div>
+
+        <div class="form-row">
           <div class="label-with-info">
             <label for="cost-of-living-top">Cost of Living</label>
             <select
@@ -416,21 +436,6 @@
             />
             <span>%</span>
           </div>
-        </div>
-
-        <div class="form-row">
-          <label for="current-age">Current Age (optional)</label>
-          <input
-            #currentAgeInput
-            id="current-age"
-            type="text"
-            data-numeric
-            inputmode="numeric"
-            placeholder="e.g. 30"
-            [value]="currentAge() ?? ''"
-            (input)="setCurrentAge(currentAgeInput.value)"
-            (blur)="formatNumberInputOnBlur($event)"
-          />
         </div>
 
         <button
