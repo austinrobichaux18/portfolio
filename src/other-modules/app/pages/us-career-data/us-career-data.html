@@ -384,7 +384,11 @@
       Showing {{ resultCount() | number }} of {{ occupations().length | number }} jobs
     </h2>
 
-    <div class="table-scroll">
+    <div class="table-scroll-top" #topScroll (scroll)="syncScroll(topScroll, tableScroll)">
+      <div class="table-scroll-top-spacer" [style.width.px]="tableTotalWidth()"></div>
+    </div>
+
+    <div class="table-scroll" #tableScroll (scroll)="syncScroll(tableScroll, topScroll)">
       <table class="career-table">
         <thead>
           <tr>
@@ -598,7 +602,7 @@
         <tbody>
           @for (occupation of pagedRows(); track occupation.socCode) {
             <tr
-              [class.selected-row]="selectedRowCode() === occupation.socCode"
+              [class.selected-row]="selectedRowCodes().has(occupation.socCode)"
               (click)="toggleRowSelection(occupation.socCode)"
             >
               <td [title]="occupation.socCode">{{ occupation.jobTitle }}</td>

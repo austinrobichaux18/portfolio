@@ -117,6 +117,26 @@ const DEFAULT_COLUMN_WIDTHS: Record<SortField, number> = {
   remoteWorkPotential: 180,
 };
 
+// The columns actually rendered as <th> elements, in table order. 'projectedEmploymentChangePercent'
+// is a SortField (used for the Job Outlook cell's title tooltip) but has no column of its own, so
+// it's excluded here -- this list is what the top scrollbar's width is based on.
+const RENDERED_COLUMNS: SortField[] = [
+  'jobTitle',
+  'socMajorGroup',
+  'totalEmployment',
+  'medianAnnualWage',
+  'meanAnnualWage',
+  'pct10AnnualWage',
+  'pct90AnnualWage',
+  'typicalEducationNeeded',
+  'workExperienceRequired',
+  'jobOutlookTier',
+  'projectedAnnualOpenings',
+  'jobEnvironment',
+  'aiExposure',
+  'remoteWorkPotential',
+];
+
 // Ordinal ranks for the categorical fields so sorting reflects their natural order rather than
 // alphabetical order. Education/experience ranks come from how BLS itself orders these
 // categories (least to most); the exposure/outlook ranks are this site's own scale (see
@@ -226,7 +246,7 @@ export class UsCareerData implements OnDestroy {
   private resizeStartX = 0;
   private resizeStartWidth = 0;
 
-  selectedRowCode = signal<string | null>(null);
+  selectedRowCodes = signal<ReadonlySet<string>>(new Set());
 
   loading = signal(true);
   loadError = signal(false);
@@ -506,11 +526,33 @@ export class UsCareerData implements OnDestroy {
   }
 
   toggleRowSelection(socCode: string) {
-    this.selectedRowCode.set(this.selectedRowCode() === socCode ? null : socCode);
+    const next = new Set(this.selectedRowCodes());
+    if (next.has(socCode)) {
+      next.delete(socCode);
+    } else {
+      next.add(socCode);
+    }
+    this.selectedRowCodes.set(next);
   }
 
   columnWidth(field: SortField): number {
     return this.columnWidths()[field];
+  }
+
+  // The table uses table-layout: fixed, so its rendered width is exactly the sum of the rendered
+  // columns' widths -- used to size the mirrored top scrollbar's spacer to match.
+  tableTotalWidth = computed(() => {
+    const widths = this.columnWidths();
+    return RENDERED_COLUMNS.reduce((sum, key) => sum + widths[key], 0);
+  });
+
+  private syncingScroll = false;
+
+  syncScroll(source: HTMLElement, target: HTMLElement) {
+    if (this.syncingScroll) return;
+    this.syncingScroll = true;
+    target.scrollLeft = source.scrollLeft;
+    this.syncingScroll = false;
   }
 
   startResize(event: MouseEvent, field: SortField) {

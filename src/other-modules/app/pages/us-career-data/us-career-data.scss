@@ -394,8 +394,41 @@ h1 {
   font-weight: 700;
 }
 
-.table-scroll {
+// A thin, duplicate horizontal scrollbar above the table, synced to .table-scroll's scrollLeft
+// so wide tables can be panned without first scrolling down to reach the bottom scrollbar.
+.table-scroll-top {
   overflow-x: auto;
+  overflow-y: hidden;
+  height: 16px;
+  margin-bottom: 4px;
+  scrollbar-color: rgba(73, 198, 255, 0.4) rgba(255, 255, 255, 0.05);
+
+  &::-webkit-scrollbar {
+    height: 10px;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 999px;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: rgba(73, 198, 255, 0.4);
+    border-radius: 999px;
+
+    &:hover {
+      background: rgba(73, 198, 255, 0.6);
+    }
+  }
+}
+
+.table-scroll-top-spacer {
+  height: 1px;
+}
+
+.table-scroll {
+  overflow: auto;
+  max-height: 65vh;
   border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 14px;
 }
@@ -424,6 +457,7 @@ h1 {
     user-select: none;
     position: sticky;
     top: 0;
+    z-index: 2;
 
     &:hover {
       color: #49c6ff;
