@@ -32,7 +32,14 @@ export const routes: Routes = [
   },
   {
     path: 'us-career-data',
-    loadComponent: () => import('./pages/us-career-data/us-career-data').then((m) => m.UsCareerData),
+    loadComponent: () =>
+      import('./pages/us-career-data/us-career-data').then((m) => m.UsCareerData),
     title: 'US Career Data | Austin Robichaux',
+  },
+  {
+    path: 'learning-resources',
+    loadComponent: () =>
+      import('./pages/learning-resources/learning-resources').then((m) => m.LearningResources),
+    title: 'Japanese Learning Resources | Austin Robichaux',
   },
 ];

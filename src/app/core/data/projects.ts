@@ -650,6 +650,67 @@ export const projects: Project[] = [
             github: 'https://github.com/austinrobichaux18/portfolio/tree/master/src/other-modules/app/pages/us-career-data'
         }
 
+    },
+
+    {
+        id: 'learning-resources',
+
+        title: 'Japanese Learning Resources',
+
+        description:
+            'A searchable, categorized hub of external resources for learning Japanese, with live client-side filtering across dictionaries, grammar guides, graded readers, immersion tools, and community-sourced recommendation lists.',
+
+        tags: [
+            'Angular',
+            'TypeScript',
+            'Signals'
+        ],
+
+        result:
+            'A self-contained tool in this site\'s "Other Modules" section.',
+
+        link: '/projects/learning-resources',
+
+        overview: [
+            'Collects external Japanese-learning resources (dictionary, grammar guides, comprehensible input, graded readers, Anki decks, podcasts, and community recommendation lists) into one categorized, searchable reference page.',
+            'Built as the first of this site\'s "Other Modules" content-only tools, where the value is in the organization and curation of the list rather than any interactive practice mechanic.'
+        ],
+
+        myRole:
+            'Designed the data model, wrote the categorized resource data, and built the filtering UI end-to-end.',
+
+        technicalChallenges: [
+            {
+                title: 'Live, Cross-Field Search',
+                description:
+                    'A single search box filters resources by title or description text across every category simultaneously via a computed() signal, hiding any category left with zero matches rather than showing empty sections.'
+            },
+            {
+                title: 'Data-Driven Content Model',
+                description:
+                    'Resources are plain data (category, title, optional URL, optional note) rather than hardcoded template markup, so adding or recategorizing a resource is a data-file edit, not a template change.'
+            }
+        ],
+
+        architecture: [
+            'Static categorized resource data (core/data)',
+            'Angular signals (search filter state)',
+            'computed() cross-field search'
+        ],
+
+        deepDive: [
+            {
+                title: 'Graceful Handling of Missing URLs',
+                description:
+                    'A resource\'s URL is optional in the model — entries with no stable public link (like a named Anki deck) render as plain text instead of a dead or guessed link.'
+            }
+        ],
+
+        links: {
+            demo: 'https://austinrobichaux.com/other-modules/learning-resources',
+            github: 'https://github.com/austinrobichaux18/portfolio/tree/master/src/other-modules/app/pages/learning-resources'
+        }
+
     }
 
 ];

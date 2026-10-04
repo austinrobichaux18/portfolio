@@ -1,8 +1,9 @@
 # Japanese Learning Resources — Seed Notes
 
-A curated link list for a future "Learning Resources" module (see `../TODO.md`) —
-a reference hub inside the app, plus a standalone idea for a song-transcription
-practice tool. Captured as given, not yet built into anything.
+A curated link list that became the "Learning Resources" module
+(`app/pages/learning-resources/`, data in `app/core/data/learning-resources.ts`).
+The song-transcription practice idea below is still a standalone backlog item (see
+`../TODO.md`) — an interactive tool, not just a link in the hub.
 
 ## Immersion practice
 

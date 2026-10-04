@@ -41,11 +41,6 @@ holding pen.
   (particles, verb conjugation forms, sentence structure, etc.), likely reference
   content plus some kind of practice/quiz component rather than a pure article page.
   Seed notes already captured: [`reference-notes/basic-grammar.md`](./reference-notes/basic-grammar.md).
-- **Learning resources hub** — a curated, categorized page of external Japanese
-  study resources (dictionary, grammar guides/videos, comprehensible input,
-  graded readers, Anki decks, podcasts, immersion tools, community recommendation
-  lists for media/games/YouTubers, etc.). Seed list already captured:
-  [`reference-notes/learning-resources.md`](./reference-notes/learning-resources.md).
 - **Song transcription practice** — an interactive practice tool: show song
   lyrics (or play audio) and have the user transcribe/translate them, as a way
   to drill kana writing and listening/reading comprehension. See the
@@ -54,6 +49,7 @@ holding pen.
 
 ## Notes
 
-- Existing modules: Quiz, LocalFlix, Japanese Kana, Investment Calculator.
+- Existing modules: Quiz, LocalFlix, Japanese Kana, Investment Calculator, US Career
+  Data, Learning Resources.
 - When picking one up, move it out of this list and into the actual module work —
   don't let this file describe something that's already been built.

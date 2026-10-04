@@ -40,4 +40,12 @@ export const modules: Module[] = [
     route: 'us-career-data',
     lastUpdated: '2026-10-03',
   },
+  {
+    id: 'learning-resources',
+    title: 'Japanese Learning Resources',
+    description:
+      'A searchable, categorized hub of external resources for learning Japanese: dictionaries, grammar guides, graded readers, immersion tools, and community recommendations.',
+    route: 'learning-resources',
+    lastUpdated: '2026-10-04',
+  },
 ];
