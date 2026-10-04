@@ -1,0 +1,221 @@
+<section class="page-container us-career-data-page">
+  <header class="page-header">
+    <h1>US Career Data</h1>
+    <p>
+      Browse national employment and wage figures for ~830 occupations, straight from the BLS
+      Occupational Employment and Wage Statistics (OEWS) program.
+    </p>
+  </header>
+
+  <div class="source-note">
+    <div class="source-note-text">
+      <h2>Data Source</h2>
+      <p>
+        All figures are the May 2025 national, cross-industry estimates from the BLS
+        <a href="https://www.bls.gov/oes/" target="_blank" rel="noopener"
+          >Occupational Employment and Wage Statistics (OEWS)</a
+        >
+        program, downloaded directly from the BLS
+        <a href="https://www.bls.gov/oes/tables.htm" target="_blank" rel="noopener"
+          >OEWS data tables page</a
+        >
+        ("All data" file). Every column below is a field BLS publishes directly &mdash; nothing on
+        this page is modeled, estimated, or inferred.
+      </p>
+      <p class="last-updated">Data pulled and last updated 10/2026 (May 2025 OEWS release).</p>
+    </div>
+    <button type="button" class="info-toggle" (click)="toggleGlossary()">
+      {{ showGlossary() ? 'Hide' : 'ⓘ What do these columns mean?' }}
+    </button>
+  </div>
+
+  @if (showGlossary()) {
+    <dl class="glossary-panel">
+      @for (entry of columnGlossary; track entry.column) {
+        <div class="glossary-entry">
+          <dt>{{ entry.column }}</dt>
+          <dd>{{ entry.description }}</dd>
+        </div>
+      }
+    </dl>
+  }
+
+  @if (loading()) {
+    <p class="status-message">Loading career data…</p>
+  } @else if (loadError()) {
+    <p class="status-message error">Couldn't load the career data. Try refreshing the page.</p>
+  } @else {
+    <div class="summary-row">
+      <div class="summary-stat">
+        <span class="summary-value">{{ resultCount() }}</span>
+        <span class="summary-label">Occupations matched</span>
+      </div>
+      <div class="summary-stat">
+        <span class="summary-value">{{
+          averageMedianAnnualWage() | currency: 'USD' : 'symbol' : '1.0-0'
+        }}</span>
+        <span class="summary-label">Average median annual wage</span>
+      </div>
+    </div>
+
+    <div class="filter-bar">
+      <input
+        class="search-input"
+        type="search"
+        placeholder="Search job title…"
+        [ngModel]="search()"
+        (ngModelChange)="setFilter(search, $event)"
+      />
+
+      <select [ngModel]="socGroupFilter()" (ngModelChange)="setFilter(socGroupFilter, $event)">
+        <option value="All">All SOC groups</option>
+        @for (group of socGroups(); track group) {
+          <option [value]="group">{{ group }}</option>
+        }
+      </select>
+    </div>
+
+    <div class="range-filters">
+      <div class="range-filter">
+        <label
+          >Median Annual Wage:
+          {{ salaryMin() | currency: 'USD' : 'symbol' : '1.0-0' }} &ndash;
+          {{ salaryMax() | currency: 'USD' : 'symbol' : '1.0-0' }}</label
+        >
+        <div class="dual-range">
+          <input
+            type="range"
+            class="range-min"
+            [min]="salaryBounds().min"
+            [max]="salaryBounds().max"
+            step="1000"
+            [ngModel]="salaryMin()"
+            (ngModelChange)="setSalaryMin($event)"
+          />
+          <input
+            type="range"
+            class="range-max"
+            [min]="salaryBounds().min"
+            [max]="salaryBounds().max"
+            step="1000"
+            [ngModel]="salaryMax()"
+            (ngModelChange)="setSalaryMax($event)"
+          />
+        </div>
+      </div>
+
+      <div class="range-filter">
+        <label
+          >Total Employment:
+          {{ employmentMin() | number }} &ndash;
+          {{ employmentMax() | number }}</label
+        >
+        <div class="dual-range">
+          <input
+            type="range"
+            class="range-min"
+            [min]="employmentBounds().min"
+            [max]="employmentBounds().max"
+            step="1000"
+            [ngModel]="employmentMin()"
+            (ngModelChange)="setEmploymentMin($event)"
+          />
+          <input
+            type="range"
+            class="range-max"
+            [min]="employmentBounds().min"
+            [max]="employmentBounds().max"
+            step="1000"
+            [ngModel]="employmentMax()"
+            (ngModelChange)="setEmploymentMax($event)"
+          />
+        </div>
+      </div>
+    </div>
+
+    <div class="table-scroll">
+      <table class="career-table">
+        <thead>
+          <tr>
+            <th (click)="sortBy('jobTitle')">Job Title {{ sortIndicator('jobTitle') }}</th>
+            <th (click)="sortBy('socMajorGroup')">
+              SOC Group {{ sortIndicator('socMajorGroup') }}
+            </th>
+            <th class="numeric" (click)="sortBy('totalEmployment')">
+              Total Employment {{ sortIndicator('totalEmployment') }}
+            </th>
+            <th class="numeric" (click)="sortBy('medianAnnualWage')">
+              Median Annual {{ sortIndicator('medianAnnualWage') }}
+            </th>
+            <th class="numeric" (click)="sortBy('meanAnnualWage')">
+              Mean Annual {{ sortIndicator('meanAnnualWage') }}
+            </th>
+            <th class="numeric" (click)="sortBy('pct10AnnualWage')">
+              10th %ile Annual {{ sortIndicator('pct10AnnualWage') }}
+            </th>
+            <th class="numeric" (click)="sortBy('pct90AnnualWage')">
+              90th %ile Annual {{ sortIndicator('pct90AnnualWage') }}
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (occupation of pagedRows(); track occupation.socCode) {
+            <tr>
+              <td [title]="occupation.socCode">{{ occupation.jobTitle }}</td>
+              <td>{{ occupation.socMajorGroup }}</td>
+              <td class="numeric">{{ (occupation.totalEmployment | number) ?? '—' }}</td>
+              <td class="numeric">
+                @if (occupation.medianAnnualWage !== null) {
+                  {{ occupation.medianAnnualWage | currency: 'USD' : 'symbol' : '1.0-0' }}
+                } @else {
+                  &mdash;
+                }
+              </td>
+              <td class="numeric">
+                @if (occupation.meanAnnualWage !== null) {
+                  {{ occupation.meanAnnualWage | currency: 'USD' : 'symbol' : '1.0-0' }}
+                } @else {
+                  &mdash;
+                }
+              </td>
+              <td class="numeric">
+                @if (occupation.pct10AnnualWage !== null) {
+                  {{ occupation.pct10AnnualWage | currency: 'USD' : 'symbol' : '1.0-0' }}
+                } @else {
+                  &mdash;
+                }
+              </td>
+              <td class="numeric">
+                @if (occupation.pct90AnnualWage !== null) {
+                  {{ occupation.pct90AnnualWage | currency: 'USD' : 'symbol' : '1.0-0' }}
+                } @else {
+                  &mdash;
+                }
+              </td>
+            </tr>
+          } @empty {
+            <tr>
+              <td colspan="7" class="no-results">No occupations match these filters.</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+
+    @if (totalPages() > 1) {
+      <div class="pagination">
+        <button type="button" (click)="goToPage(page() - 1)" [disabled]="page() === 1">Prev</button>
+        <span>Page {{ page() }} of {{ totalPages() }}</span>
+        <button type="button" (click)="goToPage(page() + 1)" [disabled]="page() === totalPages()">
+          Next
+        </button>
+      </div>
+    }
+
+    <p class="data-note">
+      Occupations with only hourly or only annual wages published by BLS show &mdash; for the
+      unavailable figure. See "What do these columns mean?" above for full column definitions and
+      sourcing.
+    </p>
+  }
+</section>

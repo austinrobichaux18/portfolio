@@ -30,4 +30,9 @@ export const routes: Routes = [
       ),
     title: 'Investment Calculator | Austin Robichaux',
   },
+  {
+    path: 'us-career-data',
+    loadComponent: () => import('./pages/us-career-data/us-career-data').then((m) => m.UsCareerData),
+    title: 'US Career Data | Austin Robichaux',
+  },
 ];

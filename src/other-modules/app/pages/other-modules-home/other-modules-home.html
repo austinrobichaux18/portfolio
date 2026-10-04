@@ -9,6 +9,7 @@
       <a class="module-card" [routerLink]="['/other-modules', m.route]">
         <h2>{{ m.title }}</h2>
         <p>{{ m.description }}</p>
+        <p class="last-updated">Last updated: {{ m.lastUpdated | date: 'MMM d, y' }}</p>
       </a>
     }
   </div>

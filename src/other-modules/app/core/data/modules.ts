@@ -7,12 +7,14 @@ export const modules: Module[] = [
     description:
       'Load a folder of quiz JSON files and test yourself, with score history saved back to the folder.',
     route: 'quiz',
+    lastUpdated: '2026-09-12',
   },
   {
     id: 'localflix',
     title: 'LocalFlix',
     description: 'Browse a folder of shows and episodes and pick up watching where you left off.',
     route: 'localflix',
+    lastUpdated: '2026-10-02',
   },
   {
     id: 'kana',
@@ -20,6 +22,7 @@ export const modules: Module[] = [
     description:
       'Drill hiragana and katakana with adaptive practice that focuses on the characters you miss most.',
     route: 'kana',
+    lastUpdated: '2026-10-02',
   },
   {
     id: 'investment-calculator',
@@ -27,5 +30,14 @@ export const modules: Module[] = [
     description:
       'Project ending balance, contributions, and interest from a starting amount and regular contributions, plus a household budget widget and sourced FIRE/retirement advice.',
     route: 'investment-calculator',
+    lastUpdated: '2026-10-03',
+  },
+  {
+    id: 'us-career-data',
+    title: 'US Career Data',
+    description:
+      'Search, filter, and sort national employment and wage data for ~830 US occupations, straight from the BLS OEWS program.',
+    route: 'us-career-data',
+    lastUpdated: '2026-10-03',
   },
 ];

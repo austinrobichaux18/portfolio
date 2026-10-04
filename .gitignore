@@ -42,3 +42,6 @@ __screenshots__/
 # System files
 .DS_Store
 Thumbs.db
+
+# Raw source data (large downloads kept locally, not published)
+/src/other-modules/raw-data/
