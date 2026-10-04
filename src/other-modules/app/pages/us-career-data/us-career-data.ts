@@ -1,4 +1,4 @@
-import { Component, WritableSignal, computed, inject, signal } from '@angular/core';
+import { Component, OnDestroy, WritableSignal, computed, inject, signal } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { FormsModule } from '@angular/forms';
 import { CurrencyPipe, DecimalPipe } from '@angular/common';
@@ -34,7 +34,88 @@ interface Range {
   max: number;
 }
 
+type RangeFilterKey =
+  | 'medianAnnualWage'
+  | 'meanAnnualWage'
+  | 'pct10AnnualWage'
+  | 'pct90AnnualWage'
+  | 'totalEmployment'
+  | 'projectedAnnualOpenings';
+
+interface RangeFilterConfig {
+  key: RangeFilterKey;
+  label: string;
+  hint: string;
+  format: 'currency' | 'number';
+}
+
+interface RangeFilterSignals {
+  bounds: WritableSignal<Range>;
+  min: WritableSignal<number>;
+  max: WritableSignal<number>;
+}
+
+const RANGE_FILTER_CONFIGS: RangeFilterConfig[] = [
+  {
+    key: 'medianAnnualWage',
+    label: 'Median Annual Salary',
+    hint: 'Only show jobs that typically pay in this range.',
+    format: 'currency',
+  },
+  {
+    key: 'meanAnnualWage',
+    label: 'Average Salary',
+    hint: 'Only show jobs whose average pay falls in this range.',
+    format: 'currency',
+  },
+  {
+    key: 'pct10AnnualWage',
+    label: 'Low-End Pay',
+    hint: 'Only show jobs whose lowest-paid workers (bottom 10%) earn in this range.',
+    format: 'currency',
+  },
+  {
+    key: 'pct90AnnualWage',
+    label: 'High-End Pay',
+    hint: 'Only show jobs whose highest-paid workers (top 10%) earn in this range.',
+    format: 'currency',
+  },
+  {
+    key: 'totalEmployment',
+    label: 'Total Employment',
+    hint: 'Only show jobs with about this many people currently working in them.',
+    format: 'number',
+  },
+  {
+    key: 'projectedAnnualOpenings',
+    label: 'Annual Openings',
+    hint: 'Only show jobs with about this many expected job openings per year.',
+    format: 'number',
+  },
+];
+
 const PAGE_SIZE = 25;
+const MIN_COLUMN_WIDTH = 80;
+
+// Starting pixel width for each table column. Users can drag a column's right edge to resize it;
+// these are just the initial sizes.
+const DEFAULT_COLUMN_WIDTHS: Record<SortField, number> = {
+  jobTitle: 220,
+  socMajorGroup: 240,
+  totalEmployment: 140,
+  medianAnnualWage: 150,
+  meanAnnualWage: 140,
+  pct10AnnualWage: 130,
+  pct90AnnualWage: 130,
+  typicalEducationNeeded: 200,
+  workExperienceRequired: 190,
+  projectedEmploymentChangePercent: 140,
+  jobOutlookTier: 170,
+  projectedAnnualOpenings: 140,
+  jobEnvironment: 150,
+  aiExposure: 130,
+  remoteWorkPotential: 180,
+};
 
 // Ordinal ranks for the categorical fields so sorting reflects their natural order rather than
 // alphabetical order. Education/experience ranks come from how BLS itself orders these
@@ -77,14 +158,75 @@ const RANK_MAPS: Partial<Record<SortField, Record<string, number>>> = {
   jobOutlookTier: OUTLOOK_RANK,
 };
 
+// Plain-language versions of the real BLS category names, shown in the UI instead of the
+// official wording. Sorting, filtering, and the underlying data still use the real BLS text
+// above (the keys here) -- these are display-only.
+const JOB_OUTLOOK_LABELS: Record<string, string> = {
+  Declining: 'Shrinking (Fewer Jobs)',
+  'Little or No Change': 'About the Same',
+  'Slower Than Average': 'Growing Slowly',
+  Average: 'Growing at a Normal Rate',
+  'Faster Than Average': 'Growing Fast',
+  'Much Faster Than Average': 'Growing Very Fast',
+};
+
+const EDUCATION_LABELS: Record<string, string> = {
+  'No formal educational credential': 'No Degree Needed',
+  'High school diploma or equivalent': 'High School Diploma',
+  'Some college, no degree': 'Some College, No Degree',
+  'Postsecondary nondegree award': 'Trade School / Certificate',
+  "Associate's degree": '2-Year College Degree',
+  "Bachelor's degree": '4-Year College Degree',
+  "Master's degree": "Master's Degree (Grad School)",
+  'Doctoral or professional degree': 'Doctorate or Professional Degree (PhD, MD, JD)',
+};
+
+const EXPERIENCE_LABELS: Record<string, string> = {
+  None: 'No Experience Needed',
+  'Less than 5 years': 'Some Experience (Under 5 Years)',
+  '5 years or more': 'Lots of Experience (5+ Years)',
+};
+
+// Hover-tooltip text for each table column, reusing the exact same explanations shown in the
+// "What do these columns mean?" glossary panel above the table.
+const glossaryByColumn = new Map(COLUMN_GLOSSARY.map((e) => [e.column, e.description]));
+const ESTIMATE_COLUMNS_TOOLTIP = glossaryByColumn.get(
+  'Job Environment, AI Exposure, Remote-Work Potential',
+)!;
+const LOW_HIGH_PAY_TOOLTIP = glossaryByColumn.get('Low-End / High-End Pay')!;
+
+const COLUMN_TOOLTIPS: Record<string, string> = {
+  jobTitle: glossaryByColumn.get('Job Title')!,
+  socMajorGroup: glossaryByColumn.get('Job Category')!,
+  totalEmployment: glossaryByColumn.get('Total Employment')!,
+  medianAnnualWage: glossaryByColumn.get('Median Annual Salary')!,
+  meanAnnualWage: glossaryByColumn.get('Average Salary (Mean Annual Wage)')!,
+  pct10AnnualWage: LOW_HIGH_PAY_TOOLTIP,
+  pct90AnnualWage: LOW_HIGH_PAY_TOOLTIP,
+  typicalEducationNeeded: glossaryByColumn.get('Education Needed')!,
+  workExperienceRequired: glossaryByColumn.get('Experience Required')!,
+  jobOutlookTier: glossaryByColumn.get('Job Outlook')!,
+  projectedAnnualOpenings: glossaryByColumn.get('Annual Openings')!,
+  jobEnvironment: ESTIMATE_COLUMNS_TOOLTIP,
+  aiExposure: ESTIMATE_COLUMNS_TOOLTIP,
+  remoteWorkPotential: ESTIMATE_COLUMNS_TOOLTIP,
+};
+
 @Component({
   selector: 'app-us-career-data',
   imports: [FormsModule, CurrencyPipe, DecimalPipe],
   templateUrl: './us-career-data.html',
   styleUrl: './us-career-data.scss',
 })
-export class UsCareerData {
+export class UsCareerData implements OnDestroy {
   private readonly http = inject(HttpClient);
+
+  columnWidths = signal<Record<SortField, number>>({ ...DEFAULT_COLUMN_WIDTHS });
+  resizingField = signal<SortField | null>(null);
+  private resizeStartX = 0;
+  private resizeStartWidth = 0;
+
+  selectedRowCode = signal<string | null>(null);
 
   loading = signal(true);
   loadError = signal(false);
@@ -92,20 +234,32 @@ export class UsCareerData {
   occupations = signal<CareerRow[]>([]);
 
   search = signal('');
-  socGroupFilter = signal('All');
-  jobEnvironmentFilter = signal('All');
-  aiExposureFilter = signal('All');
-  remoteWorkFilter = signal('All');
-  jobOutlookFilter = signal('All');
-  educationFilter = signal('All');
+  socGroupFilter = signal<ReadonlySet<string>>(new Set());
+  jobEnvironmentFilter = signal<ReadonlySet<string>>(new Set());
+  aiExposureFilter = signal<ReadonlySet<string>>(new Set());
+  remoteWorkFilter = signal<ReadonlySet<string>>(new Set());
+  jobOutlookFilter = signal<ReadonlySet<string>>(new Set());
+  educationFilter = signal<ReadonlySet<string>>(new Set());
+  experienceFilter = signal<ReadonlySet<string>>(new Set());
 
-  salaryBounds = signal<Range>({ min: 0, max: 0 });
-  salaryMin = signal(0);
-  salaryMax = signal(0);
+  private readonly tileFilterSignals: WritableSignal<ReadonlySet<string>>[] = [
+    this.socGroupFilter,
+    this.jobEnvironmentFilter,
+    this.aiExposureFilter,
+    this.remoteWorkFilter,
+    this.jobOutlookFilter,
+    this.educationFilter,
+    this.experienceFilter,
+  ];
 
-  employmentBounds = signal<Range>({ min: 0, max: 0 });
-  employmentMin = signal(0);
-  employmentMax = signal(0);
+  readonly rangeFilterConfigs = RANGE_FILTER_CONFIGS;
+
+  private readonly rangeSignals: Map<RangeFilterKey, RangeFilterSignals> = new Map(
+    RANGE_FILTER_CONFIGS.map((config) => [
+      config.key,
+      { bounds: signal<Range>({ min: 0, max: 0 }), min: signal(0), max: signal(0) },
+    ]),
+  );
 
   sortField = signal<SortField>('medianAnnualWage');
   sortDirection = signal<SortDirection>('desc');
@@ -113,13 +267,13 @@ export class UsCareerData {
   page = signal(1);
 
   showGlossary = signal(false);
+  filtersExpanded = signal(true);
+  socGroupExpanded = signal(false);
+  educationExpanded = signal(false);
 
   readonly columnGlossary = COLUMN_GLOSSARY;
 
-  private distinctValues(
-    field: keyof CareerRow,
-    rankMap?: Record<string, number>,
-  ): string[] {
+  private distinctValues(field: keyof CareerRow, rankMap?: Record<string, number>): string[] {
     const values = new Set(this.occupations().map((o) => String(o[field])));
     const arr = [...values];
     arr.sort((a, b) => (rankMap ? (rankMap[a] ?? 0) - (rankMap[b] ?? 0) : a.localeCompare(b)));
@@ -132,6 +286,9 @@ export class UsCareerData {
   remoteWorkOptions = computed(() => this.distinctValues('remoteWorkPotential', REMOTE_RANK));
   jobOutlookOptions = computed(() => this.distinctValues('jobOutlookTier', OUTLOOK_RANK));
   educationOptions = computed(() => this.distinctValues('typicalEducationNeeded', EDUCATION_RANK));
+  experienceOptions = computed(() =>
+    this.distinctValues('workExperienceRequired', EXPERIENCE_RANK),
+  );
 
   filtered = computed(() => {
     const search = this.search().trim().toLowerCase();
@@ -141,35 +298,30 @@ export class UsCareerData {
     const remoteWork = this.remoteWorkFilter();
     const jobOutlook = this.jobOutlookFilter();
     const education = this.educationFilter();
+    const experience = this.experienceFilter();
     const field = this.sortField();
     const direction = this.sortDirection();
 
-    const salaryBounds = this.salaryBounds();
-    const salaryMin = this.salaryMin();
-    const salaryMax = this.salaryMax();
-    const salaryFilterActive = salaryMin > salaryBounds.min || salaryMax < salaryBounds.max;
-
-    const employmentBounds = this.employmentBounds();
-    const employmentMin = this.employmentMin();
-    const employmentMax = this.employmentMax();
-    const employmentFilterActive =
-      employmentMin > employmentBounds.min || employmentMax < employmentBounds.max;
+    const activeRanges = RANGE_FILTER_CONFIGS.map((config) => {
+      const group = this.rangeSignals.get(config.key)!;
+      const bounds = group.bounds();
+      const min = group.min();
+      const max = group.max();
+      return { key: config.key, min, max, active: min > bounds.min || max < bounds.max };
+    }).filter((r) => r.active);
 
     const rows = this.occupations().filter((o) => {
-      if (socGroup !== 'All' && o.socMajorGroup !== socGroup) return false;
-      if (jobEnvironment !== 'All' && o.jobEnvironment !== jobEnvironment) return false;
-      if (aiExposure !== 'All' && o.aiExposure !== aiExposure) return false;
-      if (remoteWork !== 'All' && o.remoteWorkPotential !== remoteWork) return false;
-      if (jobOutlook !== 'All' && o.jobOutlookTier !== jobOutlook) return false;
-      if (education !== 'All' && o.typicalEducationNeeded !== education) return false;
+      if (socGroup.size > 0 && !socGroup.has(o.socMajorGroup)) return false;
+      if (jobEnvironment.size > 0 && !jobEnvironment.has(o.jobEnvironment)) return false;
+      if (aiExposure.size > 0 && !aiExposure.has(o.aiExposure)) return false;
+      if (remoteWork.size > 0 && !remoteWork.has(o.remoteWorkPotential)) return false;
+      if (jobOutlook.size > 0 && !jobOutlook.has(o.jobOutlookTier)) return false;
+      if (education.size > 0 && !education.has(o.typicalEducationNeeded)) return false;
+      if (experience.size > 0 && !experience.has(o.workExperienceRequired)) return false;
       if (search && !o.jobTitle.toLowerCase().includes(search)) return false;
-      if (salaryFilterActive) {
-        if (o.medianAnnualWage === null) return false;
-        if (o.medianAnnualWage < salaryMin || o.medianAnnualWage > salaryMax) return false;
-      }
-      if (employmentFilterActive) {
-        if (o.totalEmployment === null) return false;
-        if (o.totalEmployment < employmentMin || o.totalEmployment > employmentMax) return false;
+      for (const r of activeRanges) {
+        const value = o[r.key] as number | null;
+        if (value === null || value < r.min || value > r.max) return false;
       }
       return true;
     });
@@ -201,11 +353,27 @@ export class UsCareerData {
 
   resultCount = computed(() => this.filtered().length);
 
+  hasActiveFilters = computed(() => {
+    if (this.search().trim().length > 0) return true;
+    if (this.tileFilterSignals.some((sig) => sig().size > 0)) return true;
+    return RANGE_FILTER_CONFIGS.some((config) => {
+      const group = this.rangeSignals.get(config.key)!;
+      const bounds = group.bounds();
+      return group.min() > bounds.min || group.max() < bounds.max;
+    });
+  });
+
   averageMedianAnnualWage = computed(() => {
     const rows = this.filtered().filter((o) => o.medianAnnualWage !== null);
     if (rows.length === 0) return 0;
     return rows.reduce((sum, o) => sum + (o.medianAnnualWage ?? 0), 0) / rows.length;
   });
+
+  // Summed once (via computed()'s own caching) across every occupation in the dataset, not just
+  // the filtered rows -- this is the fixed denominator each row's employment share is based on.
+  totalEmploymentSum = computed(() =>
+    this.occupations().reduce((sum, o) => sum + (o.totalEmployment ?? 0), 0),
+  );
 
   totalPages = computed(() => Math.max(1, Math.ceil(this.resultCount() / PAGE_SIZE)));
 
@@ -227,21 +395,16 @@ export class UsCareerData {
         });
         this.occupations.set(data);
 
-        const wages = data
-          .map((o) => o.medianAnnualWage)
-          .filter((w): w is number => w !== null);
-        const salaryBounds = { min: Math.min(...wages), max: Math.max(...wages) };
-        this.salaryBounds.set(salaryBounds);
-        this.salaryMin.set(salaryBounds.min);
-        this.salaryMax.set(salaryBounds.max);
-
-        const employment = data
-          .map((o) => o.totalEmployment)
-          .filter((e): e is number => e !== null);
-        const employmentBounds = { min: Math.min(...employment), max: Math.max(...employment) };
-        this.employmentBounds.set(employmentBounds);
-        this.employmentMin.set(employmentBounds.min);
-        this.employmentMax.set(employmentBounds.max);
+        for (const config of RANGE_FILTER_CONFIGS) {
+          const values = data
+            .map((o) => o[config.key] as number | null)
+            .filter((v): v is number => v !== null);
+          const bounds = { min: Math.min(...values), max: Math.max(...values) };
+          const group = this.rangeSignals.get(config.key)!;
+          group.bounds.set(bounds);
+          group.min.set(bounds.min);
+          group.max.set(bounds.max);
+        }
 
         this.loading.set(false);
       },
@@ -257,28 +420,70 @@ export class UsCareerData {
     this.page.set(1);
   }
 
-  setSalaryMin(value: number) {
-    this.salaryMin.set(Math.min(value, this.salaryMax()));
+  toggleFilterValue(sig: WritableSignal<ReadonlySet<string>>, value: string) {
+    const next = new Set(sig());
+    if (next.has(value)) {
+      next.delete(value);
+    } else {
+      next.add(value);
+    }
+    sig.set(next);
     this.page.set(1);
   }
 
-  setSalaryMax(value: number) {
-    this.salaryMax.set(Math.max(value, this.salaryMin()));
+  clearFilterGroup(sig: WritableSignal<ReadonlySet<string>>) {
+    sig.set(new Set());
     this.page.set(1);
   }
 
-  setEmploymentMin(value: number) {
-    this.employmentMin.set(Math.min(value, this.employmentMax()));
+  resetAllFilters() {
+    this.search.set('');
+    for (const sig of this.tileFilterSignals) {
+      sig.set(new Set());
+    }
+    for (const config of RANGE_FILTER_CONFIGS) {
+      const group = this.rangeSignals.get(config.key)!;
+      const bounds = group.bounds();
+      group.min.set(bounds.min);
+      group.max.set(bounds.max);
+    }
     this.page.set(1);
   }
 
-  setEmploymentMax(value: number) {
-    this.employmentMax.set(Math.max(value, this.employmentMin()));
+  selectedValues(sig: WritableSignal<ReadonlySet<string>>): string[] {
+    return [...sig()];
+  }
+
+  rangeBounds(key: RangeFilterKey): Range {
+    return this.rangeSignals.get(key)!.bounds();
+  }
+
+  rangeMin(key: RangeFilterKey): number {
+    return this.rangeSignals.get(key)!.min();
+  }
+
+  rangeMax(key: RangeFilterKey): number {
+    return this.rangeSignals.get(key)!.max();
+  }
+
+  setRangeMin(key: RangeFilterKey, value: number) {
+    const group = this.rangeSignals.get(key)!;
+    group.min.set(Math.min(value, group.max()));
+    this.page.set(1);
+  }
+
+  setRangeMax(key: RangeFilterKey, value: number) {
+    const group = this.rangeSignals.get(key)!;
+    group.max.set(Math.max(value, group.min()));
     this.page.set(1);
   }
 
   toggleGlossary() {
     this.showGlossary.set(!this.showGlossary());
+  }
+
+  toggleExpanded(sig: WritableSignal<boolean>) {
+    sig.set(!sig());
   }
 
   sortBy(field: SortField) {
@@ -298,6 +503,74 @@ export class UsCareerData {
 
   goToPage(page: number) {
     this.page.set(Math.min(Math.max(1, page), this.totalPages()));
+  }
+
+  toggleRowSelection(socCode: string) {
+    this.selectedRowCode.set(this.selectedRowCode() === socCode ? null : socCode);
+  }
+
+  columnWidth(field: SortField): number {
+    return this.columnWidths()[field];
+  }
+
+  startResize(event: MouseEvent, field: SortField) {
+    event.preventDefault();
+    event.stopPropagation();
+    this.resizingField.set(field);
+    this.resizeStartX = event.clientX;
+    this.resizeStartWidth = this.columnWidths()[field];
+    window.addEventListener('mousemove', this.onResizeMove);
+    window.addEventListener('mouseup', this.onResizeEnd);
+  }
+
+  resetColumnWidth(event: MouseEvent, field: SortField) {
+    event.preventDefault();
+    event.stopPropagation();
+    this.columnWidths.update((widths) => ({ ...widths, [field]: DEFAULT_COLUMN_WIDTHS[field] }));
+  }
+
+  private onResizeMove = (event: MouseEvent) => {
+    const field = this.resizingField();
+    if (!field) return;
+    const delta = event.clientX - this.resizeStartX;
+    const newWidth = Math.max(MIN_COLUMN_WIDTH, this.resizeStartWidth + delta);
+    this.columnWidths.update((widths) => ({ ...widths, [field]: newWidth }));
+  };
+
+  private onResizeEnd = () => {
+    this.resizingField.set(null);
+    window.removeEventListener('mousemove', this.onResizeMove);
+    window.removeEventListener('mouseup', this.onResizeEnd);
+  };
+
+  ngOnDestroy() {
+    window.removeEventListener('mousemove', this.onResizeMove);
+    window.removeEventListener('mouseup', this.onResizeEnd);
+  }
+
+  jobOutlookLabel(tier: string): string {
+    return JOB_OUTLOOK_LABELS[tier] ?? tier;
+  }
+
+  educationLabel(level: string): string {
+    return EDUCATION_LABELS[level] ?? level;
+  }
+
+  experienceLabel(level: string): string {
+    return EXPERIENCE_LABELS[level] ?? level;
+  }
+
+  columnTooltip(field: SortField): string {
+    return COLUMN_TOOLTIPS[field] ?? '';
+  }
+
+  employmentShareTooltip(value: number | null): string {
+    if (value === null) return '';
+    const total = this.totalEmploymentSum();
+    if (total === 0) return '';
+    const pct = (value / total) * 100;
+    const pctText = pct < 0.01 ? pct.toFixed(4) : pct < 1 ? pct.toFixed(3) : pct.toFixed(2);
+    return `${pctText}% of the ${total.toLocaleString()} total jobs summed across every occupation in this dataset`;
   }
 
   outlookClass(tier: string): string {

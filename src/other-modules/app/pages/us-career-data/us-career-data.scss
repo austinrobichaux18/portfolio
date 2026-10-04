@@ -173,8 +173,7 @@ h1 {
   gap: 10px;
   margin-bottom: 20px;
 
-  input,
-  select {
+  input {
     padding: 10px 12px;
     background: #111827;
     border: 1px solid rgba(255, 255, 255, 0.12);
@@ -191,29 +190,131 @@ h1 {
   .search-input {
     flex: 1 1 220px;
   }
+}
 
-  select {
-    flex: 1 1 160px;
+.link-btn {
+  padding: 0;
+  border: none;
+  background: none;
+  color: #49c6ff;
+  font-size: 0.78rem;
+  cursor: pointer;
+
+  &:hover {
+    opacity: 0.8;
   }
 }
 
-.range-filters {
+.filters-panel {
+  margin-bottom: 20px;
+  padding: 16px 20px;
+  background: rgba(23, 31, 43, 0.5);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+}
+
+.filters-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+
+  h2 {
+    margin: 0;
+    color: #d6dde6;
+    font-size: 0.78rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+}
+
+.filters-panel-actions {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.filters-panel .filter-bar {
+  margin-top: 16px;
+}
+
+.tile-filters {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-top: 16px;
+}
+
+.tile-group-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 8px;
+
+  h3 {
+    margin: 0;
+    color: #8f9bad;
+    font-size: 0.78rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+
+  .estimate-mark {
+    color: #ffc107;
+  }
+}
+
+.tile-group-actions {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-shrink: 0;
+}
+
+.tile-group-hint {
+  margin: 0 0 10px;
+  color: #6b7686;
+  font-size: 0.8rem;
+}
+
+.tile-row {
   display: flex;
   flex-wrap: wrap;
-  gap: 24px;
-  margin-bottom: 20px;
+  gap: 8px;
 }
 
-.range-filter {
-  flex: 1 1 260px;
-  min-width: 220px;
+.filter-tile {
+  padding: 7px 14px;
+  background: #111827;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 999px;
+  color: #d6dde6;
+  font-size: 0.82rem;
+  cursor: pointer;
+  transition:
+    border-color 0.15s ease,
+    color 0.15s ease,
+    background 0.15s ease;
 
-  label {
-    display: block;
-    margin-bottom: 10px;
-    color: #8f9bad;
-    font-size: 0.82rem;
+  &:hover {
+    border-color: #49c6ff;
   }
+
+  &.selected {
+    background: rgba(73, 198, 255, 0.15);
+    border-color: #49c6ff;
+    color: #49c6ff;
+  }
+}
+
+.range-value {
+  margin-bottom: 10px;
+  color: #d6dde6;
+  font-size: 0.85rem;
+  font-weight: 600;
 }
 
 .dual-range {
@@ -272,6 +373,13 @@ h1 {
   }
 }
 
+.results-heading {
+  margin: 0 0 10px;
+  color: #d6dde6;
+  font-size: 1.05rem;
+  font-weight: 700;
+}
+
 .table-scroll {
   overflow-x: auto;
   border: 1px solid rgba(255, 255, 255, 0.08);
@@ -280,6 +388,7 @@ h1 {
 
 .career-table {
   width: 100%;
+  table-layout: fixed;
   border-collapse: collapse;
   font-size: 0.85rem;
   white-space: nowrap;
@@ -289,6 +398,8 @@ h1 {
     padding: 10px 14px;
     text-align: left;
     border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 
   th {
@@ -305,6 +416,31 @@ h1 {
     }
   }
 
+  .col-resize-handle {
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 8px;
+    height: 100%;
+    cursor: col-resize;
+    touch-action: none;
+
+    &::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      right: 3px;
+      width: 2px;
+      height: 100%;
+      background: rgba(255, 255, 255, 0.12);
+    }
+
+    &:hover::after,
+    &.resizing::after {
+      background: #49c6ff;
+    }
+  }
+
   td {
     color: #d6dde6;
   }
@@ -317,8 +453,24 @@ h1 {
     border-left: 1px dashed rgba(255, 193, 7, 0.3);
   }
 
+  tbody tr {
+    cursor: pointer;
+  }
+
   tbody tr:hover {
     background: rgba(73, 198, 255, 0.05);
+  }
+
+  tbody tr.selected-row {
+    background: rgba(73, 198, 255, 0.14);
+
+    &:hover {
+      background: rgba(73, 198, 255, 0.18);
+    }
+
+    td:first-child {
+      box-shadow: inset 3px 0 0 #49c6ff;
+    }
   }
 
   .no-results {

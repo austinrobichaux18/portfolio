@@ -2,39 +2,35 @@
   <header class="page-header">
     <h1>US Career Data</h1>
     <p>
-      Browse national employment and wage figures, real BLS education/experience/outlook data,
-      and this site's own job-environment, AI-exposure, and remote-work estimates for ~830 US
-      occupations.
+      See how much different jobs pay, how much schooling they need, and whether they're growing or
+      shrinking &mdash; using real U.S. government data for about 830 jobs.
     </p>
   </header>
 
   <div class="source-note">
     <div class="source-note-text">
-      <h2>Real BLS Data</h2>
+      <h2>Real Government Data</h2>
       <p>
-        Wages, total employment, and the 10th/90th percentile wage range are the May 2025
-        national, cross-industry estimates from the BLS
-        <a href="https://www.bls.gov/oes/" target="_blank" rel="noopener"
-          >Occupational Employment and Wage Statistics (OEWS)</a
-        >
-        program, from the BLS
+        Pay and how many people have each job come from the government's official wage survey (<a
+          href="https://www.bls.gov/oes/"
+          target="_blank"
+          rel="noopener"
+          >Bureau of Labor Statistics, Occupational Employment and Wage Statistics</a
+        >), using data from May 2025. See the full
         <a href="https://www.bls.gov/oes/tables.htm" target="_blank" rel="noopener"
-          >OEWS data tables page</a
-        >
-        ("All data" file).
+          >BLS data tables page</a
+        >.
       </p>
       <p>
-        Typical education needed, work experience required, on-the-job training, projected
-        employment change, and annual job openings are from the 2025&ndash;35 BLS
+        How much schooling is usually needed, whether work experience is required, and whether a job
+        is growing or shrinking come from a separate government report (
         <a href="https://www.bls.gov/emp/" target="_blank" rel="noopener"
-          >Employment Projections</a
-        >
-        program ("National Employment Matrix," Table 1.2), from the BLS
+          >BLS Employment Projections</a
+        >) that looks ahead to the year 2035. See the
         <a href="https://www.bls.gov/emp/tables.htm" target="_blank" rel="noopener"
           >Employment Projections data tables page</a
-        >. "Job Outlook" is this site's own tier label applied to BLS's real percent-change
-        figure (see glossary) &mdash; the percent-change and openings numbers themselves are
-        BLS's.
+        >. "Job Outlook" is our own plain-language label for the government's real growth number
+        &mdash; hover any Job Outlook cell to see the exact number.
       </p>
       <p class="last-updated">Data pulled and last updated 10/2026.</p>
     </div>
@@ -45,14 +41,13 @@
 
   <div class="source-note estimate-note">
     <div class="source-note-text">
-      <h2>Site Estimates (Not BLS Data)</h2>
+      <h2>Our Own Best Guesses (Not Official Data)</h2>
       <p>
-        Job Environment, AI Exposure, and Remote-Work Potential have no single authoritative BLS
-        table to draw from. These three columns are this site's own simple, rule-based
-        categorization &mdash; a baseline per SOC major group, adjusted by keyword matches on the
-        job title (e.g. titles containing "mechanic," "nurse," or "data entry" get adjusted
-        toward their typical environment). They're a rough general-orientation estimate, not a
-        scientific index, and not sourced from BLS, O*NET, or any named study.
+        The government doesn't track everything. For 3 things &mdash; how physical the job is, how
+        easily a computer could do it, and whether you could work from home &mdash; we made our own
+        simple, best-guess label. These are not official numbers. We guessed based on the job's
+        title and category (for example, a job with "mechanic" in the title gets guessed as
+        hands-on, physical work). Treat these as a rough guide, not a fact.
       </p>
     </div>
   </div>
@@ -82,181 +77,533 @@
         <span class="summary-value">{{
           averageMedianAnnualWage() | currency: 'USD' : 'symbol' : '1.0-0'
         }}</span>
-        <span class="summary-label">Average median annual wage</span>
+        <span class="summary-label">Average median annual salary</span>
       </div>
     </div>
 
-    <div class="filter-bar">
-      <input
-        class="search-input"
-        type="search"
-        placeholder="Search job title…"
-        [ngModel]="search()"
-        (ngModelChange)="setFilter(search, $event)"
-      />
-
-      <select [ngModel]="socGroupFilter()" (ngModelChange)="setFilter(socGroupFilter, $event)">
-        <option value="All">All SOC groups</option>
-        @for (group of socGroups(); track group) {
-          <option [value]="group">{{ group }}</option>
-        }
-      </select>
-
-      <select
-        [ngModel]="educationFilter()"
-        (ngModelChange)="setFilter(educationFilter, $event)"
-      >
-        <option value="All">All education levels</option>
-        @for (level of educationOptions(); track level) {
-          <option [value]="level">{{ level }}</option>
-        }
-      </select>
-
-      <select [ngModel]="jobOutlookFilter()" (ngModelChange)="setFilter(jobOutlookFilter, $event)">
-        <option value="All">All job outlooks</option>
-        @for (tier of jobOutlookOptions(); track tier) {
-          <option [value]="tier">{{ tier }}</option>
-        }
-      </select>
-
-      <select
-        [ngModel]="jobEnvironmentFilter()"
-        (ngModelChange)="setFilter(jobEnvironmentFilter, $event)"
-      >
-        <option value="All">All job environments</option>
-        @for (env of jobEnvironmentOptions(); track env) {
-          <option [value]="env">{{ env }}</option>
-        }
-      </select>
-
-      <select
-        [ngModel]="aiExposureFilter()"
-        (ngModelChange)="setFilter(aiExposureFilter, $event)"
-      >
-        <option value="All">All AI exposure levels</option>
-        @for (level of aiExposureOptions(); track level) {
-          <option [value]="level">{{ level }}</option>
-        }
-      </select>
-
-      <select [ngModel]="remoteWorkFilter()" (ngModelChange)="setFilter(remoteWorkFilter, $event)">
-        <option value="All">All remote-work levels</option>
-        @for (level of remoteWorkOptions(); track level) {
-          <option [value]="level">{{ level }}</option>
-        }
-      </select>
-    </div>
-
-    <div class="range-filters">
-      <div class="range-filter">
-        <label
-          >Median Annual Wage:
-          {{ salaryMin() | currency: 'USD' : 'symbol' : '1.0-0' }} &ndash;
-          {{ salaryMax() | currency: 'USD' : 'symbol' : '1.0-0' }}</label
-        >
-        <div class="dual-range">
-          <input
-            type="range"
-            class="range-min"
-            [min]="salaryBounds().min"
-            [max]="salaryBounds().max"
-            step="1000"
-            [ngModel]="salaryMin()"
-            (ngModelChange)="setSalaryMin($event)"
-          />
-          <input
-            type="range"
-            class="range-max"
-            [min]="salaryBounds().min"
-            [max]="salaryBounds().max"
-            step="1000"
-            [ngModel]="salaryMax()"
-            (ngModelChange)="setSalaryMax($event)"
-          />
+    <div class="filters-panel">
+      <div class="filters-panel-header">
+        <h2>Filters</h2>
+        <div class="filters-panel-actions">
+          @if (hasActiveFilters()) {
+            <button type="button" class="link-btn" (click)="resetAllFilters()">
+              Reset Filters
+            </button>
+          }
+          <button type="button" class="info-toggle" (click)="toggleExpanded(filtersExpanded)">
+            {{ filtersExpanded() ? 'Hide Filters' : 'Show Filters' }}
+          </button>
         </div>
       </div>
 
-      <div class="range-filter">
-        <label
-          >Total Employment:
-          {{ employmentMin() | number }} &ndash;
-          {{ employmentMax() | number }}</label
-        >
-        <div class="dual-range">
-          <input
-            type="range"
-            class="range-min"
-            [min]="employmentBounds().min"
-            [max]="employmentBounds().max"
-            step="1000"
-            [ngModel]="employmentMin()"
-            (ngModelChange)="setEmploymentMin($event)"
-          />
-          <input
-            type="range"
-            class="range-max"
-            [min]="employmentBounds().min"
-            [max]="employmentBounds().max"
-            step="1000"
-            [ngModel]="employmentMax()"
-            (ngModelChange)="setEmploymentMax($event)"
-          />
-        </div>
+      <div class="filter-bar">
+        <input
+          class="search-input"
+          type="search"
+          placeholder="Search job title…"
+          [ngModel]="search()"
+          (ngModelChange)="setFilter(search, $event)"
+        />
       </div>
+
+      @if (filtersExpanded()) {
+        <div class="tile-filters">
+          <div class="tile-group">
+            <div class="tile-group-header">
+              <h3>Job Category</h3>
+              <div class="tile-group-actions">
+                @if (socGroupFilter().size > 0) {
+                  <button type="button" class="link-btn" (click)="clearFilterGroup(socGroupFilter)">
+                    Clear ({{ socGroupFilter().size }})
+                  </button>
+                }
+                <button type="button" class="link-btn" (click)="toggleExpanded(socGroupExpanded)">
+                  {{
+                    socGroupExpanded()
+                      ? 'Hide options'
+                      : 'Show options (' + socGroups().length + ')'
+                  }}
+                </button>
+              </div>
+            </div>
+            <p class="tile-group-hint">The broad field this job belongs to.</p>
+            @if (!socGroupExpanded() && socGroupFilter().size > 0) {
+              <div class="tile-row">
+                @for (group of selectedValues(socGroupFilter); track group) {
+                  <button
+                    type="button"
+                    class="filter-tile selected"
+                    (click)="toggleFilterValue(socGroupFilter, group)"
+                  >
+                    {{ group }} ✕
+                  </button>
+                }
+              </div>
+            }
+            @if (socGroupExpanded()) {
+              <div class="tile-row">
+                @for (group of socGroups(); track group) {
+                  <button
+                    type="button"
+                    class="filter-tile"
+                    [class.selected]="socGroupFilter().has(group)"
+                    (click)="toggleFilterValue(socGroupFilter, group)"
+                  >
+                    {{ group }}
+                  </button>
+                }
+              </div>
+            }
+          </div>
+
+          <div class="tile-group">
+            <div class="tile-group-header">
+              <h3>Education Needed</h3>
+              <div class="tile-group-actions">
+                @if (educationFilter().size > 0) {
+                  <button
+                    type="button"
+                    class="link-btn"
+                    (click)="clearFilterGroup(educationFilter)"
+                  >
+                    Clear ({{ educationFilter().size }})
+                  </button>
+                }
+                <button type="button" class="link-btn" (click)="toggleExpanded(educationExpanded)">
+                  {{
+                    educationExpanded()
+                      ? 'Hide options'
+                      : 'Show options (' + educationOptions().length + ')'
+                  }}
+                </button>
+              </div>
+            </div>
+            <p class="tile-group-hint">How much schooling people usually need for this job.</p>
+            @if (!educationExpanded() && educationFilter().size > 0) {
+              <div class="tile-row">
+                @for (level of selectedValues(educationFilter); track level) {
+                  <button
+                    type="button"
+                    class="filter-tile selected"
+                    (click)="toggleFilterValue(educationFilter, level)"
+                  >
+                    {{ educationLabel(level) }} ✕
+                  </button>
+                }
+              </div>
+            }
+            @if (educationExpanded()) {
+              <div class="tile-row">
+                @for (level of educationOptions(); track level) {
+                  <button
+                    type="button"
+                    class="filter-tile"
+                    [class.selected]="educationFilter().has(level)"
+                    (click)="toggleFilterValue(educationFilter, level)"
+                  >
+                    {{ educationLabel(level) }}
+                  </button>
+                }
+              </div>
+            }
+          </div>
+
+          <div class="tile-group">
+            <div class="tile-group-header">
+              <h3>Experience Required</h3>
+              @if (experienceFilter().size > 0) {
+                <button type="button" class="link-btn" (click)="clearFilterGroup(experienceFilter)">
+                  Clear ({{ experienceFilter().size }})
+                </button>
+              }
+            </div>
+            <p class="tile-group-hint">
+              Whether you usually need past work experience to get hired.
+            </p>
+            <div class="tile-row">
+              @for (level of experienceOptions(); track level) {
+                <button
+                  type="button"
+                  class="filter-tile"
+                  [class.selected]="experienceFilter().has(level)"
+                  (click)="toggleFilterValue(experienceFilter, level)"
+                >
+                  {{ experienceLabel(level) }}
+                </button>
+              }
+            </div>
+          </div>
+
+          <div class="tile-group">
+            <div class="tile-group-header">
+              <h3>Job Outlook</h3>
+              @if (jobOutlookFilter().size > 0) {
+                <button type="button" class="link-btn" (click)="clearFilterGroup(jobOutlookFilter)">
+                  Clear ({{ jobOutlookFilter().size }})
+                </button>
+              }
+            </div>
+            <p class="tile-group-hint">Will there be more of these jobs in the future, or fewer?</p>
+            <div class="tile-row">
+              @for (tier of jobOutlookOptions(); track tier) {
+                <button
+                  type="button"
+                  class="filter-tile"
+                  [class.selected]="jobOutlookFilter().has(tier)"
+                  (click)="toggleFilterValue(jobOutlookFilter, tier)"
+                >
+                  {{ jobOutlookLabel(tier) }}
+                </button>
+              }
+            </div>
+          </div>
+
+          <div class="tile-group">
+            <div class="tile-group-header">
+              <h3>Job Environment<span class="estimate-mark">*</span></h3>
+              @if (jobEnvironmentFilter().size > 0) {
+                <button
+                  type="button"
+                  class="link-btn"
+                  (click)="clearFilterGroup(jobEnvironmentFilter)"
+                >
+                  Clear ({{ jobEnvironmentFilter().size }})
+                </button>
+              }
+            </div>
+            <p class="tile-group-hint">
+              Do you sit at a desk, work with your hands, or a bit of both?
+            </p>
+            <div class="tile-row">
+              @for (env of jobEnvironmentOptions(); track env) {
+                <button
+                  type="button"
+                  class="filter-tile"
+                  [class.selected]="jobEnvironmentFilter().has(env)"
+                  (click)="toggleFilterValue(jobEnvironmentFilter, env)"
+                >
+                  {{ env }}
+                </button>
+              }
+            </div>
+          </div>
+
+          <div class="tile-group">
+            <div class="tile-group-header">
+              <h3>AI Exposure<span class="estimate-mark">*</span></h3>
+              @if (aiExposureFilter().size > 0) {
+                <button type="button" class="link-btn" (click)="clearFilterGroup(aiExposureFilter)">
+                  Clear ({{ aiExposureFilter().size }})
+                </button>
+              }
+            </div>
+            <p class="tile-group-hint">
+              Our guess at how easily a computer could do this job instead of a person.
+            </p>
+            <div class="tile-row">
+              @for (level of aiExposureOptions(); track level) {
+                <button
+                  type="button"
+                  class="filter-tile"
+                  [class.selected]="aiExposureFilter().has(level)"
+                  (click)="toggleFilterValue(aiExposureFilter, level)"
+                >
+                  {{ level }}
+                </button>
+              }
+            </div>
+          </div>
+
+          <div class="tile-group">
+            <div class="tile-group-header">
+              <h3>Remote-Work Potential<span class="estimate-mark">*</span></h3>
+              @if (remoteWorkFilter().size > 0) {
+                <button type="button" class="link-btn" (click)="clearFilterGroup(remoteWorkFilter)">
+                  Clear ({{ remoteWorkFilter().size }})
+                </button>
+              }
+            </div>
+            <p class="tile-group-hint">Our guess at how likely you could do this job from home.</p>
+            <div class="tile-row">
+              @for (level of remoteWorkOptions(); track level) {
+                <button
+                  type="button"
+                  class="filter-tile"
+                  [class.selected]="remoteWorkFilter().has(level)"
+                  (click)="toggleFilterValue(remoteWorkFilter, level)"
+                >
+                  {{ level }}
+                </button>
+              }
+            </div>
+          </div>
+
+          @for (config of rangeFilterConfigs; track config.key) {
+            <div class="tile-group">
+              <div class="tile-group-header">
+                <h3>{{ config.label }}</h3>
+              </div>
+              <p class="tile-group-hint">{{ config.hint }}</p>
+              <div class="range-value">
+                @if (config.format === 'currency') {
+                  {{ rangeMin(config.key) | currency: 'USD' : 'symbol' : '1.0-0' }} &ndash;
+                  {{ rangeMax(config.key) | currency: 'USD' : 'symbol' : '1.0-0' }}
+                } @else {
+                  {{ rangeMin(config.key) | number }} &ndash; {{ rangeMax(config.key) | number }}
+                }
+              </div>
+              <div class="dual-range">
+                <input
+                  type="range"
+                  class="range-min"
+                  [min]="rangeBounds(config.key).min"
+                  [max]="rangeBounds(config.key).max"
+                  step="1000"
+                  [ngModel]="rangeMin(config.key)"
+                  (ngModelChange)="setRangeMin(config.key, $event)"
+                />
+                <input
+                  type="range"
+                  class="range-max"
+                  [min]="rangeBounds(config.key).min"
+                  [max]="rangeBounds(config.key).max"
+                  step="1000"
+                  [ngModel]="rangeMax(config.key)"
+                  (ngModelChange)="setRangeMax(config.key, $event)"
+                />
+              </div>
+            </div>
+          }
+        </div>
+      }
     </div>
+
+    <h2 class="results-heading">
+      Showing {{ resultCount() | number }} of {{ occupations().length | number }} jobs
+    </h2>
 
     <div class="table-scroll">
       <table class="career-table">
         <thead>
           <tr>
-            <th (click)="sortBy('jobTitle')">Job Title {{ sortIndicator('jobTitle') }}</th>
-            <th (click)="sortBy('socMajorGroup')">
-              SOC Group {{ sortIndicator('socMajorGroup') }}
+            <th
+              [style.width.px]="columnWidth('jobTitle')"
+              [title]="columnTooltip('jobTitle')"
+              (click)="sortBy('jobTitle')"
+            >
+              Job Title {{ sortIndicator('jobTitle') }}
+              <span
+                class="col-resize-handle"
+                [class.resizing]="resizingField() === 'jobTitle'"
+                (click)="$event.stopPropagation()"
+                (mousedown)="startResize($event, 'jobTitle')"
+                (dblclick)="resetColumnWidth($event, 'jobTitle')"
+              ></span>
             </th>
-            <th class="numeric" (click)="sortBy('totalEmployment')">
+            <th
+              [style.width.px]="columnWidth('socMajorGroup')"
+              [title]="columnTooltip('socMajorGroup')"
+              (click)="sortBy('socMajorGroup')"
+            >
+              Job Category {{ sortIndicator('socMajorGroup') }}
+              <span
+                class="col-resize-handle"
+                [class.resizing]="resizingField() === 'socMajorGroup'"
+                (click)="$event.stopPropagation()"
+                (mousedown)="startResize($event, 'socMajorGroup')"
+                (dblclick)="resetColumnWidth($event, 'socMajorGroup')"
+              ></span>
+            </th>
+            <th
+              class="numeric"
+              [style.width.px]="columnWidth('totalEmployment')"
+              [title]="columnTooltip('totalEmployment')"
+              (click)="sortBy('totalEmployment')"
+            >
               Total Employment {{ sortIndicator('totalEmployment') }}
+              <span
+                class="col-resize-handle"
+                [class.resizing]="resizingField() === 'totalEmployment'"
+                (click)="$event.stopPropagation()"
+                (mousedown)="startResize($event, 'totalEmployment')"
+                (dblclick)="resetColumnWidth($event, 'totalEmployment')"
+              ></span>
             </th>
-            <th class="numeric" (click)="sortBy('medianAnnualWage')">
-              Median Annual {{ sortIndicator('medianAnnualWage') }}
+            <th
+              class="numeric"
+              [style.width.px]="columnWidth('medianAnnualWage')"
+              [title]="columnTooltip('medianAnnualWage')"
+              (click)="sortBy('medianAnnualWage')"
+            >
+              Median Annual Salary {{ sortIndicator('medianAnnualWage') }}
+              <span
+                class="col-resize-handle"
+                [class.resizing]="resizingField() === 'medianAnnualWage'"
+                (click)="$event.stopPropagation()"
+                (mousedown)="startResize($event, 'medianAnnualWage')"
+                (dblclick)="resetColumnWidth($event, 'medianAnnualWage')"
+              ></span>
             </th>
-            <th class="numeric" (click)="sortBy('meanAnnualWage')">
-              Mean Annual {{ sortIndicator('meanAnnualWage') }}
+            <th
+              class="numeric"
+              [style.width.px]="columnWidth('meanAnnualWage')"
+              [title]="columnTooltip('meanAnnualWage')"
+              (click)="sortBy('meanAnnualWage')"
+            >
+              Average Salary {{ sortIndicator('meanAnnualWage') }}
+              <span
+                class="col-resize-handle"
+                [class.resizing]="resizingField() === 'meanAnnualWage'"
+                (click)="$event.stopPropagation()"
+                (mousedown)="startResize($event, 'meanAnnualWage')"
+                (dblclick)="resetColumnWidth($event, 'meanAnnualWage')"
+              ></span>
             </th>
-            <th class="numeric" (click)="sortBy('pct10AnnualWage')">
-              10th %ile Annual {{ sortIndicator('pct10AnnualWage') }}
+            <th
+              class="numeric"
+              [style.width.px]="columnWidth('pct10AnnualWage')"
+              [title]="columnTooltip('pct10AnnualWage')"
+              (click)="sortBy('pct10AnnualWage')"
+            >
+              Low-End Pay {{ sortIndicator('pct10AnnualWage') }}
+              <span
+                class="col-resize-handle"
+                [class.resizing]="resizingField() === 'pct10AnnualWage'"
+                (click)="$event.stopPropagation()"
+                (mousedown)="startResize($event, 'pct10AnnualWage')"
+                (dblclick)="resetColumnWidth($event, 'pct10AnnualWage')"
+              ></span>
             </th>
-            <th class="numeric" (click)="sortBy('pct90AnnualWage')">
-              90th %ile Annual {{ sortIndicator('pct90AnnualWage') }}
+            <th
+              class="numeric"
+              [style.width.px]="columnWidth('pct90AnnualWage')"
+              [title]="columnTooltip('pct90AnnualWage')"
+              (click)="sortBy('pct90AnnualWage')"
+            >
+              High-End Pay {{ sortIndicator('pct90AnnualWage') }}
+              <span
+                class="col-resize-handle"
+                [class.resizing]="resizingField() === 'pct90AnnualWage'"
+                (click)="$event.stopPropagation()"
+                (mousedown)="startResize($event, 'pct90AnnualWage')"
+                (dblclick)="resetColumnWidth($event, 'pct90AnnualWage')"
+              ></span>
             </th>
-            <th (click)="sortBy('typicalEducationNeeded')">
+            <th
+              [style.width.px]="columnWidth('typicalEducationNeeded')"
+              [title]="columnTooltip('typicalEducationNeeded')"
+              (click)="sortBy('typicalEducationNeeded')"
+            >
               Education Needed {{ sortIndicator('typicalEducationNeeded') }}
+              <span
+                class="col-resize-handle"
+                [class.resizing]="resizingField() === 'typicalEducationNeeded'"
+                (click)="$event.stopPropagation()"
+                (mousedown)="startResize($event, 'typicalEducationNeeded')"
+                (dblclick)="resetColumnWidth($event, 'typicalEducationNeeded')"
+              ></span>
             </th>
-            <th (click)="sortBy('workExperienceRequired')">
+            <th
+              [style.width.px]="columnWidth('workExperienceRequired')"
+              [title]="columnTooltip('workExperienceRequired')"
+              (click)="sortBy('workExperienceRequired')"
+            >
               Experience Required {{ sortIndicator('workExperienceRequired') }}
+              <span
+                class="col-resize-handle"
+                [class.resizing]="resizingField() === 'workExperienceRequired'"
+                (click)="$event.stopPropagation()"
+                (mousedown)="startResize($event, 'workExperienceRequired')"
+                (dblclick)="resetColumnWidth($event, 'workExperienceRequired')"
+              ></span>
             </th>
-            <th (click)="sortBy('jobOutlookTier')">
+            <th
+              [style.width.px]="columnWidth('jobOutlookTier')"
+              [title]="columnTooltip('jobOutlookTier')"
+              (click)="sortBy('jobOutlookTier')"
+            >
               Job Outlook {{ sortIndicator('jobOutlookTier') }}
+              <span
+                class="col-resize-handle"
+                [class.resizing]="resizingField() === 'jobOutlookTier'"
+                (click)="$event.stopPropagation()"
+                (mousedown)="startResize($event, 'jobOutlookTier')"
+                (dblclick)="resetColumnWidth($event, 'jobOutlookTier')"
+              ></span>
             </th>
-            <th class="numeric" (click)="sortBy('projectedAnnualOpenings')">
+            <th
+              class="numeric"
+              [style.width.px]="columnWidth('projectedAnnualOpenings')"
+              [title]="columnTooltip('projectedAnnualOpenings')"
+              (click)="sortBy('projectedAnnualOpenings')"
+            >
               Annual Openings {{ sortIndicator('projectedAnnualOpenings') }}
+              <span
+                class="col-resize-handle"
+                [class.resizing]="resizingField() === 'projectedAnnualOpenings'"
+                (click)="$event.stopPropagation()"
+                (mousedown)="startResize($event, 'projectedAnnualOpenings')"
+                (dblclick)="resetColumnWidth($event, 'projectedAnnualOpenings')"
+              ></span>
             </th>
-            <th class="estimate-col" (click)="sortBy('jobEnvironment')">
+            <th
+              class="estimate-col"
+              [style.width.px]="columnWidth('jobEnvironment')"
+              [title]="columnTooltip('jobEnvironment')"
+              (click)="sortBy('jobEnvironment')"
+            >
               Job Environment* {{ sortIndicator('jobEnvironment') }}
+              <span
+                class="col-resize-handle"
+                [class.resizing]="resizingField() === 'jobEnvironment'"
+                (click)="$event.stopPropagation()"
+                (mousedown)="startResize($event, 'jobEnvironment')"
+                (dblclick)="resetColumnWidth($event, 'jobEnvironment')"
+              ></span>
             </th>
-            <th class="estimate-col" (click)="sortBy('aiExposure')">
+            <th
+              class="estimate-col"
+              [style.width.px]="columnWidth('aiExposure')"
+              [title]="columnTooltip('aiExposure')"
+              (click)="sortBy('aiExposure')"
+            >
               AI Exposure* {{ sortIndicator('aiExposure') }}
+              <span
+                class="col-resize-handle"
+                [class.resizing]="resizingField() === 'aiExposure'"
+                (click)="$event.stopPropagation()"
+                (mousedown)="startResize($event, 'aiExposure')"
+                (dblclick)="resetColumnWidth($event, 'aiExposure')"
+              ></span>
             </th>
-            <th class="estimate-col" (click)="sortBy('remoteWorkPotential')">
+            <th
+              class="estimate-col"
+              [style.width.px]="columnWidth('remoteWorkPotential')"
+              [title]="columnTooltip('remoteWorkPotential')"
+              (click)="sortBy('remoteWorkPotential')"
+            >
               Remote-Work Potential* {{ sortIndicator('remoteWorkPotential') }}
+              <span
+                class="col-resize-handle"
+                [class.resizing]="resizingField() === 'remoteWorkPotential'"
+                (click)="$event.stopPropagation()"
+                (mousedown)="startResize($event, 'remoteWorkPotential')"
+                (dblclick)="resetColumnWidth($event, 'remoteWorkPotential')"
+              ></span>
             </th>
           </tr>
         </thead>
         <tbody>
           @for (occupation of pagedRows(); track occupation.socCode) {
-            <tr>
+            <tr
+              [class.selected-row]="selectedRowCode() === occupation.socCode"
+              (click)="toggleRowSelection(occupation.socCode)"
+            >
               <td [title]="occupation.socCode">{{ occupation.jobTitle }}</td>
               <td>{{ occupation.socMajorGroup }}</td>
-              <td class="numeric">{{ (occupation.totalEmployment | number) ?? '—' }}</td>
+              <td class="numeric" [title]="employmentShareTooltip(occupation.totalEmployment)">
+                {{ (occupation.totalEmployment | number) ?? '—' }}
+              </td>
               <td class="numeric">
                 @if (occupation.medianAnnualWage !== null) {
                   {{ occupation.medianAnnualWage | currency: 'USD' : 'symbol' : '1.0-0' }}
@@ -285,11 +632,11 @@
                   &mdash;
                 }
               </td>
-              <td>{{ occupation.typicalEducationNeeded }}</td>
-              <td>{{ occupation.workExperienceRequired }}</td>
+              <td>{{ educationLabel(occupation.typicalEducationNeeded) }}</td>
+              <td>{{ experienceLabel(occupation.workExperienceRequired) }}</td>
               <td [title]="occupation.projectedEmploymentChangePercent + '% projected 2025–35'">
                 <span [class]="outlookClass(occupation.jobOutlookTier)">{{
-                  occupation.jobOutlookTier
+                  jobOutlookLabel(occupation.jobOutlookTier)
                 }}</span>
               </td>
               <td class="numeric">{{ occupation.projectedAnnualOpenings | number }}</td>
@@ -325,10 +672,10 @@
     }
 
     <p class="data-note">
-      * Job Environment, AI Exposure, and Remote-Work Potential are this site's own estimate, not
-      BLS data. Occupations with only hourly or only annual wages published by BLS show &mdash;
-      for the unavailable figure. See "What do these columns mean?" above for full column
-      definitions and sourcing.
+      * Job Environment, AI Exposure, and Remote-Work Potential are our own best guess, not official
+      data. A &mdash; means the government doesn't publish that number for this job. Tap "What do
+      these columns mean?" above for plain-language definitions of every column. Drag a column's
+      right edge to resize it, or double-click the edge to reset its width.
     </p>
   }
 </section>

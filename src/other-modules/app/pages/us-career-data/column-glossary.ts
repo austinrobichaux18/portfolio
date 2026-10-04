@@ -4,72 +4,62 @@ export interface ColumnGlossaryEntry {
 }
 
 /**
- * Column definitions adapted from the BLS OEWS "Field Descriptions" sheet published alongside
- * the May 2025 National, State, Metropolitan, and Nonmetropolitan Area Occupational Employment
- * and Wage Estimates: https://www.bls.gov/oes/tables.htm
+ * Plain-language column definitions. The underlying figures come from the BLS OEWS "Field
+ * Descriptions" sheet (May 2025 wage data) and the BLS Employment Projections program's 2025-35
+ * National Employment Matrix, Table 1.2 (education/experience/outlook data):
+ * https://www.bls.gov/oes/tables.htm and https://www.bls.gov/emp/tables.htm
  */
 export const COLUMN_GLOSSARY: ColumnGlossaryEntry[] = [
   {
-    column: 'SOC Code',
+    column: 'Job Category',
     description:
-      'The 6-digit Standard Occupational Classification (SOC) code for the occupation, assigned by BLS.',
-  },
-  {
-    column: 'SOC Group',
-    description:
-      'The SOC major group this occupation rolls up into (e.g. "Management Occupations"). There are 22 major groups represented in the OEWS national data (SOC has a 23rd, military-specific, group that OEWS does not cover).',
+      'The broad field this job is part of, like "Management Jobs" or "Healthcare Jobs." The government calls this a "SOC major group" — there are 22 of them in this data.',
   },
   {
     column: 'Job Title',
-    description: 'The SOC title, or OEWS-specific title, for the occupation.',
+    description: 'The name of the job.',
   },
   {
     column: 'Total Employment',
-    description:
-      'Estimated total U.S. employment in the occupation, rounded to the nearest 10. Excludes the self-employed.',
+    description: 'About how many people in the U.S. currently have this job.',
   },
   {
-    column: 'Median Annual Wage',
+    column: 'Median Annual Salary',
     description:
-      'The 50th-percentile annual wage — half of workers in the occupation earn more, half earn less. Some occupations that are typically paid and worked on an hourly basis (e.g. actors, musicians) are released hourly-only by BLS, so their annual figure is not available.',
+      'The middle pay for this job per year — half of workers in this job earn more than this, half earn less. This is usually a better "typical" number than the average, since a few very high earners can\'t skew it. Some jobs that are usually paid by the hour with irregular schedules (like acting or music) don\'t have a yearly pay number — those show as "—".',
   },
   {
-    column: 'Mean Annual Wage',
-    description: 'The average (arithmetic mean) annual wage across all workers in the occupation.',
+    column: 'Average Salary (Mean Annual Wage)',
+    description:
+      'The average pay for this job per year (add up everyone\'s pay and divide by the number of workers). A few very high earners can pull this number up higher than what most people actually make.',
   },
   {
-    column: '10th / 90th Percentile Annual Wage',
+    column: 'Low-End / High-End Pay',
     description:
-      'The annual wage below which 10% (or 90%) of workers in the occupation fall. The gap between these two figures is a rough measure of pay spread within an occupation.',
-  },
-  {
-    column: 'Annual/Hourly-Only Wages',
-    description:
-      'BLS releases only annual wages for occupations that typically work fewer than 2,080 hours/year but are paid annually (e.g. teachers, pilots, athletes), and only hourly wages for occupations typically paid hourly with irregular hours (e.g. actors, dancers, musicians).',
+      'Low-End Pay: only about 1 in 10 workers in this job make less than this. High-End Pay: only about 1 in 10 workers make more than this. Together, they show the typical range of pay in this job, from low to high.',
   },
   {
     column: 'Education Needed',
     description:
-      'The typical education needed to enter the occupation, from the BLS Employment Projections program\'s 2025–35 National Employment Matrix (Table 1.2). One of 8 standard BLS categories, from "No formal educational credential" to "Doctoral or professional degree."',
+      'The schooling most people need to get hired for this job, from "No Degree Needed" up to a doctorate.',
   },
   {
     column: 'Experience Required',
-    description:
-      'Typical work experience in a related occupation needed to enter the role: "None," "Less than 5 years," or "5 years or more." Also from BLS Employment Projections Table 1.2.',
+    description: 'Whether you usually need past work experience in a related job to get hired.',
   },
   {
     column: 'Job Outlook',
     description:
-      'This site\'s own tier label (Declining / Little or No Change / Slower Than Average / Average / Faster Than Average / Much Faster Than Average), applied to BLS\'s real projected percent change in employment, 2025–35, relative to the real national average (3.5%) over the same period. Hover a row\'s Job Outlook cell to see the exact BLS percent-change figure.',
+      'Will there be more of these jobs by the year 2035, or fewer? This compares the government\'s real growth forecast for this job against the average job over the same years. Hover a row\'s Job Outlook cell to see the exact forecast number.',
   },
   {
     column: 'Annual Openings',
     description:
-      'The real BLS-projected average number of annual job openings in the occupation, 2025–35 (from new jobs created plus workers leaving the occupation permanently).',
+      'About how many job openings are expected each year in the U.S. for this job — counting both new jobs and spots left open when people retire or leave.',
   },
   {
     column: 'Job Environment, AI Exposure, Remote-Work Potential',
     description:
-      'Not BLS data. This site\'s own simple, rule-based estimate — a baseline per SOC major group adjusted by keyword matches on the job title — meant as a rough general-orientation guide, not a scientific index.',
+      'These 3 are not official government numbers. They are this site\'s own best guess, based on the job\'s title and category — a rough guide, not a fact. Job Environment: do you mostly sit at a desk, work with your hands, or both? AI Exposure: how easily a computer could do this job instead of a person. Remote-Work Potential: how likely you could do this job from home.',
   },
 ];
