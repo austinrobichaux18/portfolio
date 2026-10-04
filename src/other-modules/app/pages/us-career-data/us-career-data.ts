@@ -267,7 +267,7 @@ export class UsCareerData implements OnDestroy {
   page = signal(1);
 
   showGlossary = signal(false);
-  filtersExpanded = signal(true);
+  filtersExpanded = signal(false);
   socGroupExpanded = signal(false);
   educationExpanded = signal(false);
 
