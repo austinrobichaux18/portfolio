@@ -1,12 +1,14 @@
 import { Component, OnDestroy, WritableSignal, computed, inject, signal } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { FormsModule } from '@angular/forms';
-import { CurrencyPipe, DecimalPipe } from '@angular/common';
+import { CurrencyPipe, DatePipe, DecimalPipe } from '@angular/common';
 import { forkJoin } from 'rxjs';
 
 import { UsOccupation } from '../../core/models/UsOccupation';
 import { CareerOutlook } from '../../core/models/CareerOutlook';
 import { COLUMN_GLOSSARY } from './column-glossary';
+import { CareerFilterStateJSON, isValidFilterStateJSON } from './career-filter-state';
+import { CareerSearchRun, loadHistory, saveHistory } from './career-storage';
 
 export type CareerRow = UsOccupation & Omit<CareerOutlook, 'socCode' | 'jobTitle'>;
 
@@ -137,6 +139,26 @@ const RENDERED_COLUMNS: SortField[] = [
   'remoteWorkPotential',
 ];
 
+// Display label for each rendered column -- used both as the <th> text and in the "Columns"
+// show/hide picker, so the two always agree.
+const COLUMN_LABELS: Record<SortField, string> = {
+  jobTitle: 'Job Title',
+  socMajorGroup: 'Job Category',
+  totalEmployment: 'Total Employment',
+  medianAnnualWage: 'Median Annual Salary',
+  meanAnnualWage: 'Average Salary',
+  pct10AnnualWage: 'Low-End Pay',
+  pct90AnnualWage: 'High-End Pay',
+  typicalEducationNeeded: 'Education Needed',
+  workExperienceRequired: 'Experience Required',
+  projectedEmploymentChangePercent: 'Employment Change %',
+  jobOutlookTier: 'Job Outlook',
+  projectedAnnualOpenings: 'Annual Openings',
+  jobEnvironment: 'Job Environment*',
+  aiExposure: 'AI Exposure*',
+  remoteWorkPotential: 'Remote-Work Potential*',
+};
+
 // Ordinal ranks for the categorical fields so sorting reflects their natural order rather than
 // alphabetical order. Education/experience ranks come from how BLS itself orders these
 // categories (least to most); the exposure/outlook ranks are this site's own scale (see
@@ -207,6 +229,60 @@ const EXPERIENCE_LABELS: Record<string, string> = {
   '5 years or more': 'Lots of Experience (5+ Years)',
 };
 
+// Short labels for the chart's education axis ticks -- the full plain-language labels above are
+// too long to fit as repeated tick text.
+const EDUCATION_AXIS_LABELS: Record<number, string> = {
+  1: 'No Degree',
+  2: 'HS Diploma',
+  3: 'Some College',
+  4: 'Trade Cert.',
+  5: '2-Yr Degree',
+  6: '4-Yr Degree',
+  7: "Master's",
+  8: 'Doctorate',
+};
+
+// Reuses the same hex values as the table's AI Exposure chips (exposureClass()) so the chart's
+// dot colors and the table's chip colors mean the same thing everywhere on the page.
+const AI_EXPOSURE_DOT_COLOR: Record<string, string> = {
+  Low: '#44d68b',
+  Moderate: '#ffc107',
+  High: '#ff6b6b',
+};
+
+const CHART_WIDTH = 900;
+const CHART_HEIGHT = 480;
+const CHART_MARGIN = { top: 16, right: 16, bottom: 44, left: 84 };
+
+interface ChartPoint {
+  socCode: string;
+  cx: number;
+  cy: number;
+  r: number;
+  color: string;
+  tooltip: string;
+}
+
+interface ChartData {
+  width: number;
+  height: number;
+  innerLeft: number;
+  innerRight: number;
+  innerTop: number;
+  innerBottom: number;
+  points: ChartPoint[];
+  quadrantX: number;
+  quadrantY: number;
+  xTicks: { x: number; label: string }[];
+  yTicks: { y: number; label: string }[];
+}
+
+function median(nums: number[]): number {
+  const sorted = [...nums].sort((a, b) => a - b);
+  const mid = Math.floor(sorted.length / 2);
+  return sorted.length % 2 === 0 ? (sorted[mid - 1] + sorted[mid]) / 2 : sorted[mid];
+}
+
 // Hover-tooltip text for each table column, reusing the exact same explanations shown in the
 // "What do these columns mean?" glossary panel above the table.
 const glossaryByColumn = new Map(COLUMN_GLOSSARY.map((e) => [e.column, e.description]));
@@ -234,7 +310,7 @@ const COLUMN_TOOLTIPS: Record<string, string> = {
 
 @Component({
   selector: 'app-us-career-data',
-  imports: [FormsModule, CurrencyPipe, DecimalPipe],
+  imports: [FormsModule, CurrencyPipe, DecimalPipe, DatePipe],
   templateUrl: './us-career-data.html',
   styleUrl: './us-career-data.scss',
 })
@@ -262,15 +338,24 @@ export class UsCareerData implements OnDestroy {
   educationFilter = signal<ReadonlySet<string>>(new Set());
   experienceFilter = signal<ReadonlySet<string>>(new Set());
 
-  private readonly tileFilterSignals: WritableSignal<ReadonlySet<string>>[] = [
-    this.socGroupFilter,
-    this.jobEnvironmentFilter,
-    this.aiExposureFilter,
-    this.remoteWorkFilter,
-    this.jobOutlookFilter,
-    this.educationFilter,
-    this.experienceFilter,
+  // Short keys match CareerFilterStateJSON's field names -- this is the single source of truth
+  // used both for hasActiveFilters()/resetAllFilters() and for building/applying shareable-link
+  // and saved-search state.
+  private readonly tileFilterEntries: [
+    keyof Pick<CareerFilterStateJSON, 'sg' | 'je' | 'ai' | 'rw' | 'jo' | 'ed' | 'ex'>,
+    WritableSignal<ReadonlySet<string>>,
+  ][] = [
+    ['sg', this.socGroupFilter],
+    ['je', this.jobEnvironmentFilter],
+    ['ai', this.aiExposureFilter],
+    ['rw', this.remoteWorkFilter],
+    ['jo', this.jobOutlookFilter],
+    ['ed', this.educationFilter],
+    ['ex', this.experienceFilter],
   ];
+
+  private readonly tileFilterSignals: WritableSignal<ReadonlySet<string>>[] =
+    this.tileFilterEntries.map(([, sig]) => sig);
 
   readonly rangeFilterConfigs = RANGE_FILTER_CONFIGS;
 
@@ -290,6 +375,18 @@ export class UsCareerData implements OnDestroy {
   filtersExpanded = signal(false);
   socGroupExpanded = signal(false);
   educationExpanded = signal(false);
+
+  shareLinkCopied = signal(false);
+  comparePanelOpen = signal(false);
+  showChart = signal(false);
+  showColumnPicker = signal(false);
+
+  history = signal<CareerSearchRun[]>(loadHistory());
+  historyDescending = computed(() =>
+    [...this.history()].sort((a, b) => b.timestamp.localeCompare(a.timestamp)),
+  );
+
+  private pendingRangeOverrides: Record<string, [number, number]> | undefined;
 
   readonly columnGlossary = COLUMN_GLOSSARY;
 
@@ -402,7 +499,81 @@ export class UsCareerData implements OnDestroy {
     return this.filtered().slice(start, start + PAGE_SIZE);
   });
 
+  selectedOccupations = computed(() => {
+    const codes = this.selectedRowCodes();
+    return this.occupations().filter((o) => codes.has(o.socCode));
+  });
+
+  // Scatter/quadrant view: median annual salary (x) vs. education level (y), dot color = AI
+  // Exposure (same hex as the table's chips), dot size = total employment. Plots the currently
+  // filtered rows, so it doubles as a visual summary of whatever the filters narrowed down to.
+  chartData = computed<ChartData | null>(() => {
+    const rows = this.filtered().filter(
+      (o) => o.medianAnnualWage !== null && o.totalEmployment !== null,
+    );
+    if (rows.length === 0) return null;
+
+    const innerLeft = CHART_MARGIN.left;
+    const innerRight = CHART_WIDTH - CHART_MARGIN.right;
+    const innerTop = CHART_MARGIN.top;
+    const innerBottom = CHART_HEIGHT - CHART_MARGIN.bottom;
+    const innerW = innerRight - innerLeft;
+    const innerH = innerBottom - innerTop;
+
+    const salaries = rows.map((o) => o.medianAnnualWage!);
+    const minSalary = Math.min(...salaries);
+    const maxSalary = Math.max(...salaries);
+    const salarySpan = maxSalary - minSalary || 1;
+
+    const employments = rows.map((o) => o.totalEmployment!);
+    const maxEmployment = Math.max(...employments);
+
+    const xScale = (v: number) => innerLeft + ((v - minSalary) / salarySpan) * innerW;
+    const yScale = (rank: number) => innerBottom - ((rank - 1) / 7) * innerH;
+
+    const points: ChartPoint[] = rows.map((o) => {
+      const rank = EDUCATION_RANK[o.typicalEducationNeeded] ?? 1;
+      const radius = 3 + Math.sqrt((o.totalEmployment ?? 0) / maxEmployment) * 11;
+      return {
+        socCode: o.socCode,
+        cx: xScale(o.medianAnnualWage!),
+        cy: yScale(rank),
+        r: radius,
+        color: AI_EXPOSURE_DOT_COLOR[o.aiExposure] ?? '#8f9bad',
+        tooltip: `${o.jobTitle} — ${Math.round(o.medianAnnualWage!).toLocaleString()}/yr — ${this.educationLabel(o.typicalEducationNeeded)} — AI exposure: ${o.aiExposure}`,
+      };
+    });
+
+    const medianSalary = median(salaries);
+    const medianRank = median(rows.map((o) => EDUCATION_RANK[o.typicalEducationNeeded] ?? 1));
+
+    const xTicks = [0, 0.25, 0.5, 0.75, 1].map((t) => ({
+      x: innerLeft + t * innerW,
+      label: `$${Math.round((minSalary + t * salarySpan) / 1000)}k`,
+    }));
+    const yTicks = [1, 2, 3, 4, 5, 6, 7, 8].map((rank) => ({
+      y: yScale(rank),
+      label: EDUCATION_AXIS_LABELS[rank],
+    }));
+
+    return {
+      width: CHART_WIDTH,
+      height: CHART_HEIGHT,
+      innerLeft,
+      innerRight,
+      innerTop,
+      innerBottom,
+      points,
+      quadrantX: xScale(medianSalary),
+      quadrantY: yScale(medianRank),
+      xTicks,
+      yTicks,
+    };
+  });
+
   constructor() {
+    this.applyInitialStateFromUrl();
+
     forkJoin({
       base: this.http.get<UsOccupation[]>('/data/us-career-data.json'),
       outlook: this.http.get<CareerOutlook[]>('/data/us-career-outlook.json'),
@@ -422,8 +593,9 @@ export class UsCareerData implements OnDestroy {
           const bounds = { min: Math.min(...values), max: Math.max(...values) };
           const group = this.rangeSignals.get(config.key)!;
           group.bounds.set(bounds);
-          group.min.set(bounds.min);
-          group.max.set(bounds.max);
+          const override = this.pendingRangeOverrides?.[config.key];
+          group.min.set(override ? Math.max(bounds.min, override[0]) : bounds.min);
+          group.max.set(override ? Math.min(bounds.max, override[1]) : bounds.max);
         }
 
         this.loading.set(false);
@@ -433,6 +605,226 @@ export class UsCareerData implements OnDestroy {
         this.loading.set(false);
       },
     });
+  }
+
+  // Shareable link / saved search state -------------------------------------------------------
+
+  private buildFilterStateJSON(): CareerFilterStateJSON {
+    const json: CareerFilterStateJSON = {};
+    const q = this.search().trim();
+    if (q) json.q = q;
+
+    for (const [key, sig] of this.tileFilterEntries) {
+      const values = [...sig()];
+      if (values.length) json[key] = values;
+    }
+
+    const ranges: Record<string, [number, number]> = {};
+    for (const config of RANGE_FILTER_CONFIGS) {
+      const group = this.rangeSignals.get(config.key)!;
+      const bounds = group.bounds();
+      const min = group.min();
+      const max = group.max();
+      if (min > bounds.min || max < bounds.max) ranges[config.key] = [min, max];
+    }
+    if (Object.keys(ranges).length) json.r = ranges;
+
+    if (this.sortField() !== 'medianAnnualWage') json.sf = this.sortField();
+    if (this.sortDirection() !== 'desc') json.sd = this.sortDirection();
+
+    return json;
+  }
+
+  private applyFilterStateJSON(json: CareerFilterStateJSON) {
+    this.search.set(json.q ?? '');
+    for (const [key, sig] of this.tileFilterEntries) {
+      sig.set(new Set(json[key] ?? []));
+    }
+    this.pendingRangeOverrides = json.r;
+    // If data is already loaded, apply range overrides against the already-known bounds now
+    // (otherwise the constructor's data-load callback applies them once bounds are computed).
+    if (this.occupations().length > 0) {
+      for (const config of RANGE_FILTER_CONFIGS) {
+        const group = this.rangeSignals.get(config.key)!;
+        const bounds = group.bounds();
+        const override = json.r?.[config.key];
+        group.min.set(override ? Math.max(bounds.min, override[0]) : bounds.min);
+        group.max.set(override ? Math.min(bounds.max, override[1]) : bounds.max);
+      }
+    }
+    this.sortField.set((json.sf as SortField) ?? 'medianAnnualWage');
+    this.sortDirection.set(json.sd === 'asc' ? 'asc' : 'desc');
+    this.page.set(1);
+  }
+
+  private applyInitialStateFromUrl() {
+    const raw = new URLSearchParams(window.location.search).get('f');
+    if (!raw) return;
+    try {
+      const json = JSON.parse(raw);
+      if (!isValidFilterStateJSON(json)) return;
+      this.applyFilterStateJSON(json);
+      this.filtersExpanded.set(true);
+    } catch {
+      // Malformed or tampered link -- ignore and start with defaults.
+    }
+  }
+
+  buildShareableUrl(): string {
+    const json = this.buildFilterStateJSON();
+    const encoded = encodeURIComponent(JSON.stringify(json));
+    return `${window.location.origin}${window.location.pathname}?f=${encoded}`;
+  }
+
+  async copyShareableLink() {
+    const url = this.buildShareableUrl();
+    try {
+      await navigator.clipboard.writeText(url);
+      this.shareLinkCopied.set(true);
+      setTimeout(() => this.shareLinkCopied.set(false), 2000);
+    } catch {
+      // Clipboard API unavailable (non-secure context, permissions, etc.) -- nothing more we can
+      // do without a fallback UI; the button just won't show the "Copied!" confirmation.
+    }
+  }
+
+  saveCurrentSearch(): void {
+    const existing = new Set(this.history().map((r) => r.timestamp));
+    let timestamp = new Date().toISOString();
+    while (existing.has(timestamp)) {
+      timestamp = new Date(Date.parse(timestamp) + 1).toISOString();
+    }
+
+    const state = this.buildFilterStateJSON();
+    const run: CareerSearchRun = {
+      timestamp,
+      label: this.summaryForState(state),
+      state,
+      resultCount: this.resultCount(),
+    };
+
+    const updated = [...this.history(), run];
+    this.history.set(updated);
+    saveHistory(updated);
+  }
+
+  loadSearch(run: CareerSearchRun): void {
+    this.applyFilterStateJSON(run.state);
+    this.filtersExpanded.set(true);
+  }
+
+  deleteSearch(timestamp: string): void {
+    const updated = this.history().filter((r) => r.timestamp !== timestamp);
+    this.history.set(updated);
+    saveHistory(updated);
+  }
+
+  clearSearchHistory(): void {
+    const confirmed = confirm('Clear all saved searches? This cannot be undone.');
+    if (!confirmed) return;
+    this.history.set([]);
+    saveHistory([]);
+  }
+
+  private summaryForState(state: CareerFilterStateJSON): string {
+    const parts: string[] = [];
+    if (state.q) parts.push(`"${state.q}"`);
+    if (state.sg?.length)
+      parts.push(`${state.sg.length} categor${state.sg.length === 1 ? 'y' : 'ies'}`);
+    if (state.ed?.length)
+      parts.push(`${state.ed.length} education level${state.ed.length === 1 ? '' : 's'}`);
+    if (state.jo?.length)
+      parts.push(`${state.jo.length} outlook${state.jo.length === 1 ? '' : 's'}`);
+    if (state.je?.length)
+      parts.push(`${state.je.length} environment${state.je.length === 1 ? '' : 's'}`);
+    if (state.ai?.length) parts.push(`AI exposure: ${state.ai.join('/')}`);
+    if (state.rw?.length) parts.push(`remote: ${state.rw.join('/')}`);
+    if (state.ex?.length)
+      parts.push(`${state.ex.length} experience level${state.ex.length === 1 ? '' : 's'}`);
+    if (state.r && Object.keys(state.r).length)
+      parts.push(`${Object.keys(state.r).length} range filter(s)`);
+    return parts.length ? parts.join(', ') : 'All occupations';
+  }
+
+  // CSV export ----------------------------------------------------------------------------------
+
+  exportCsv(): void {
+    const headers = [
+      'Job Title',
+      'SOC Code',
+      'Job Category',
+      'Total Employment',
+      'Median Annual Salary',
+      'Average Salary',
+      'Low-End Pay',
+      'High-End Pay',
+      'Education Needed',
+      'Experience Required',
+      'Job Outlook',
+      'Projected Employment Change %',
+      'Annual Openings',
+      'Job Environment (site estimate)',
+      'AI Exposure (site estimate)',
+      'Remote-Work Potential (site estimate)',
+    ];
+
+    const escapeCsv = (value: string | number | null): string => {
+      const s = value === null ? '' : String(value);
+      return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+    };
+
+    const rows = this.filtered().map((o) =>
+      [
+        o.jobTitle,
+        o.socCode,
+        o.socMajorGroup,
+        o.totalEmployment,
+        o.medianAnnualWage,
+        o.meanAnnualWage,
+        o.pct10AnnualWage,
+        o.pct90AnnualWage,
+        this.educationLabel(o.typicalEducationNeeded),
+        this.experienceLabel(o.workExperienceRequired),
+        this.jobOutlookLabel(o.jobOutlookTier),
+        o.projectedEmploymentChangePercent,
+        o.projectedAnnualOpenings,
+        o.jobEnvironment,
+        o.aiExposure,
+        o.remoteWorkPotential,
+      ]
+        .map(escapeCsv)
+        .join(','),
+    );
+
+    const csv = [headers.map(escapeCsv).join(','), ...rows].join('\r\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `us-career-data-${new Date().toISOString().slice(0, 10)}.csv`;
+    link.click();
+    URL.revokeObjectURL(url);
+  }
+
+  // Compare / detail panel -----------------------------------------------------------------------
+
+  openComparePanel(): void {
+    this.comparePanelOpen.set(true);
+  }
+
+  closeComparePanel(): void {
+    this.comparePanelOpen.set(false);
+  }
+
+  clearSelection(): void {
+    this.selectedRowCodes.set(new Set());
+  }
+
+  removeFromSelection(socCode: string): void {
+    const next = new Set(this.selectedRowCodes());
+    next.delete(socCode);
+    this.selectedRowCodes.set(next);
+    if (next.size === 0) this.comparePanelOpen.set(false);
   }
 
   setFilter<T>(sig: WritableSignal<T>, value: T) {
@@ -539,11 +931,36 @@ export class UsCareerData implements OnDestroy {
     return this.columnWidths()[field];
   }
 
-  // The table uses table-layout: fixed, so its rendered width is exactly the sum of the rendered
+  hiddenColumns = signal<ReadonlySet<SortField>>(new Set());
+
+  readonly columnPickerOptions = RENDERED_COLUMNS.map((key) => ({
+    key,
+    label: COLUMN_LABELS[key],
+  }));
+
+  isColumnVisible(field: SortField): boolean {
+    return !this.hiddenColumns().has(field);
+  }
+
+  toggleColumnVisibility(field: SortField): void {
+    const next = new Set(this.hiddenColumns());
+    if (next.has(field)) {
+      next.delete(field);
+    } else {
+      next.add(field);
+    }
+    this.hiddenColumns.set(next);
+  }
+
+  // The table uses table-layout: fixed, so its rendered width is exactly the sum of the visible
   // columns' widths -- used to size the mirrored top scrollbar's spacer to match.
   tableTotalWidth = computed(() => {
     const widths = this.columnWidths();
-    return RENDERED_COLUMNS.reduce((sum, key) => sum + widths[key], 0);
+    const hidden = this.hiddenColumns();
+    return RENDERED_COLUMNS.filter((key) => !hidden.has(key)).reduce(
+      (sum, key) => sum + widths[key],
+      0,
+    );
   });
 
   private syncingScroll = false;

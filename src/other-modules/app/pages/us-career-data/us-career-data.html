@@ -81,10 +81,56 @@
       </div>
     </div>
 
+    <div class="history-section">
+      <div class="history-header">
+        <h3>Saved Searches</h3>
+        <div class="history-actions">
+          <button type="button" class="link-btn" (click)="saveCurrentSearch()">
+            Save Current Search
+          </button>
+          @if (historyDescending().length) {
+            <button type="button" class="link-btn danger-link" (click)="clearSearchHistory()">
+              Clear History
+            </button>
+          }
+        </div>
+      </div>
+
+      @if (historyDescending().length) {
+        <div class="history-list">
+          @for (run of historyDescending(); track run.timestamp) {
+            <div class="history-row">
+              <button type="button" class="history-row-main" (click)="loadSearch(run)">
+                <span class="history-row-date">{{ run.timestamp | date: 'medium' }}</span>
+                <span class="history-row-summary">{{ run.label }}</span>
+                <span class="history-row-result">{{ run.resultCount }} jobs</span>
+              </button>
+              <button
+                type="button"
+                class="history-delete-btn"
+                title="Delete this saved search"
+                (click)="deleteSearch(run.timestamp)"
+              >
+                ✕
+              </button>
+            </div>
+          }
+        </div>
+      } @else {
+        <p class="tile-group-hint">
+          No saved searches yet. Set up some filters and tap "Save Current Search" to come back to
+          them later — saved locally in your browser, not sent anywhere.
+        </p>
+      }
+    </div>
+
     <div class="filters-panel">
       <div class="filters-panel-header">
         <h2>Filters</h2>
         <div class="filters-panel-actions">
+          <button type="button" class="link-btn" (click)="copyShareableLink()">
+            {{ shareLinkCopied() ? 'Link Copied ✓' : 'Copy Shareable Link' }}
+          </button>
           @if (hasActiveFilters()) {
             <button type="button" class="link-btn" (click)="resetAllFilters()">
               Reset Filters
@@ -380,9 +426,162 @@
       }
     </div>
 
-    <h2 class="results-heading">
-      Showing {{ resultCount() | number }} of {{ occupations().length | number }} jobs
-    </h2>
+    <div class="results-toolbar">
+      <h2 class="results-heading">
+        Showing {{ resultCount() | number }} of {{ occupations().length | number }} jobs
+      </h2>
+
+      <div class="results-toolbar-actions">
+        @if (selectedRowCodes().size > 0) {
+          <button type="button" class="secondary-btn" (click)="openComparePanel()">
+            {{
+              selectedRowCodes().size === 1
+                ? 'View Details'
+                : 'Compare Selected (' + selectedRowCodes().size + ')'
+            }}
+          </button>
+          <button type="button" class="link-btn" (click)="clearSelection()">Clear Selection</button>
+        }
+        <button type="button" class="secondary-btn" (click)="toggleExpanded(showChart)">
+          {{ showChart() ? 'Hide Chart' : '📊 Show Chart' }}
+        </button>
+        <div class="column-picker-wrap">
+          <button type="button" class="secondary-btn" (click)="toggleExpanded(showColumnPicker)">
+            Columns
+          </button>
+          @if (showColumnPicker()) {
+            <div class="column-picker-panel">
+              @for (col of columnPickerOptions; track col.key) {
+                <label class="column-picker-option">
+                  <input
+                    type="checkbox"
+                    [checked]="isColumnVisible(col.key)"
+                    (change)="toggleColumnVisibility(col.key)"
+                  />
+                  {{ col.label }}
+                </label>
+              }
+            </div>
+          }
+        </div>
+        <button type="button" class="secondary-btn" (click)="exportCsv()">⬇ Export CSV</button>
+      </div>
+    </div>
+
+    @if (showChart()) {
+      <div class="chart-panel">
+        @if (chartData(); as chart) {
+          <div class="chart-legend">
+            <span class="chart-legend-title">AI Exposure (site estimate):</span>
+            <span class="chart-legend-item"
+              ><span class="chart-swatch" style="background: #44d68b"></span>Low</span
+            >
+            <span class="chart-legend-item"
+              ><span class="chart-swatch" style="background: #ffc107"></span>Moderate</span
+            >
+            <span class="chart-legend-item"
+              ><span class="chart-swatch" style="background: #ff6b6b"></span>High</span
+            >
+            <span class="chart-legend-item chart-legend-note"
+              >Dot size = total employment. Click a dot to select that job.</span
+            >
+          </div>
+          <svg
+            class="chart-svg"
+            [attr.viewBox]="'0 0 ' + chart.width + ' ' + chart.height"
+            role="img"
+            aria-label="Scatter chart of median annual salary versus education level, colored by AI exposure"
+          >
+            <!-- Quadrant divider lines at the median salary / median education of the plotted rows -->
+            <line
+              class="chart-quadrant-line"
+              [attr.x1]="chart.quadrantX"
+              [attr.x2]="chart.quadrantX"
+              [attr.y1]="chart.innerTop"
+              [attr.y2]="chart.innerBottom"
+            />
+            <line
+              class="chart-quadrant-line"
+              [attr.x1]="chart.innerLeft"
+              [attr.x2]="chart.innerRight"
+              [attr.y1]="chart.quadrantY"
+              [attr.y2]="chart.quadrantY"
+            />
+
+            <!-- Axes -->
+            <line
+              class="chart-axis-line"
+              [attr.x1]="chart.innerLeft"
+              [attr.x2]="chart.innerRight"
+              [attr.y1]="chart.innerBottom"
+              [attr.y2]="chart.innerBottom"
+            />
+            <line
+              class="chart-axis-line"
+              [attr.x1]="chart.innerLeft"
+              [attr.x2]="chart.innerLeft"
+              [attr.y1]="chart.innerTop"
+              [attr.y2]="chart.innerBottom"
+            />
+
+            @for (tick of chart.xTicks; track tick.label) {
+              <text
+                class="chart-tick-label"
+                [attr.x]="tick.x"
+                [attr.y]="chart.innerBottom + 20"
+                text-anchor="middle"
+              >
+                {{ tick.label }}
+              </text>
+            }
+            @for (tick of chart.yTicks; track tick.label) {
+              <text
+                class="chart-tick-label"
+                [attr.x]="chart.innerLeft - 8"
+                [attr.y]="tick.y + 3"
+                text-anchor="end"
+              >
+                {{ tick.label }}
+              </text>
+            }
+
+            <text
+              class="chart-axis-title"
+              [attr.x]="(chart.innerLeft + chart.innerRight) / 2"
+              [attr.y]="chart.height - 6"
+              text-anchor="middle"
+            >
+              Median Annual Salary
+            </text>
+            <text
+              class="chart-axis-title"
+              [attr.x]="-((chart.innerTop + chart.innerBottom) / 2)"
+              y="14"
+              text-anchor="middle"
+              transform="rotate(-90)"
+            >
+              Education Needed
+            </text>
+
+            @for (point of chart.points; track point.socCode) {
+              <circle
+                class="chart-dot"
+                [class.selected]="selectedRowCodes().has(point.socCode)"
+                [attr.cx]="point.cx"
+                [attr.cy]="point.cy"
+                [attr.r]="point.r"
+                [attr.fill]="point.color"
+                (click)="toggleRowSelection(point.socCode)"
+              >
+                <title>{{ point.tooltip }}</title>
+              </circle>
+            }
+          </svg>
+        } @else {
+          <p class="status-message">No jobs with both a salary and an education level to plot.</p>
+        }
+      </div>
+    }
 
     <div class="table-scroll-top" #topScroll (scroll)="syncScroll(topScroll, tableScroll)">
       <div class="table-scroll-top-spacer" [style.width.px]="tableTotalWidth()"></div>
@@ -393,6 +592,7 @@
         <thead>
           <tr>
             <th
+              [hidden]="!isColumnVisible('jobTitle')"
               [style.width.px]="columnWidth('jobTitle')"
               [title]="columnTooltip('jobTitle')"
               (click)="sortBy('jobTitle')"
@@ -407,6 +607,7 @@
               ></span>
             </th>
             <th
+              [hidden]="!isColumnVisible('socMajorGroup')"
               [style.width.px]="columnWidth('socMajorGroup')"
               [title]="columnTooltip('socMajorGroup')"
               (click)="sortBy('socMajorGroup')"
@@ -422,6 +623,7 @@
             </th>
             <th
               class="numeric"
+              [hidden]="!isColumnVisible('totalEmployment')"
               [style.width.px]="columnWidth('totalEmployment')"
               [title]="columnTooltip('totalEmployment')"
               (click)="sortBy('totalEmployment')"
@@ -437,6 +639,7 @@
             </th>
             <th
               class="numeric"
+              [hidden]="!isColumnVisible('medianAnnualWage')"
               [style.width.px]="columnWidth('medianAnnualWage')"
               [title]="columnTooltip('medianAnnualWage')"
               (click)="sortBy('medianAnnualWage')"
@@ -452,6 +655,7 @@
             </th>
             <th
               class="numeric"
+              [hidden]="!isColumnVisible('meanAnnualWage')"
               [style.width.px]="columnWidth('meanAnnualWage')"
               [title]="columnTooltip('meanAnnualWage')"
               (click)="sortBy('meanAnnualWage')"
@@ -467,6 +671,7 @@
             </th>
             <th
               class="numeric"
+              [hidden]="!isColumnVisible('pct10AnnualWage')"
               [style.width.px]="columnWidth('pct10AnnualWage')"
               [title]="columnTooltip('pct10AnnualWage')"
               (click)="sortBy('pct10AnnualWage')"
@@ -482,6 +687,7 @@
             </th>
             <th
               class="numeric"
+              [hidden]="!isColumnVisible('pct90AnnualWage')"
               [style.width.px]="columnWidth('pct90AnnualWage')"
               [title]="columnTooltip('pct90AnnualWage')"
               (click)="sortBy('pct90AnnualWage')"
@@ -496,6 +702,7 @@
               ></span>
             </th>
             <th
+              [hidden]="!isColumnVisible('typicalEducationNeeded')"
               [style.width.px]="columnWidth('typicalEducationNeeded')"
               [title]="columnTooltip('typicalEducationNeeded')"
               (click)="sortBy('typicalEducationNeeded')"
@@ -510,6 +717,7 @@
               ></span>
             </th>
             <th
+              [hidden]="!isColumnVisible('workExperienceRequired')"
               [style.width.px]="columnWidth('workExperienceRequired')"
               [title]="columnTooltip('workExperienceRequired')"
               (click)="sortBy('workExperienceRequired')"
@@ -524,6 +732,7 @@
               ></span>
             </th>
             <th
+              [hidden]="!isColumnVisible('jobOutlookTier')"
               [style.width.px]="columnWidth('jobOutlookTier')"
               [title]="columnTooltip('jobOutlookTier')"
               (click)="sortBy('jobOutlookTier')"
@@ -539,6 +748,7 @@
             </th>
             <th
               class="numeric"
+              [hidden]="!isColumnVisible('projectedAnnualOpenings')"
               [style.width.px]="columnWidth('projectedAnnualOpenings')"
               [title]="columnTooltip('projectedAnnualOpenings')"
               (click)="sortBy('projectedAnnualOpenings')"
@@ -554,6 +764,7 @@
             </th>
             <th
               class="estimate-col"
+              [hidden]="!isColumnVisible('jobEnvironment')"
               [style.width.px]="columnWidth('jobEnvironment')"
               [title]="columnTooltip('jobEnvironment')"
               (click)="sortBy('jobEnvironment')"
@@ -569,6 +780,7 @@
             </th>
             <th
               class="estimate-col"
+              [hidden]="!isColumnVisible('aiExposure')"
               [style.width.px]="columnWidth('aiExposure')"
               [title]="columnTooltip('aiExposure')"
               (click)="sortBy('aiExposure')"
@@ -584,6 +796,7 @@
             </th>
             <th
               class="estimate-col"
+              [hidden]="!isColumnVisible('remoteWorkPotential')"
               [style.width.px]="columnWidth('remoteWorkPotential')"
               [title]="columnTooltip('remoteWorkPotential')"
               (click)="sortBy('remoteWorkPotential')"
@@ -605,54 +818,71 @@
               [class.selected-row]="selectedRowCodes().has(occupation.socCode)"
               (click)="toggleRowSelection(occupation.socCode)"
             >
-              <td [title]="occupation.socCode">{{ occupation.jobTitle }}</td>
-              <td>{{ occupation.socMajorGroup }}</td>
-              <td class="numeric" [title]="employmentShareTooltip(occupation.totalEmployment)">
+              <td [hidden]="!isColumnVisible('jobTitle')" [title]="occupation.socCode">
+                {{ occupation.jobTitle }}
+              </td>
+              <td [hidden]="!isColumnVisible('socMajorGroup')">{{ occupation.socMajorGroup }}</td>
+              <td
+                class="numeric"
+                [hidden]="!isColumnVisible('totalEmployment')"
+                [title]="employmentShareTooltip(occupation.totalEmployment)"
+              >
                 {{ (occupation.totalEmployment | number) ?? '—' }}
               </td>
-              <td class="numeric">
+              <td class="numeric" [hidden]="!isColumnVisible('medianAnnualWage')">
                 @if (occupation.medianAnnualWage !== null) {
                   {{ occupation.medianAnnualWage | currency: 'USD' : 'symbol' : '1.0-0' }}
                 } @else {
                   &mdash;
                 }
               </td>
-              <td class="numeric">
+              <td class="numeric" [hidden]="!isColumnVisible('meanAnnualWage')">
                 @if (occupation.meanAnnualWage !== null) {
                   {{ occupation.meanAnnualWage | currency: 'USD' : 'symbol' : '1.0-0' }}
                 } @else {
                   &mdash;
                 }
               </td>
-              <td class="numeric">
+              <td class="numeric" [hidden]="!isColumnVisible('pct10AnnualWage')">
                 @if (occupation.pct10AnnualWage !== null) {
                   {{ occupation.pct10AnnualWage | currency: 'USD' : 'symbol' : '1.0-0' }}
                 } @else {
                   &mdash;
                 }
               </td>
-              <td class="numeric">
+              <td class="numeric" [hidden]="!isColumnVisible('pct90AnnualWage')">
                 @if (occupation.pct90AnnualWage !== null) {
                   {{ occupation.pct90AnnualWage | currency: 'USD' : 'symbol' : '1.0-0' }}
                 } @else {
                   &mdash;
                 }
               </td>
-              <td>{{ educationLabel(occupation.typicalEducationNeeded) }}</td>
-              <td>{{ experienceLabel(occupation.workExperienceRequired) }}</td>
-              <td [title]="occupation.projectedEmploymentChangePercent + '% projected 2025–35'">
+              <td [hidden]="!isColumnVisible('typicalEducationNeeded')">
+                {{ educationLabel(occupation.typicalEducationNeeded) }}
+              </td>
+              <td [hidden]="!isColumnVisible('workExperienceRequired')">
+                {{ experienceLabel(occupation.workExperienceRequired) }}
+              </td>
+              <td
+                [hidden]="!isColumnVisible('jobOutlookTier')"
+                [title]="occupation.projectedEmploymentChangePercent + '% projected 2025–35'"
+              >
                 <span [class]="outlookClass(occupation.jobOutlookTier)">{{
                   jobOutlookLabel(occupation.jobOutlookTier)
                 }}</span>
               </td>
-              <td class="numeric">{{ occupation.projectedAnnualOpenings | number }}</td>
-              <td class="estimate-col">{{ occupation.jobEnvironment }}</td>
-              <td class="estimate-col">
+              <td class="numeric" [hidden]="!isColumnVisible('projectedAnnualOpenings')">
+                {{ occupation.projectedAnnualOpenings | number }}
+              </td>
+              <td class="estimate-col" [hidden]="!isColumnVisible('jobEnvironment')">
+                {{ occupation.jobEnvironment }}
+              </td>
+              <td class="estimate-col" [hidden]="!isColumnVisible('aiExposure')">
                 <span [class]="exposureClass(occupation.aiExposure)">{{
                   occupation.aiExposure
                 }}</span>
               </td>
-              <td class="estimate-col">
+              <td class="estimate-col" [hidden]="!isColumnVisible('remoteWorkPotential')">
                 <span [class]="remoteClass(occupation.remoteWorkPotential)">{{
                   occupation.remoteWorkPotential
                 }}</span>
@@ -683,5 +913,158 @@
       these columns mean?" above for plain-language definitions of every column. Drag a column's
       right edge to resize it, or double-click the edge to reset its width.
     </p>
+
+    @if (comparePanelOpen() && selectedOccupations().length > 0) {
+      <div
+        class="compare-backdrop"
+        (click)="closeComparePanel()"
+        (keydown.escape)="closeComparePanel()"
+      >
+        <div class="compare-panel" (click)="$event.stopPropagation()">
+          <div class="compare-panel-header">
+            <h2>{{ selectedOccupations().length === 1 ? 'Job Details' : 'Compare Jobs' }}</h2>
+            <button type="button" class="info-toggle" (click)="closeComparePanel()">Close ✕</button>
+          </div>
+          <div class="compare-scroll">
+            <table class="compare-table">
+              <thead>
+                <tr>
+                  <th class="compare-field-col"></th>
+                  @for (o of selectedOccupations(); track o.socCode) {
+                    <th>
+                      {{ o.jobTitle }}
+                      <button
+                        type="button"
+                        class="compare-remove-btn"
+                        title="Remove from comparison"
+                        (click)="removeFromSelection(o.socCode)"
+                      >
+                        ✕
+                      </button>
+                    </th>
+                  }
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td class="compare-field-col">Job Category</td>
+                  @for (o of selectedOccupations(); track o.socCode) {
+                    <td>{{ o.socMajorGroup }}</td>
+                  }
+                </tr>
+                <tr>
+                  <td class="compare-field-col">Total Employment</td>
+                  @for (o of selectedOccupations(); track o.socCode) {
+                    <td [title]="employmentShareTooltip(o.totalEmployment)">
+                      {{ (o.totalEmployment | number) ?? '—' }}
+                    </td>
+                  }
+                </tr>
+                <tr>
+                  <td class="compare-field-col">Median Annual Salary</td>
+                  @for (o of selectedOccupations(); track o.socCode) {
+                    <td>
+                      {{
+                        o.medianAnnualWage !== null
+                          ? (o.medianAnnualWage | currency: 'USD' : 'symbol' : '1.0-0')
+                          : '—'
+                      }}
+                    </td>
+                  }
+                </tr>
+                <tr>
+                  <td class="compare-field-col">Average Salary</td>
+                  @for (o of selectedOccupations(); track o.socCode) {
+                    <td>
+                      {{
+                        o.meanAnnualWage !== null
+                          ? (o.meanAnnualWage | currency: 'USD' : 'symbol' : '1.0-0')
+                          : '—'
+                      }}
+                    </td>
+                  }
+                </tr>
+                <tr>
+                  <td class="compare-field-col">Low-End Pay</td>
+                  @for (o of selectedOccupations(); track o.socCode) {
+                    <td>
+                      {{
+                        o.pct10AnnualWage !== null
+                          ? (o.pct10AnnualWage | currency: 'USD' : 'symbol' : '1.0-0')
+                          : '—'
+                      }}
+                    </td>
+                  }
+                </tr>
+                <tr>
+                  <td class="compare-field-col">High-End Pay</td>
+                  @for (o of selectedOccupations(); track o.socCode) {
+                    <td>
+                      {{
+                        o.pct90AnnualWage !== null
+                          ? (o.pct90AnnualWage | currency: 'USD' : 'symbol' : '1.0-0')
+                          : '—'
+                      }}
+                    </td>
+                  }
+                </tr>
+                <tr>
+                  <td class="compare-field-col">Education Needed</td>
+                  @for (o of selectedOccupations(); track o.socCode) {
+                    <td>{{ educationLabel(o.typicalEducationNeeded) }}</td>
+                  }
+                </tr>
+                <tr>
+                  <td class="compare-field-col">Experience Required</td>
+                  @for (o of selectedOccupations(); track o.socCode) {
+                    <td>{{ experienceLabel(o.workExperienceRequired) }}</td>
+                  }
+                </tr>
+                <tr>
+                  <td class="compare-field-col">Job Outlook</td>
+                  @for (o of selectedOccupations(); track o.socCode) {
+                    <td [title]="o.projectedEmploymentChangePercent + '% projected 2025–35'">
+                      <span [class]="outlookClass(o.jobOutlookTier)">{{
+                        jobOutlookLabel(o.jobOutlookTier)
+                      }}</span>
+                    </td>
+                  }
+                </tr>
+                <tr>
+                  <td class="compare-field-col">Annual Openings</td>
+                  @for (o of selectedOccupations(); track o.socCode) {
+                    <td>{{ o.projectedAnnualOpenings | number }}</td>
+                  }
+                </tr>
+                <tr>
+                  <td class="compare-field-col">Job Environment*</td>
+                  @for (o of selectedOccupations(); track o.socCode) {
+                    <td>{{ o.jobEnvironment }}</td>
+                  }
+                </tr>
+                <tr>
+                  <td class="compare-field-col">AI Exposure*</td>
+                  @for (o of selectedOccupations(); track o.socCode) {
+                    <td>
+                      <span [class]="exposureClass(o.aiExposure)">{{ o.aiExposure }}</span>
+                    </td>
+                  }
+                </tr>
+                <tr>
+                  <td class="compare-field-col">Remote-Work Potential*</td>
+                  @for (o of selectedOccupations(); track o.socCode) {
+                    <td>
+                      <span [class]="remoteClass(o.remoteWorkPotential)">{{
+                        o.remoteWorkPotential
+                      }}</span>
+                    </td>
+                  }
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    }
   }
 </section>

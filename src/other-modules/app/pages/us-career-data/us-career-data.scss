@@ -203,6 +203,130 @@ h1 {
   &:hover {
     opacity: 0.8;
   }
+
+  &.danger-link {
+    color: #ff7b7b;
+  }
+}
+
+.secondary-btn {
+  padding: 8px 14px;
+  background: #111827;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 8px;
+  color: #d6dde6;
+  font-size: 0.82rem;
+  cursor: pointer;
+
+  &:hover {
+    border-color: #49c6ff;
+    color: #49c6ff;
+  }
+}
+
+// Saved searches ------------------------------------------------------------------------------
+
+.history-section {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 20px;
+  padding: 16px 20px;
+  background: rgba(23, 31, 43, 0.5);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+}
+
+.history-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+
+  h3 {
+    margin: 0;
+    color: #d6dde6;
+    font-size: 0.78rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+}
+
+.history-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.history-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-height: 220px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.history-row {
+  display: flex;
+  align-items: stretch;
+  gap: 8px;
+}
+
+.history-row-main {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+  padding: 10px 14px;
+  background: #111827;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 8px;
+  color: #b8c1ce;
+  font-size: 0.82rem;
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+
+  &:hover {
+    border-color: #49c6ff;
+  }
+}
+
+.history-row-date {
+  flex-shrink: 0;
+  color: #8f9bad;
+  font-size: 0.78rem;
+}
+
+.history-row-summary {
+  flex: 1;
+}
+
+.history-row-result {
+  flex-shrink: 0;
+  color: #49c6ff;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.history-delete-btn {
+  flex-shrink: 0;
+  width: 36px;
+  padding: 0;
+  background: #111827;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 8px;
+  color: #8f9bad;
+  cursor: pointer;
+
+  &:hover {
+    border-color: #ff7b7b;
+    color: #ff7b7b;
+  }
 }
 
 .filters-panel {
@@ -387,11 +511,243 @@ h1 {
   }
 }
 
+.results-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
 .results-heading {
-  margin: 0 0 10px;
+  margin: 0;
   color: #d6dde6;
   font-size: 1.05rem;
   font-weight: 700;
+}
+
+.results-toolbar-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+// Column show/hide picker ----------------------------------------------------------------------
+
+.column-picker-wrap {
+  position: relative;
+}
+
+.column-picker-panel {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  z-index: 5;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(160px, 1fr));
+  gap: 4px 16px;
+  padding: 14px 16px;
+  background: #111827;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 10px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+  white-space: nowrap;
+}
+
+.column-picker-option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 0;
+  color: #d6dde6;
+  font-size: 0.82rem;
+  cursor: pointer;
+
+  input {
+    accent-color: #49c6ff;
+  }
+}
+
+// Scatter / quadrant chart ----------------------------------------------------------------------
+
+.chart-panel {
+  margin-bottom: 20px;
+  padding: 16px 20px;
+  background: rgba(23, 31, 43, 0.5);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+}
+
+.chart-legend {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 10px;
+  font-size: 0.8rem;
+  color: #8f9bad;
+}
+
+.chart-legend-title {
+  font-weight: 600;
+  color: #d6dde6;
+}
+
+.chart-legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.chart-legend-note {
+  color: #6b7686;
+  font-style: italic;
+}
+
+.chart-swatch {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+}
+
+.chart-svg {
+  width: 100%;
+  height: auto;
+}
+
+.chart-quadrant-line {
+  stroke: rgba(255, 255, 255, 0.12);
+  stroke-width: 1;
+  stroke-dasharray: 4 4;
+}
+
+.chart-axis-line {
+  stroke: #383835;
+  stroke-width: 1;
+}
+
+.chart-tick-label {
+  fill: #8f9bad;
+  font-size: 11px;
+}
+
+.chart-axis-title {
+  fill: #d6dde6;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.chart-dot {
+  fill-opacity: 0.7;
+  stroke: #0b1118;
+  stroke-width: 1;
+  cursor: pointer;
+
+  &:hover {
+    fill-opacity: 1;
+  }
+
+  &.selected {
+    stroke: #ffffff;
+    stroke-width: 2;
+    fill-opacity: 1;
+  }
+}
+
+// Compare / detail panel ------------------------------------------------------------------------
+
+.compare-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: rgba(0, 0, 0, 0.6);
+}
+
+.compare-panel {
+  width: 100%;
+  max-width: 1100px;
+  max-height: 85vh;
+  display: flex;
+  flex-direction: column;
+  background: #111827;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 14px;
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.5);
+}
+
+.compare-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 16px 20px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+
+  h2 {
+    margin: 0;
+    color: #d6dde6;
+    font-size: 1.1rem;
+  }
+}
+
+.compare-scroll {
+  overflow: auto;
+  padding: 0 20px 20px;
+}
+
+.compare-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+  white-space: nowrap;
+
+  th,
+  td {
+    padding: 10px 16px;
+    text-align: left;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    vertical-align: top;
+  }
+
+  thead th {
+    position: sticky;
+    top: 0;
+    background: #111827;
+    color: #d6dde6;
+    font-weight: 700;
+  }
+
+  td {
+    color: #d6dde6;
+  }
+}
+
+.compare-field-col {
+  color: #8f9bad;
+  font-weight: 600;
+}
+
+.compare-remove-btn {
+  margin-left: 10px;
+  padding: 2px 6px;
+  background: none;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 6px;
+  color: #8f9bad;
+  font-size: 0.72rem;
+  cursor: pointer;
+
+  &:hover {
+    border-color: #ff7b7b;
+    color: #ff7b7b;
+  }
 }
 
 // A thin, duplicate horizontal scrollbar above the table, synced to .table-scroll's scrollLeft
@@ -439,6 +795,11 @@ h1 {
   border-collapse: collapse;
   font-size: 0.85rem;
   white-space: nowrap;
+
+  th[hidden],
+  td[hidden] {
+    display: none;
+  }
 
   th,
   td {
@@ -503,6 +864,10 @@ h1 {
 
   tbody tr {
     cursor: pointer;
+  }
+
+  tbody tr:nth-child(even):not(.selected-row) {
+    background: rgba(255, 255, 255, 0.025);
   }
 
   tbody tr:hover {
