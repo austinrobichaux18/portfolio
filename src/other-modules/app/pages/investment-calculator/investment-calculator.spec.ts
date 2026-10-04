@@ -28,7 +28,7 @@ describe('InvestmentCalculator', () => {
 
   it('recomputes when an input signal changes', () => {
     const before = component.result().endingBalance;
-    component.setContributionAmount('500');
+    component.setContributionAmount('2000');
     const after = component.result().endingBalance;
     expect(after).toBeGreaterThan(before);
   });
@@ -36,13 +36,13 @@ describe('InvestmentCalculator', () => {
   it('resets all inputs to their defaults', () => {
     component.setStartingAmount('9999');
     component.setYears('1');
-    component.setCurrentAge('30');
+    component.setCurrentAge('85');
     component.setWithdrawalRatePercent('5');
     component.setInflationRatePercent('0');
     component.reset();
-    expect(component.startingAmount()).toBe(1000);
-    expect(component.years()).toBe(20);
-    expect(component.currentAge()).toBeNull();
+    expect(component.startingAmount()).toBe(0);
+    expect(component.years()).toBe(30);
+    expect(component.currentAge()).toBe(30);
     expect(component.withdrawalRatePercent()).toBe(3.5);
     expect(component.inflationRatePercent()).toBe(3);
   });
@@ -63,6 +63,7 @@ describe('InvestmentCalculator', () => {
   });
 
   it('leaves current age unset until entered, then computes age per year', () => {
+    component.setCurrentAge('');
     expect(component.currentAge()).toBeNull();
     component.setCurrentAge('30');
     expect(component.currentAge()).toBe(30);
@@ -71,6 +72,7 @@ describe('InvestmentCalculator', () => {
   });
 
   it('computes the final age at the end of the horizon, or null with no age entered', () => {
+    component.setCurrentAge('');
     expect(component.finalAge()).toBeNull();
     component.setCurrentAge('30');
     component.setYears('20');
@@ -88,6 +90,7 @@ describe('InvestmentCalculator', () => {
   });
 
   it('never flags Social Security eligibility without an age entered', () => {
+    component.setCurrentAge('');
     expect(component.currentAge()).toBeNull();
     expect(component.isSsEligibleYear(100)).toBe(false);
   });
@@ -251,13 +254,13 @@ describe('InvestmentCalculator', () => {
     fixture.detectChanges();
     await new Promise((resolve) => setTimeout(resolve, 0));
 
-    const startingAmountInput = fixture.nativeElement.querySelector(
-      '#starting-amount',
+    const contributionAmountInput = fixture.nativeElement.querySelector(
+      '#contribution-amount',
     ) as HTMLInputElement;
     const incomeInput = fixture.nativeElement.querySelector(
       `#income-${component.incomeEntries()[0].id}`,
     ) as HTMLInputElement;
-    expect(startingAmountInput.value).toBe('1,000');
+    expect(contributionAmountInput.value).toBe('1,000');
     expect(incomeInput.value).toBe('70,000');
   });
 
@@ -294,7 +297,7 @@ describe('InvestmentCalculator', () => {
     const saved = component.history()[0];
 
     component.reset();
-    expect(component.startingAmount()).toBe(1000);
+    expect(component.startingAmount()).toBe(0);
 
     component.loadFromHistory(saved);
     expect(component.startingAmount()).toBe(5000);

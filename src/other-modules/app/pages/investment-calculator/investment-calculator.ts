@@ -168,9 +168,9 @@ export class InvestmentCalculator {
     afterNextRender(() => this.formatAllNumericInputsSoon());
   }
 
-  startingAmount = signal(1000);
+  startingAmount = signal(0);
 
-  contributionAmount = signal(200);
+  contributionAmount = signal(1000);
 
   contributionFrequency = signal<ContributionFrequency>('monthly');
 
@@ -180,7 +180,7 @@ export class InvestmentCalculator {
 
   compoundFrequency = signal<CompoundFrequency>('annually');
 
-  years = signal(20);
+  years = signal(30);
 
   months = signal(0);
 
@@ -189,7 +189,7 @@ export class InvestmentCalculator {
 
   withdrawalRatePercent = signal(3.5);
 
-  currentAge = signal<number | null>(null);
+  currentAge = signal<number | null>(30);
 
   history = signal<InvestmentRun[]>(loadHistory());
 
@@ -706,17 +706,17 @@ export class InvestmentCalculator {
   }
 
   reset(): void {
-    this.startingAmount.set(1000);
-    this.contributionAmount.set(200);
+    this.startingAmount.set(0);
+    this.contributionAmount.set(1000);
     this.contributionFrequency.set('monthly');
     this.contributionTiming.set('end');
     this.annualInterestRatePercent.set(10);
     this.compoundFrequency.set('annually');
-    this.years.set(20);
+    this.years.set(30);
     this.months.set(0);
     this.inflationRatePercent.set(3);
     this.withdrawalRatePercent.set(3.5);
-    this.currentAge.set(null);
+    this.currentAge.set(30);
     this.formatAllNumericInputsSoon();
   }
 
