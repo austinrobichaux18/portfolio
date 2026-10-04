@@ -415,7 +415,14 @@
           />
         </div>
 
-        <button type="button" class="secondary reset-btn" (click)="reset()">Reset</button>
+        <button
+          type="button"
+          class="secondary reset-btn"
+          aria-label="Reset all inputs in both widgets to their defaults"
+          (click)="reset()"
+        >
+          Reset All Inputs
+        </button>
       </div>
 
       <div class="budget-card">

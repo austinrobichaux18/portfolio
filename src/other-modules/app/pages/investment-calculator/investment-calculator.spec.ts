@@ -37,18 +37,37 @@ describe('InvestmentCalculator', () => {
     expect(after).toBeGreaterThan(before);
   });
 
-  it('resets all inputs to their defaults', () => {
+  it('resets all inputs in both widgets to their defaults', () => {
     component.setStartingAmount('9999');
     component.setYears('1');
     component.setCurrentAge('85');
     component.setWithdrawalRatePercent('5');
     component.setInflationRatePercent('0');
+    component.onStateSelected('CA');
+    component.setWithholdingsAmount('500');
+    component.setMonthlyCostOfLiving('9999');
+    component.setCurrentCheckingBalance('1234');
+    component.setCurrentSavingsBalance('1234');
+    component.setIgnoreAlreadySaved(true);
+    component.addIncomeEntry();
+
     component.reset();
+
     expect(component.startingAmount()).toBe(0);
     expect(component.years()).toBe(37);
     expect(component.currentAge()).toBe(30);
     expect(component.withdrawalRatePercent()).toBe(3.5);
     expect(component.inflationRatePercent()).toBe(3);
+
+    expect(component.incomeEntries()).toHaveLength(1);
+    expect(component.incomeAnnualAmounts()).toEqual([70000]);
+    expect(component.selectedStateCode()).toBe('');
+    expect(component.withholdingsAmount()).toBe(0);
+    expect(component.monthlyCostOfLiving()).toBe(45_000 / 12);
+    expect(component.currentCheckingBalance()).toBe(0);
+    expect(component.currentSavingsBalance()).toBe(0);
+    expect(component.ignoreAlreadySaved()).toBe(false);
+    expect(component.householdBudgetEntered()).toBe(false);
   });
 
   it('feeds the inflation rate into the projection', () => {
@@ -264,7 +283,7 @@ describe('InvestmentCalculator', () => {
     const incomeInput = fixture.nativeElement.querySelector(
       `#income-${component.incomeEntries()[0].id}`,
     ) as HTMLInputElement;
-    expect(contributionAmountInput.value).toBe('1,000');
+    expect(contributionAmountInput.value).toBe('774');
     expect(incomeInput.value).toBe('70,000');
   });
 

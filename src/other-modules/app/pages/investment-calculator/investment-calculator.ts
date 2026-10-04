@@ -234,7 +234,7 @@ export class InvestmentCalculator {
 
   startingAmount = signal(0);
 
-  contributionAmount = signal(1000);
+  contributionAmount = signal(774);
 
   contributionFrequency = signal<ContributionFrequency>('monthly');
 
@@ -779,7 +779,7 @@ export class InvestmentCalculator {
 
   reset(): void {
     this.startingAmount.set(0);
-    this.contributionAmount.set(1000);
+    this.contributionAmount.set(774);
     this.contributionFrequency.set('monthly');
     this.contributionTiming.set('end');
     this.annualInterestRatePercent.set(10);
@@ -789,6 +789,19 @@ export class InvestmentCalculator {
     this.inflationRatePercent.set(3);
     this.withdrawalRatePercent.set(3.5);
     this.currentAge.set(30);
+
+    this.incomeEntries.set([createIncomeEntry(DEFAULT_YEARLY_INCOME)]);
+    this.selectedStateCode.set('');
+    this.stateTaxRatePercent.set(AVERAGE_STATE_TAX_RATE_PERCENT);
+    this.withholdingsAmount.set(0);
+    this.withholdingsFrequency.set('monthly');
+    this.monthlyCostOfLiving.set(DEFAULT_MONTHLY_COST_OF_LIVING);
+    this.costOfLivingFrequency.set('monthly');
+    this.currentCheckingBalance.set(0);
+    this.currentSavingsBalance.set(0);
+    this.ignoreAlreadySaved.set(false);
+    this.lastAppliedPresetId.set(null);
+
     this.formatAllNumericInputsSoon();
   }
 
