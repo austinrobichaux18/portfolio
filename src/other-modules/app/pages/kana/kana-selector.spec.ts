@@ -32,4 +32,38 @@ describe('pickNextChar', () => {
 
     expect(weakCount).toBeGreaterThan(trials * 0.7);
   });
+
+  it('weights a slow-but-correct character higher than a fast-and-correct one', () => {
+    const pool = [makeChar('slow'), makeChar('fast')];
+    const stats: KanaCharStatsMap = {
+      slow: { attempts: 10, correct: 10, totalTimeMs: 10 * 10000 }, // 10s avg, maxed out
+      fast: { attempts: 10, correct: 10, totalTimeMs: 10 * 1000 }, // 1s avg, within healthy range
+    };
+
+    let slowCount = 0;
+    const trials = 500;
+    for (let i = 0; i < trials; i++) {
+      const next = pickNextChar(pool, stats, null);
+      if (next.id === 'slow') slowCount++;
+    }
+
+    expect(slowCount).toBeGreaterThan(trials * 0.55);
+  });
+
+  it('weights an incorrect answer higher than a maxed-out slow-but-correct one', () => {
+    const pool = [makeChar('wrong'), makeChar('slowCorrect')];
+    const stats: KanaCharStatsMap = {
+      wrong: { attempts: 10, correct: 9, totalTimeMs: 10 * 1000 }, // one miss, fast
+      slowCorrect: { attempts: 10, correct: 10, totalTimeMs: 10 * 100000 }, // never misses, always maxed-out slow
+    };
+
+    let wrongCount = 0;
+    const trials = 500;
+    for (let i = 0; i < trials; i++) {
+      const next = pickNextChar(pool, stats, null);
+      if (next.id === 'wrong') wrongCount++;
+    }
+
+    expect(wrongCount).toBeGreaterThan(trials * 0.5);
+  });
 });
