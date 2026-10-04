@@ -309,32 +309,50 @@
 
         <div class="form-row">
           <label for="years">Time Horizon</label>
-          <div class="input-suffix">
-            <input
-              #yearsInput
-              id="years"
-              type="text"
-              data-numeric
-              inputmode="numeric"
-              [value]="years()"
-              (input)="setYears(yearsInput.value)"
-              (blur)="formatIntegerInputOnBlur($event)"
-            />
-            <span>years</span>
+          <div class="half-input-row">
+            <div class="input-suffix">
+              <input
+                #yearsInput
+                id="years"
+                type="text"
+                data-numeric
+                inputmode="numeric"
+                [value]="years()"
+                (input)="setYears(yearsInput.value)"
+                (blur)="formatIntegerInputOnBlur($event)"
+              />
+              <span>years</span>
+            </div>
+            <div class="input-suffix">
+              <input
+                #monthsInput
+                id="months"
+                type="text"
+                data-numeric
+                inputmode="numeric"
+                [value]="months()"
+                (input)="setMonths(monthsInput.value)"
+                (blur)="formatIntegerInputOnBlur($event)"
+              />
+              <span>months</span>
+            </div>
           </div>
-          <div class="input-suffix">
-            <input
-              #monthsInput
-              id="months"
-              type="text"
-              data-numeric
-              inputmode="numeric"
-              [value]="months()"
-              (input)="setMonths(monthsInput.value)"
-              (blur)="formatIntegerInputOnBlur($event)"
-            />
-            <span>months</span>
-          </div>
+          <label for="retirement-age">Goal Retirement Age</label>
+          <input
+            #retirementAgeInput
+            id="retirement-age"
+            type="text"
+            data-numeric
+            inputmode="numeric"
+            placeholder="e.g. 65"
+            [disabled]="currentAge() === null"
+            [value]="goalRetirementAge() ?? ''"
+            (input)="setRetirementAge(retirementAgeInput.value)"
+            (blur)="formatIntegerInputOnBlur($event)"
+          />
+          @if (currentAge() === null) {
+            <p class="field-note">Enter your current age below to use this.</p>
+          }
         </div>
 
         <div class="form-row">
@@ -1111,7 +1129,7 @@
                       }
                     </span>
                   }
-                  @if (coversCostOfLiving(row.year, row.endingBalance)) {
+                  @if (row.year === firstCostOfLivingCoveredYear()) {
                     <span
                       class="col-covered-badge"
                       [title]="costOfLivingCoveredTitle(row.year, row.endingBalance)"

@@ -490,4 +490,48 @@ describe('InvestmentCalculator', () => {
     expect(component.isInfoPopoverOpen('withholdings')).toBe(false);
     expect(component.isInfoPopoverOpen('costOfLiving')).toBe(true);
   });
+
+  it('derives the goal retirement age from current age plus the time horizon', () => {
+    component.setCurrentAge('30');
+    component.setYears('35');
+    component.setMonths('0');
+    expect(component.goalRetirementAge()).toBe(65);
+
+    component.setMonths('7');
+    expect(component.goalRetirementAge()).toBe(66); // rounds up past the half-year mark
+
+    component.setCurrentAge('');
+    expect(component.goalRetirementAge()).toBeNull();
+  });
+
+  it('re-derives years/months when the goal retirement age is edited', () => {
+    component.setCurrentAge('30');
+    component.setRetirementAge('65');
+    expect(component.years()).toBe(35);
+    expect(component.months()).toBe(0);
+    expect(component.goalRetirementAge()).toBe(65);
+
+    // Can't go below the current age.
+    component.setRetirementAge('20');
+    expect(component.years()).toBe(0);
+    expect(component.months()).toBe(0);
+  });
+
+  it('ignores the retirement age input until a current age is entered', () => {
+    component.setCurrentAge('');
+    component.setYears('10');
+    component.setRetirementAge('65');
+    expect(component.years()).toBe(10);
+  });
+
+  it('only flags the first year that covers the entered cost of living', () => {
+    component.setCurrentAge('30');
+    component.setMonthlyCostOfLiving('1000');
+    const rows = component.result().yearRows;
+    const coveredYears = rows
+      .map((row) => row.year)
+      .filter((year) => component.coversCostOfLiving(year, rows[year - 1].endingBalance));
+    expect(coveredYears.length).toBeGreaterThan(1);
+    expect(component.firstCostOfLivingCoveredYear()).toBe(coveredYears[0]);
+  });
 });

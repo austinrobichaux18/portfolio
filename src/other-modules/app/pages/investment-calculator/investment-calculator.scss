@@ -414,6 +414,11 @@ select {
     outline: none;
     border-color: #49c6ff;
   }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
 }
 
 .input-prefix,
@@ -677,6 +682,17 @@ select {
 
   .input-suffix {
     flex: 1;
+  }
+}
+
+/** Two equal-width fields side by side, e.g. years + months. */
+.half-input-row {
+  display: flex;
+  gap: 8px;
+
+  .input-suffix {
+    flex: 1;
+    min-width: 0;
   }
 }
 

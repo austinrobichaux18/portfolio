@@ -520,6 +520,22 @@ export class InvestmentCalculator {
     this.months.set(Math.min(11, toNonNegativeInt(raw)));
   }
 
+  /** Current age plus the time horizon, rounded to a whole age for the Retirement Age box. */
+  goalRetirementAge = computed<number | null>(() => {
+    const age = this.currentAge();
+    if (age === null) return null;
+    return Math.round(age + this.years() + this.months() / 12);
+  });
+
+  /** Editing the goal retirement age re-derives years/months from the gap to current age. */
+  setRetirementAge(raw: string): void {
+    const age = this.currentAge();
+    if (age === null) return;
+    const totalMonths = Math.max(0, (toNonNegativeInt(raw) - age) * 12);
+    this.years.set(Math.floor(totalMonths / 12));
+    this.months.set(totalMonths % 12);
+  }
+
   setInflationRatePercent(raw: string): void {
     this.inflationRatePercent.set(toNonNegativeNumber(raw));
   }
@@ -556,6 +572,15 @@ export class InvestmentCalculator {
     const yearly = this.yearlyCostOfLiving();
     return yearly > 0 && this.totalWithdrawal(year, endingBalance) >= yearly;
   }
+
+  /** The first year the withdrawal covers the entered cost of living, or null if none do. */
+  firstCostOfLivingCoveredYear = computed<number | null>(() => {
+    if (this.yearlyCostOfLiving() <= 0) return null;
+    const row = this.result().yearRows.find((r) =>
+      this.coversCostOfLiving(r.year, r.endingBalance),
+    );
+    return row?.year ?? null;
+  });
 
   costOfLivingCoveredTitle(year: number, endingBalance: number): string {
     return (
