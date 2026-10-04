@@ -2,31 +2,59 @@
   <header class="page-header">
     <h1>US Career Data</h1>
     <p>
-      Browse national employment and wage figures for ~830 occupations, straight from the BLS
-      Occupational Employment and Wage Statistics (OEWS) program.
+      Browse national employment and wage figures, real BLS education/experience/outlook data,
+      and this site's own job-environment, AI-exposure, and remote-work estimates for ~830 US
+      occupations.
     </p>
   </header>
 
   <div class="source-note">
     <div class="source-note-text">
-      <h2>Data Source</h2>
+      <h2>Real BLS Data</h2>
       <p>
-        All figures are the May 2025 national, cross-industry estimates from the BLS
+        Wages, total employment, and the 10th/90th percentile wage range are the May 2025
+        national, cross-industry estimates from the BLS
         <a href="https://www.bls.gov/oes/" target="_blank" rel="noopener"
           >Occupational Employment and Wage Statistics (OEWS)</a
         >
-        program, downloaded directly from the BLS
+        program, from the BLS
         <a href="https://www.bls.gov/oes/tables.htm" target="_blank" rel="noopener"
           >OEWS data tables page</a
         >
-        ("All data" file). Every column below is a field BLS publishes directly &mdash; nothing on
-        this page is modeled, estimated, or inferred.
+        ("All data" file).
       </p>
-      <p class="last-updated">Data pulled and last updated 10/2026 (May 2025 OEWS release).</p>
+      <p>
+        Typical education needed, work experience required, on-the-job training, projected
+        employment change, and annual job openings are from the 2025&ndash;35 BLS
+        <a href="https://www.bls.gov/emp/" target="_blank" rel="noopener"
+          >Employment Projections</a
+        >
+        program ("National Employment Matrix," Table 1.2), from the BLS
+        <a href="https://www.bls.gov/emp/tables.htm" target="_blank" rel="noopener"
+          >Employment Projections data tables page</a
+        >. "Job Outlook" is this site's own tier label applied to BLS's real percent-change
+        figure (see glossary) &mdash; the percent-change and openings numbers themselves are
+        BLS's.
+      </p>
+      <p class="last-updated">Data pulled and last updated 10/2026.</p>
     </div>
     <button type="button" class="info-toggle" (click)="toggleGlossary()">
       {{ showGlossary() ? 'Hide' : 'ⓘ What do these columns mean?' }}
     </button>
+  </div>
+
+  <div class="source-note estimate-note">
+    <div class="source-note-text">
+      <h2>Site Estimates (Not BLS Data)</h2>
+      <p>
+        Job Environment, AI Exposure, and Remote-Work Potential have no single authoritative BLS
+        table to draw from. These three columns are this site's own simple, rule-based
+        categorization &mdash; a baseline per SOC major group, adjusted by keyword matches on the
+        job title (e.g. titles containing "mechanic," "nurse," or "data entry" get adjusted
+        toward their typical environment). They're a rough general-orientation estimate, not a
+        scientific index, and not sourced from BLS, O*NET, or any named study.
+      </p>
+    </div>
   </div>
 
   @if (showGlossary()) {
@@ -71,6 +99,50 @@
         <option value="All">All SOC groups</option>
         @for (group of socGroups(); track group) {
           <option [value]="group">{{ group }}</option>
+        }
+      </select>
+
+      <select
+        [ngModel]="educationFilter()"
+        (ngModelChange)="setFilter(educationFilter, $event)"
+      >
+        <option value="All">All education levels</option>
+        @for (level of educationOptions(); track level) {
+          <option [value]="level">{{ level }}</option>
+        }
+      </select>
+
+      <select [ngModel]="jobOutlookFilter()" (ngModelChange)="setFilter(jobOutlookFilter, $event)">
+        <option value="All">All job outlooks</option>
+        @for (tier of jobOutlookOptions(); track tier) {
+          <option [value]="tier">{{ tier }}</option>
+        }
+      </select>
+
+      <select
+        [ngModel]="jobEnvironmentFilter()"
+        (ngModelChange)="setFilter(jobEnvironmentFilter, $event)"
+      >
+        <option value="All">All job environments</option>
+        @for (env of jobEnvironmentOptions(); track env) {
+          <option [value]="env">{{ env }}</option>
+        }
+      </select>
+
+      <select
+        [ngModel]="aiExposureFilter()"
+        (ngModelChange)="setFilter(aiExposureFilter, $event)"
+      >
+        <option value="All">All AI exposure levels</option>
+        @for (level of aiExposureOptions(); track level) {
+          <option [value]="level">{{ level }}</option>
+        }
+      </select>
+
+      <select [ngModel]="remoteWorkFilter()" (ngModelChange)="setFilter(remoteWorkFilter, $event)">
+        <option value="All">All remote-work levels</option>
+        @for (level of remoteWorkOptions(); track level) {
+          <option [value]="level">{{ level }}</option>
         }
       </select>
     </div>
@@ -156,6 +228,27 @@
             <th class="numeric" (click)="sortBy('pct90AnnualWage')">
               90th %ile Annual {{ sortIndicator('pct90AnnualWage') }}
             </th>
+            <th (click)="sortBy('typicalEducationNeeded')">
+              Education Needed {{ sortIndicator('typicalEducationNeeded') }}
+            </th>
+            <th (click)="sortBy('workExperienceRequired')">
+              Experience Required {{ sortIndicator('workExperienceRequired') }}
+            </th>
+            <th (click)="sortBy('jobOutlookTier')">
+              Job Outlook {{ sortIndicator('jobOutlookTier') }}
+            </th>
+            <th class="numeric" (click)="sortBy('projectedAnnualOpenings')">
+              Annual Openings {{ sortIndicator('projectedAnnualOpenings') }}
+            </th>
+            <th class="estimate-col" (click)="sortBy('jobEnvironment')">
+              Job Environment* {{ sortIndicator('jobEnvironment') }}
+            </th>
+            <th class="estimate-col" (click)="sortBy('aiExposure')">
+              AI Exposure* {{ sortIndicator('aiExposure') }}
+            </th>
+            <th class="estimate-col" (click)="sortBy('remoteWorkPotential')">
+              Remote-Work Potential* {{ sortIndicator('remoteWorkPotential') }}
+            </th>
           </tr>
         </thead>
         <tbody>
@@ -192,10 +285,29 @@
                   &mdash;
                 }
               </td>
+              <td>{{ occupation.typicalEducationNeeded }}</td>
+              <td>{{ occupation.workExperienceRequired }}</td>
+              <td [title]="occupation.projectedEmploymentChangePercent + '% projected 2025–35'">
+                <span [class]="outlookClass(occupation.jobOutlookTier)">{{
+                  occupation.jobOutlookTier
+                }}</span>
+              </td>
+              <td class="numeric">{{ occupation.projectedAnnualOpenings | number }}</td>
+              <td class="estimate-col">{{ occupation.jobEnvironment }}</td>
+              <td class="estimate-col">
+                <span [class]="exposureClass(occupation.aiExposure)">{{
+                  occupation.aiExposure
+                }}</span>
+              </td>
+              <td class="estimate-col">
+                <span [class]="remoteClass(occupation.remoteWorkPotential)">{{
+                  occupation.remoteWorkPotential
+                }}</span>
+              </td>
             </tr>
           } @empty {
             <tr>
-              <td colspan="7" class="no-results">No occupations match these filters.</td>
+              <td colspan="14" class="no-results">No occupations match these filters.</td>
             </tr>
           }
         </tbody>
@@ -213,9 +325,10 @@
     }
 
     <p class="data-note">
-      Occupations with only hourly or only annual wages published by BLS show &mdash; for the
-      unavailable figure. See "What do these columns mean?" above for full column definitions and
-      sourcing.
+      * Job Environment, AI Exposure, and Remote-Work Potential are this site's own estimate, not
+      BLS data. Occupations with only hourly or only annual wages published by BLS show &mdash;
+      for the unavailable figure. See "What do these columns mean?" above for full column
+      definitions and sourcing.
     </p>
   }
 </section>

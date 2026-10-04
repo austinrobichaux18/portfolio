@@ -78,6 +78,14 @@ h1 {
   }
 }
 
+.estimate-note {
+  border-color: rgba(255, 193, 7, 0.25);
+
+  h2 {
+    color: #ffc107;
+  }
+}
+
 .info-toggle {
   flex: 0 0 auto;
   padding: 8px 14px;
@@ -305,6 +313,10 @@ h1 {
     text-align: right;
   }
 
+  .estimate-col {
+    border-left: 1px dashed rgba(255, 193, 7, 0.3);
+  }
+
   tbody tr:hover {
     background: rgba(73, 198, 255, 0.05);
   }
@@ -314,6 +326,39 @@ h1 {
     color: #8f9bad;
     padding: 24px;
   }
+}
+
+.chip {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.chip-positive {
+  background: rgba(68, 214, 139, 0.12);
+  border: 1px solid rgba(68, 214, 139, 0.35);
+  color: #44d68b;
+}
+
+.chip-neutral {
+  background: rgba(73, 198, 255, 0.12);
+  border: 1px solid rgba(73, 198, 255, 0.35);
+  color: #49c6ff;
+}
+
+.chip-caution {
+  background: rgba(255, 193, 7, 0.12);
+  border: 1px solid rgba(255, 193, 7, 0.35);
+  color: #ffc107;
+}
+
+.chip-negative {
+  background: rgba(255, 107, 107, 0.12);
+  border: 1px solid rgba(255, 107, 107, 0.35);
+  color: #ff6b6b;
 }
 
 .pagination {
