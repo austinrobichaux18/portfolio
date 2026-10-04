@@ -949,6 +949,12 @@ select {
   flex-direction: column;
   gap: 4px;
   overflow-x: auto;
+
+  /* overflow-x:auto clips the popover too (it forces overflow-y to a clipping value as well) —
+     lift it while the popover is open so the popover can escape the table's bounds. */
+  &.quintile-table-popover-open {
+    overflow: visible;
+  }
 }
 
 .quintile-row {
@@ -983,8 +989,11 @@ select {
     top: 22px;
     left: auto;
     right: 0;
+    width: 260px;
+    max-width: calc(100vw - 32px);
     text-transform: none;
     letter-spacing: normal;
+    white-space: normal;
   }
 }
 

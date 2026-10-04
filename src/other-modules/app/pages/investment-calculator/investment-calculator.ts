@@ -50,6 +50,10 @@ const SS_AVERAGE_ANNUAL_BENEFIT = 25_000;
 const AVERAGE_STATE_TAX_RATE_PERCENT =
   STATE_TAX_RATES.reduce((sum, state) => sum + state.rate, 0) / STATE_TAX_RATES.length;
 
+/** Default income and spending the budget widget starts with. */
+const DEFAULT_YEARLY_INCOME = 70_000;
+const DEFAULT_MONTHLY_COST_OF_LIVING = 45_000 / 12;
+
 interface QuintileStat {
   label: string;
   incomeBeforeTaxes: number;
@@ -261,7 +265,7 @@ export class InvestmentCalculator {
 
   readonly householdPresets = HOUSEHOLD_PRESETS;
 
-  incomeEntries = signal<IncomeEntry[]>([createIncomeEntry(70000)]);
+  incomeEntries = signal<IncomeEntry[]>([createIncomeEntry(DEFAULT_YEARLY_INCOME)]);
 
   incomeAnnualAmounts = computed(() => this.incomeEntries().map(incomeEntryAnnualAmount));
 
@@ -296,7 +300,7 @@ export class InvestmentCalculator {
     return { monthly: yearly / 12, yearly };
   });
 
-  monthlyCostOfLiving = signal(3000);
+  monthlyCostOfLiving = signal(DEFAULT_MONTHLY_COST_OF_LIVING);
 
   costOfLivingFrequency = signal<'monthly' | 'yearly'>('monthly');
 
@@ -788,16 +792,18 @@ export class InvestmentCalculator {
     this.formatAllNumericInputsSoon();
   }
 
-  /** True once the budget widget has anything other than its default single $70k entry. */
+  /** True once the budget widget has anything other than its default single income entry. */
   householdBudgetEntered = computed(() => {
     const entries = this.incomeEntries();
     const incomeChanged =
-      entries.length !== 1 || entries[0].mode !== 'yearly' || entries[0].yearlyAmount !== 70_000;
+      entries.length !== 1 ||
+      entries[0].mode !== 'yearly' ||
+      entries[0].yearlyAmount !== DEFAULT_YEARLY_INCOME;
     return (
       incomeChanged ||
       this.selectedStateCode() !== '' ||
       this.withholdingsAmount() > 0 ||
-      this.monthlyCostOfLiving() !== 3_000 ||
+      this.monthlyCostOfLiving() !== DEFAULT_MONTHLY_COST_OF_LIVING ||
       this.currentCheckingBalance() > 0 ||
       this.currentSavingsBalance() > 0 ||
       this.ignoreAlreadySaved()

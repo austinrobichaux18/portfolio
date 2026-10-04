@@ -1294,7 +1294,10 @@
         doesn't reflect what a typical household actually makes or spends. Split out by income
         quintile instead, most brackets spend comfortably below what they earn after taxes.
       </p>
-      <div class="quintile-table">
+      <div
+        class="quintile-table"
+        [class.quintile-table-popover-open]="isInfoPopoverOpen('discretionaryIncome')"
+      >
         <div class="quintile-row quintile-header">
           <span>Income Bracket</span>
           <span>Before Taxes</span>
