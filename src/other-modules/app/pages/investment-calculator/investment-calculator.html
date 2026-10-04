@@ -1322,7 +1322,20 @@
       <p class="field-note">
         A single national average gets pulled way up by a small number of very high earners — it
         doesn't reflect what a typical household actually makes or spends. Split out by income
-        quintile instead, most brackets spend comfortably below what they earn after taxes.
+        quintile instead, after-tax income doesn't comfortably cover typical spending until well
+        into the upper brackets.
+      </p>
+      <p class="quintile-reality">
+        That negative number for most brackets isn't hypothetical, and it doesn't just disappear —
+        it gets filled with credit card balances, auto loans, or savings that never get the chance
+        to build up, which is a big part of why household debt is so widespread. If your own
+        numbers look like one of the brackets running a deficit, the two moves that matter most are
+        the ones actually in your control: push to upskill, retrain, or switch fields into
+        higher-paying work as soon as you reasonably can, and treat your cost of living as
+        something you actively manage down rather than a fixed fact of life. Neither is easy, but
+        together they're close to the only realistic path to a genuinely healthy financial future —
+        whether that arrives before age 67 or, for a lot of people starting from behind, sometime
+        well after it.
       </p>
       <div
         class="quintile-table"
@@ -1331,7 +1344,6 @@
         <div class="quintile-row quintile-header">
           <span>Income Bracket</span>
           <span>Before Taxes</span>
-          <span>After Taxes</span>
           <span>Spending</span>
           <span class="label-with-info">
             Discretionary Income
@@ -1369,7 +1381,6 @@
           <div class="quintile-row">
             <span>{{ q.label }}</span>
             <span>{{ formatCurrency(q.incomeBeforeTaxes) }}</span>
-            <span>{{ formatCurrency(q.incomeAfterTaxes) }}</span>
             <span>{{ formatCurrency(q.annualExpenditures) }}</span>
             <span [class.quintile-overspend]="q.discretionaryIncome < 0">
               {{ formatCurrency(q.discretionaryIncome) }}
@@ -1381,15 +1392,17 @@
         Source: U.S. Bureau of Labor Statistics
         <a href="https://www.bls.gov/cex/" target="_blank" rel="noopener"
           >Consumer Expenditure Survey</a
-        >, 2023 annual averages by income quintile — the latest year with after-tax income
-        published (via
+        >, 2023 annual averages by income quintile (via
         <a
           href="https://fred.stlouisfed.org/series/CXUINCBEFTXLB0104M"
           target="_blank"
           rel="noopener"
           >FRED</a
-        >). The lowest bracket's after-tax income tops its before-tax income because refundable
-        tax credits count as negative taxes — not a data error.
+        >) for before-tax income and spending. After-tax income is estimated by applying a
+        representative combined effective tax rate (federal income tax, payroll tax, and average
+        state tax) that rises with income, rather than BLS's own after-tax series, which taxes
+        each quintile independently and can otherwise show lower brackets with after-tax income
+        exceeding before-tax income.
       </p>
     </div>
 

@@ -57,27 +57,31 @@ const DEFAULT_MONTHLY_COST_OF_LIVING = 45_000 / 12;
 interface QuintileStat {
   label: string;
   incomeBeforeTaxes: number;
-  incomeAfterTaxes: number;
+  effectiveTaxRatePercent: number;
   annualExpenditures: number;
 }
 
 /**
- * Mean income before taxes, mean income after taxes, and mean annual expenditures per consumer
- * unit, by quintile of the income-before-taxes distribution — U.S. Bureau of Labor Statistics
- * Consumer Expenditure Survey, 2023 annual averages (the latest year with after-tax income
- * published; https://www.bls.gov/cex/, via FRED series CXUINCBEFTXLB01*, CXUINCAFTTXLB01*,
+ * Mean income before taxes and mean annual expenditures per consumer unit, by quintile of the
+ * income-before-taxes distribution — U.S. Bureau of Labor Statistics Consumer Expenditure Survey,
+ * 2023 annual averages (https://www.bls.gov/cex/, via FRED series CXUINCBEFTXLB01*,
  * CXUTOTALEXPLB01*). Breaking the national averages out by income bracket, rather than blending
  * everyone into one figure, keeps a handful of very high earners from skewing what a typical
- * household at a given income level actually makes and spends. The lowest quintile's after-tax
- * income exceeds its before-tax income because refundable credits (EITC, Child Tax Credit) count
- * as negative taxes in BLS's methodology — not a data error.
+ * household at a given income level actually makes and spends.
+ *
+ * After-tax income isn't BLS's own after-tax series — that series prices before-tax and after-tax
+ * quintiles independently rather than taxing the same households, which produces oddities like the
+ * lowest quintile's after-tax income exceeding its before-tax income. Instead, each bracket's
+ * before-tax income is reduced by a representative effective tax rate (combined federal income
+ * tax, payroll tax, and average state tax) that rises with income, in line with published
+ * effective-rate estimates (e.g. Tax Policy Center, ITEP).
  */
 const INCOME_VS_SPENDING_BY_QUINTILE: QuintileStat[] = [
-  { label: '0–20%', incomeBeforeTaxes: 15_596, incomeAfterTaxes: 16_171, annualExpenditures: 33_776 },
-  { label: '20–40%', incomeBeforeTaxes: 40_751, incomeAfterTaxes: 40_621, annualExpenditures: 48_923 },
-  { label: '40–60%', incomeBeforeTaxes: 71_057, incomeAfterTaxes: 66_606, annualExpenditures: 65_487 },
-  { label: '60–80%', incomeBeforeTaxes: 116_717, incomeAfterTaxes: 104_559, annualExpenditures: 87_922 },
-  { label: '80–100%', incomeBeforeTaxes: 264_518, incomeAfterTaxes: 211_042, annualExpenditures: 150_093 },
+  { label: '0–20%', incomeBeforeTaxes: 15_596, effectiveTaxRatePercent: 11, annualExpenditures: 33_776 },
+  { label: '20–40%', incomeBeforeTaxes: 40_751, effectiveTaxRatePercent: 15, annualExpenditures: 48_923 },
+  { label: '40–60%', incomeBeforeTaxes: 71_057, effectiveTaxRatePercent: 18, annualExpenditures: 65_487 },
+  { label: '60–80%', incomeBeforeTaxes: 116_717, effectiveTaxRatePercent: 21, annualExpenditures: 87_922 },
+  { label: '80–100%', incomeBeforeTaxes: 264_518, effectiveTaxRatePercent: 25, annualExpenditures: 150_093 },
 ];
 
 type InfoPopoverKey =
@@ -223,10 +227,14 @@ export class InvestmentCalculator {
 
   readonly ssAverageAnnualBenefit = SS_AVERAGE_ANNUAL_BENEFIT;
 
-  readonly incomeVsSpendingByQuintile = INCOME_VS_SPENDING_BY_QUINTILE.map((q) => ({
-    ...q,
-    discretionaryIncome: q.incomeAfterTaxes - q.annualExpenditures,
-  }));
+  readonly incomeVsSpendingByQuintile = INCOME_VS_SPENDING_BY_QUINTILE.map((q) => {
+    const incomeAfterTaxes = Math.round(q.incomeBeforeTaxes * (1 - q.effectiveTaxRatePercent / 100));
+    return {
+      ...q,
+      incomeAfterTaxes,
+      discretionaryIncome: incomeAfterTaxes - q.annualExpenditures,
+    };
+  });
 
   constructor() {
     afterNextRender(() => this.formatAllNumericInputsSoon());
