@@ -246,6 +246,20 @@ h1 {
   margin-top: 16px;
 }
 
+.range-filter-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px 24px;
+
+  @media (max-width: 640px) {
+    grid-template-columns: 1fr;
+  }
+}
+
+.range-tile-group {
+  min-width: 0;
+}
+
 .tile-group-header {
   display: flex;
   align-items: center;

@@ -338,42 +338,44 @@
             </div>
           </div>
 
-          @for (config of rangeFilterConfigs; track config.key) {
-            <div class="tile-group">
-              <div class="tile-group-header">
-                <h3>{{ config.label }}</h3>
+          <div class="range-filter-grid">
+            @for (config of rangeFilterConfigs; track config.key) {
+              <div class="tile-group range-tile-group">
+                <div class="tile-group-header">
+                  <h3>{{ config.label }}</h3>
+                </div>
+                <p class="tile-group-hint">{{ config.hint }}</p>
+                <div class="range-value">
+                  @if (config.format === 'currency') {
+                    {{ rangeMin(config.key) | currency: 'USD' : 'symbol' : '1.0-0' }} &ndash;
+                    {{ rangeMax(config.key) | currency: 'USD' : 'symbol' : '1.0-0' }}
+                  } @else {
+                    {{ rangeMin(config.key) | number }} &ndash; {{ rangeMax(config.key) | number }}
+                  }
+                </div>
+                <div class="dual-range">
+                  <input
+                    type="range"
+                    class="range-min"
+                    [min]="rangeBounds(config.key).min"
+                    [max]="rangeBounds(config.key).max"
+                    step="1000"
+                    [ngModel]="rangeMin(config.key)"
+                    (ngModelChange)="setRangeMin(config.key, $event)"
+                  />
+                  <input
+                    type="range"
+                    class="range-max"
+                    [min]="rangeBounds(config.key).min"
+                    [max]="rangeBounds(config.key).max"
+                    step="1000"
+                    [ngModel]="rangeMax(config.key)"
+                    (ngModelChange)="setRangeMax(config.key, $event)"
+                  />
+                </div>
               </div>
-              <p class="tile-group-hint">{{ config.hint }}</p>
-              <div class="range-value">
-                @if (config.format === 'currency') {
-                  {{ rangeMin(config.key) | currency: 'USD' : 'symbol' : '1.0-0' }} &ndash;
-                  {{ rangeMax(config.key) | currency: 'USD' : 'symbol' : '1.0-0' }}
-                } @else {
-                  {{ rangeMin(config.key) | number }} &ndash; {{ rangeMax(config.key) | number }}
-                }
-              </div>
-              <div class="dual-range">
-                <input
-                  type="range"
-                  class="range-min"
-                  [min]="rangeBounds(config.key).min"
-                  [max]="rangeBounds(config.key).max"
-                  step="1000"
-                  [ngModel]="rangeMin(config.key)"
-                  (ngModelChange)="setRangeMin(config.key, $event)"
-                />
-                <input
-                  type="range"
-                  class="range-max"
-                  [min]="rangeBounds(config.key).min"
-                  [max]="rangeBounds(config.key).max"
-                  step="1000"
-                  [ngModel]="rangeMax(config.key)"
-                  (ngModelChange)="setRangeMax(config.key, $event)"
-                />
-              </div>
-            </div>
-          }
+            }
+          </div>
         </div>
       }
     </div>
