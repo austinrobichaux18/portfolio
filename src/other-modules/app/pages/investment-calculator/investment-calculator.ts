@@ -230,6 +230,12 @@ export class InvestmentCalculator {
     () => this.withholdingsAmount() * PERIODS_PER_YEAR[this.withholdingsFrequency()],
   );
 
+  /** Withholdings as monthly/yearly figures, regardless of the pay-period unit entered. */
+  withholdingsBreakdown = computed(() => {
+    const yearly = this.annualWithholdings();
+    return { monthly: yearly / 12, yearly };
+  });
+
   monthlyCostOfLiving = signal(3000);
 
   costOfLivingFrequency = signal<'monthly' | 'yearly'>('monthly');
@@ -240,6 +246,14 @@ export class InvestmentCalculator {
       ? this.monthlyCostOfLiving() * 12
       : this.monthlyCostOfLiving(),
   );
+
+  yearlyCostOfLiving = computed(() => this.monthlyCostOfLiving() * 12);
+
+  /** Cost of living as monthly/yearly figures, regardless of which unit is currently selected. */
+  costOfLivingBreakdown = computed(() => ({
+    monthly: this.monthlyCostOfLiving(),
+    yearly: this.yearlyCostOfLiving(),
+  }));
 
   openInfoPopover = signal<InfoPopoverKey | null>(null);
 
@@ -473,6 +487,19 @@ export class InvestmentCalculator {
     return this.isSsEligibleYear(year) ? base + SS_AVERAGE_ANNUAL_BENEFIT : base;
   }
 
+  /** True once this year's withdrawal is enough on its own to cover the entered cost of living. */
+  coversCostOfLiving(year: number, endingBalance: number): boolean {
+    const yearly = this.yearlyCostOfLiving();
+    return yearly > 0 && this.totalWithdrawal(year, endingBalance) >= yearly;
+  }
+
+  costOfLivingCoveredTitle(year: number, endingBalance: number): string {
+    return (
+      `Withdrawal (${formatCurrency(this.totalWithdrawal(year, endingBalance))}) covers your ` +
+      `${formatCurrency(this.yearlyCostOfLiving())}/year cost of living`
+    );
+  }
+
   /** Age at the final year of the horizon, or null when no age was entered. */
   finalAge = computed<number | null>(() => {
     const rows = this.result().yearRows;
@@ -546,6 +573,12 @@ export class InvestmentCalculator {
     return incomeEntryAnnualAmount(entry);
   }
 
+  /** This income entry as monthly/yearly figures, regardless of which mode it's entered in. */
+  incomeEntryBreakdown(entry: IncomeEntry): { monthly: number; yearly: number } {
+    const yearly = incomeEntryAnnualAmount(entry);
+    return { monthly: yearly / 12, yearly };
+  }
+
   incomeEntryLabel(index: number): string {
     return index === 0 ? 'Your Annual Salary' : `Additional Income #${index + 1} (optional)`;
   }
@@ -604,6 +637,11 @@ export class InvestmentCalculator {
 
   setCostOfLivingFrequency(raw: string): void {
     this.costOfLivingFrequency.set(raw as 'monthly' | 'yearly');
+  }
+
+  scrollToLongevityDetails(event: Event): void {
+    event.preventDefault();
+    document.getElementById('longevity-details')?.scrollIntoView({ behavior: 'smooth' });
   }
 
   isInfoPopoverOpen(key: InfoPopoverKey): boolean {

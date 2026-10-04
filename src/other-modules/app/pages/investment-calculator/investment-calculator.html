@@ -11,6 +11,35 @@
     </p>
   </header>
 
+  <section class="longevity-box">
+    <h3>Before You Run the Numbers</h3>
+    <ul class="longevity-highlights">
+      <li>
+        <strong>Age 45 is a "gate."</strong> Clear it in reasonable health and your expected
+        lifespan already jumps past the national average — to ~79 (men) / ~83 (women).
+      </li>
+      <li>
+        <strong>Heart disease is the #1 killer</strong> in the U.S., and not moving is its biggest
+        controllable cause.
+      </li>
+      <li>
+        <strong>Staying active works:</strong> the most-fit people see ~80% lower mortality.
+        Lifelong healthy habits push average lifespan to ~87–93, and living well past 90 is a
+        realistic target.
+      </li>
+      <li>
+        <strong>The "top 10%" live into their mid-90s</strong> — a genuinely great outcome on its
+        own.
+      </li>
+    </ul>
+    <a
+      class="longevity-more-link"
+      href="#longevity-details"
+      (click)="scrollToLongevityDetails($event)"
+      >Why this matters for your investing timeline ↓</a
+    >
+  </section>
+
   <div class="history-section">
     <div class="history-header">
       <h3>Saved Scenarios</h3>
@@ -309,6 +338,43 @@
         </div>
 
         <div class="form-row">
+          <div class="label-with-info">
+            <label for="cost-of-living-top">Cost of Living</label>
+            <select
+              #costOfLivingFrequencySelectTop
+              class="inline-select"
+              aria-label="Cost of living period"
+              [value]="costOfLivingFrequency()"
+              (change)="setCostOfLivingFrequency(costOfLivingFrequencySelectTop.value)"
+            >
+              <option value="monthly">Monthly</option>
+              <option value="yearly">Yearly</option>
+            </select>
+          </div>
+          <p class="field-note">
+            Same field as "Cost of Living" below — flags the year your withdrawal covers it in the
+            breakdown.
+          </p>
+          <p class="field-note">
+            {{ formatCurrency(costOfLivingBreakdown().monthly) }}/month ·
+            {{ formatCurrency(costOfLivingBreakdown().yearly) }}/year
+          </p>
+          <div class="input-prefix">
+            <span>$</span>
+            <input
+              #costOfLivingInputTop
+              id="cost-of-living-top"
+              type="text"
+              data-numeric
+              inputmode="decimal"
+              [value]="costOfLivingDisplayAmount()"
+              (input)="setCostOfLivingAmount(costOfLivingInputTop.value)"
+              (blur)="formatNumberInputOnBlur($event)"
+            />
+          </div>
+        </div>
+
+        <div class="form-row">
           <label for="withdrawal-rate">Withdrawal Rate</label>
           <p class="field-note">
             3.5%–4% is generally recommended and can be withdrawn from the S&amp;P 500 forever,
@@ -503,8 +569,11 @@
                   <span>wks/yr</span>
                 </div>
               </div>
-              <p class="field-note">= {{ formatCurrency(incomeEntryAnnualAmount(entry)) }}/year</p>
             }
+            <p class="field-note">
+              {{ formatCurrency(incomeEntryBreakdown(entry).monthly) }}/month ·
+              {{ formatCurrency(incomeEntryBreakdown(entry).yearly) }}/year
+            </p>
           </div>
         }
 
@@ -616,6 +685,10 @@
               </select>
             </div>
           </div>
+          <p class="field-note">
+            {{ formatCurrency(withholdingsBreakdown().monthly) }}/month ·
+            {{ formatCurrency(withholdingsBreakdown().yearly) }}/year
+          </p>
           <div class="input-prefix">
             <span>$</span>
             <input
@@ -681,6 +754,10 @@
               </select>
             </div>
           </div>
+          <p class="field-note">
+            {{ formatCurrency(costOfLivingBreakdown().monthly) }}/month ·
+            {{ formatCurrency(costOfLivingBreakdown().yearly) }}/year
+          </p>
           <div class="input-prefix">
             <span>$</span>
             <input
@@ -1015,6 +1092,13 @@
                       }
                     </span>
                   }
+                  @if (coversCostOfLiving(row.year, row.endingBalance)) {
+                    <span
+                      class="col-covered-badge"
+                      [title]="costOfLivingCoveredTitle(row.year, row.endingBalance)"
+                      >✓</span
+                    >
+                  }
                 </span>
                 <span>{{ formatCurrency(row.endingBalance) }}</span>
               </div>
@@ -1189,6 +1273,117 @@
           >.)
         </li>
       </ul>
+    </div>
+
+    <div class="edu-block" id="longevity-details">
+      <h3>How Long You'll Actually Live</h3>
+      <p>
+        U.S. life expectancy at birth is about 78.4 years overall — 75.8 for men, 81.1 for women
+        (CDC, 2023). But that number is pulled down hard by deaths concentrated in childhood and
+        young adulthood (accidents, overdoses, violence). Once you clear that stretch, the math
+        resets: Social Security's own actuarial tables give a 45-year-old man roughly 34 more years
+        on average (to ~79) and a 45-year-old woman roughly 38 more (to ~83) — already above the
+        birth-cohort number, before you've done anything to earn it. Call that the "age 45 gate":
+        survive to there in reasonable shape, and the odds already favor a longer run than the
+        headline stat implies.
+      </p>
+      <p>
+        Heart disease has been the #1 cause of death in the U.S. since 1950 — 680,909 people in 2023
+        alone — and the single biggest modifiable driver behind it is simply not moving. The World
+        Health Organization ranks physical inactivity as the 4th-leading risk factor for death
+        worldwide, behind an estimated 30% of ischaemic heart disease cases, yet only about 1 in 4
+        U.S. adults gets enough aerobic and strength activity to meet the CDC's own guidelines. The
+        upside runs deep: a Cleveland Clinic study of over 122,000 patients found no ceiling on the
+        benefit of cardio fitness — people in the top fitness bracket had roughly an 80% lower death
+        rate than the least-fit group, with gains still climbing at the high end. Basic strength
+        tracks the same way — a Harvard study of 1,100+ firefighters found the ones who could do 40+
+        pushups had a 96% lower rate of cardiovascular disease over the following decade than those
+        who could do fewer than 10.
+      </p>
+      <p>
+        Put together: staying active isn't just about living longer, it's about staying capable —
+        those fitness numbers keep paying off well into your 70s, with no observed drop-off. A
+        34-year Harvard study tracking over 123,000 adults found that people who kept all five core
+        habits (never smoking, normal weight, 30+ minutes of daily activity, a healthy diet,
+        moderate alcohol) had an average life expectancy <em>at age 50</em> of 87 for men and 93 for
+        women — roughly a decade longer than people who kept none of them. A separate study of 821
+        middle-aged Norwegian men found that among non-smokers with high physical fitness, about
+        half (48.8%) lived to 85, versus 27.9% of non-smokers with low fitness. Living to 90 isn't
+        the national median, but it's a realistic target for someone who stays active and never
+        smokes — a decades-long Finnish cohort study found 51% of men with none of the major
+        cardiovascular risk factors (smoking, high blood pressure, high cholesterol, obesity, high
+        blood sugar) at midlife lived to 90, versus just 7% of those stacking five of them.
+      </p>
+      <p>
+        What about the very top? Social Security's own actuarial data puts the "top 10%" threshold —
+        the age only 1 in 10 people live past — at around 95–96 for a man starting from his early
+        60s, and somewhat higher for a woman, not 100. Triple digits stay rare even in that lucky
+        decile: among 65-year-olds today, Social Security projects only about 1.5% of men and 3.5%
+        of women will live past age 100. So an active, health-conscious life buys real odds at your
+        late 80s/90s and a shot at your late 90s if you land in that top decile — but 100 is still
+        the exception, not something to plan your money around. The investing math on this page
+        assumes you're around to spend it — this is the other half of that plan.
+      </p>
+      <p class="edu-sources">
+        Sources:
+        <a
+          href="https://www.cdc.gov/nchs/data/nvsr/nvsr74/nvsr74-06.pdf"
+          target="_blank"
+          rel="noopener"
+          >CDC — U.S. Life Tables, 2023</a
+        >,
+        <a href="https://www.ssa.gov/oact/STATS/table4c6.html" target="_blank" rel="noopener"
+          >SSA — Actuarial Life Table</a
+        >,
+        <a
+          href="https://www.cdc.gov/nchs/products/databriefs/db521.htm"
+          target="_blank"
+          rel="noopener"
+          >CDC — Mortality in the United States, 2023</a
+        >,
+        <a
+          href="https://ncdalliance.org/stories/news-blogs/2016/4th-leading-risk-factor-death"
+          target="_blank"
+          rel="noopener"
+          >WHO — Physical Inactivity Fact Sheet</a
+        >,
+        <a
+          href="https://www.cdc.gov/active-people-healthy-nation/php/at-a-glance/index.html"
+          target="_blank"
+          rel="noopener"
+          >CDC — Active People, Healthy Nation</a
+        >,
+        <a
+          href="https://jamanetwork.com/journals/jamanetworkopen/fullarticle/2707428"
+          target="_blank"
+          rel="noopener"
+          >JAMA Network Open — Cardiorespiratory Fitness &amp; Mortality (2018)</a
+        >,
+        <a
+          href="https://www.sciencedaily.com/releases/2019/02/190216094507.htm"
+          target="_blank"
+          rel="noopener"
+          >Harvard T.H. Chan School of Public Health — Push-Up Capacity Study (2019)</a
+        >,
+        <a href="https://pmc.ncbi.nlm.nih.gov/articles/PMC7033063/" target="_blank" rel="noopener"
+          >Helsinki Businessmen Study — CVD Risk Factors &amp; Longevity</a
+        >,
+        <a
+          href="https://www.ahajournals.org/doi/10.1161/CIRCULATIONAHA.117.032047"
+          target="_blank"
+          rel="noopener"
+          >AHA/Circulation — Healthy Lifestyle Factors &amp; Life Expectancy (2018)</a
+        >,
+        <a href="https://pmc.ncbi.nlm.nih.gov/articles/PMC3846763/" target="_blank" rel="noopener"
+          >Lifestyle &amp; Longevity Among Initially Healthy Middle-Aged Men (Oslo)</a
+        >,
+        <a
+          href="https://www.ssa.gov/policy/tools/longevity-visualizer/index.html"
+          target="_blank"
+          rel="noopener"
+          >SSA — Longevity Visualizer</a
+        >
+      </p>
     </div>
 
     <div class="edu-block">
