@@ -1,5 +1,9 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { InvestmentCalculator } from './investment-calculator';
+import { STATE_TAX_RATES } from '../../core/data/state-tax-rates';
+
+const AVERAGE_STATE_TAX_RATE_PERCENT =
+  STATE_TAX_RATES.reduce((sum, state) => sum + state.rate, 0) / STATE_TAX_RATES.length;
 
 describe('InvestmentCalculator', () => {
   let component: InvestmentCalculator;
@@ -41,7 +45,7 @@ describe('InvestmentCalculator', () => {
     component.setInflationRatePercent('0');
     component.reset();
     expect(component.startingAmount()).toBe(0);
-    expect(component.years()).toBe(30);
+    expect(component.years()).toBe(37);
     expect(component.currentAge()).toBe(30);
     expect(component.withdrawalRatePercent()).toBe(3.5);
     expect(component.inflationRatePercent()).toBe(3);
@@ -399,7 +403,7 @@ describe('InvestmentCalculator', () => {
   });
 
   it('prefills the state tax rate and cost of living when a state is selected', () => {
-    expect(component.stateTaxRatePercent()).toBe(0);
+    expect(component.stateTaxRatePercent()).toBe(AVERAGE_STATE_TAX_RATE_PERCENT);
     component.onStateSelected('CA');
     expect(component.selectedStateCode()).toBe('CA');
     expect(component.stateTaxRatePercent()).toBe(13.3);

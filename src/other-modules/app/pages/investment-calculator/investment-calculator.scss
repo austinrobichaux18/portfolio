@@ -935,6 +935,67 @@ select {
   }
 }
 
+.quintile-chart-section {
+  margin-top: 24px;
+  padding-top: 18px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.quintile-table {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  overflow-x: auto;
+}
+
+.quintile-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr 1fr 1.4fr;
+  gap: 10px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  color: #b8c1ce;
+  font-size: 0.85rem;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+
+  &:not(.quintile-header):nth-child(even) {
+    background: rgba(17, 24, 39, 0.6);
+  }
+}
+
+.quintile-header {
+  color: #8f9bad;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+
+  .label-with-info {
+    justify-content: flex-start;
+    gap: 5px;
+  }
+
+  .info-popover {
+    top: 22px;
+    left: auto;
+    right: 0;
+    text-transform: none;
+    letter-spacing: normal;
+  }
+}
+
+.quintile-overspend {
+  color: #ff7b7b;
+}
+
+.quintile-source {
+  font-size: 0.72rem;
+}
+
 .chart-wrap {
   position: relative;
 }

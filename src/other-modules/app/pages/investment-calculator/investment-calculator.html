@@ -318,7 +318,7 @@
               inputmode="numeric"
               [value]="years()"
               (input)="setYears(yearsInput.value)"
-              (blur)="formatNumberInputOnBlur($event)"
+              (blur)="formatIntegerInputOnBlur($event)"
             />
             <span>years</span>
           </div>
@@ -331,7 +331,7 @@
               inputmode="numeric"
               [value]="months()"
               (input)="setMonths(monthsInput.value)"
-              (blur)="formatNumberInputOnBlur($event)"
+              (blur)="formatIntegerInputOnBlur($event)"
             />
             <span>months</span>
           </div>
@@ -862,9 +862,12 @@
     <div class="results-card">
       <div class="stat-grid">
         <div class="stat-chip">
-          <span class="stat-label"
-            >Starting Amount ({{ totalsBreakdown().startingAmountPercent }}%)</span
-          >
+          <span class="stat-label">
+            Starting Amount ({{ totalsBreakdown().startingAmountPercent }}%)
+            @if (currentAge(); as age) {
+              (Age: {{ age }})
+            }
+          </span>
           <span class="stat-value">{{ formatCurrency(result().startingAmount) }}</span>
         </div>
         <div class="stat-chip">
@@ -887,6 +890,15 @@
             }
           </span>
           <span class="stat-value">{{ formatCurrency(result().endingBalance) }}</span>
+        </div>
+        <div class="stat-chip">
+          <span class="stat-label">
+            Withdraw Each Year
+            @if (finalAge(); as age) {
+              (Age: {{ age }})
+            }
+          </span>
+          <span class="stat-value">{{ formatCurrency(finalYearWithdrawal()) }}</span>
         </div>
         @if (inflationRatePercent() > 0) {
           <div class="stat-chip">
@@ -1273,6 +1285,79 @@
           >.)
         </li>
       </ul>
+    </div>
+
+    <div class="quintile-chart-section">
+      <h3>Income vs. Spending, By Income Bracket</h3>
+      <p class="field-note">
+        A single national average gets pulled way up by a small number of very high earners — it
+        doesn't reflect what a typical household actually makes or spends. Split out by income
+        quintile instead, most brackets spend comfortably below what they earn after taxes.
+      </p>
+      <div class="quintile-table">
+        <div class="quintile-row quintile-header">
+          <span>Income Bracket</span>
+          <span>Before Taxes</span>
+          <span>After Taxes</span>
+          <span>Spending</span>
+          <span class="label-with-info">
+            Discretionary Income
+            <span class="info-popover-wrap">
+              <button
+                type="button"
+                class="info-btn"
+                aria-label="What is discretionary income?"
+                (click)="toggleInfoPopover('discretionaryIncome')"
+              >
+                i
+              </button>
+              @if (isInfoPopoverOpen('discretionaryIncome')) {
+                <div class="info-popover">
+                  <button
+                    type="button"
+                    class="info-popover-close"
+                    aria-label="Close"
+                    (click)="closeInfoPopover()"
+                  >
+                    ✕
+                  </button>
+                  <p>
+                    What's left from after-tax income once essential spending is covered — the
+                    money actually free to save, invest, or spend however you want. It's after-tax
+                    income minus annual expenditures, so a negative number means that bracket's
+                    typical spending exceeds its take-home pay.
+                  </p>
+                </div>
+              }
+            </span>
+          </span>
+        </div>
+        @for (q of incomeVsSpendingByQuintile; track q.label) {
+          <div class="quintile-row">
+            <span>{{ q.label }}</span>
+            <span>{{ formatCurrency(q.incomeBeforeTaxes) }}</span>
+            <span>{{ formatCurrency(q.incomeAfterTaxes) }}</span>
+            <span>{{ formatCurrency(q.annualExpenditures) }}</span>
+            <span [class.quintile-overspend]="q.discretionaryIncome < 0">
+              {{ formatCurrency(q.discretionaryIncome) }}
+            </span>
+          </div>
+        }
+      </div>
+      <p class="field-note quintile-source">
+        Source: U.S. Bureau of Labor Statistics
+        <a href="https://www.bls.gov/cex/" target="_blank" rel="noopener"
+          >Consumer Expenditure Survey</a
+        >, 2023 annual averages by income quintile — the latest year with after-tax income
+        published (via
+        <a
+          href="https://fred.stlouisfed.org/series/CXUINCBEFTXLB0104M"
+          target="_blank"
+          rel="noopener"
+          >FRED</a
+        >). The lowest bracket's after-tax income tops its before-tax income because refundable
+        tax credits count as negative taxes — not a data error.
+      </p>
     </div>
 
     <div class="edu-block" id="longevity-details">

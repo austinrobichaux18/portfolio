@@ -46,8 +46,43 @@ const MILESTONES = [1_000_000, 2_000_000, 3_000_000, 4_000_000, 5_000_000, 10_00
 const SS_FULL_RETIREMENT_AGE = 67;
 const SS_AVERAGE_ANNUAL_BENEFIT = 25_000;
 
+/** Average top marginal state income tax rate across all 50 states + DC, used as the default. */
+const AVERAGE_STATE_TAX_RATE_PERCENT =
+  STATE_TAX_RATES.reduce((sum, state) => sum + state.rate, 0) / STATE_TAX_RATES.length;
+
+interface QuintileStat {
+  label: string;
+  incomeBeforeTaxes: number;
+  incomeAfterTaxes: number;
+  annualExpenditures: number;
+}
+
+/**
+ * Mean income before taxes, mean income after taxes, and mean annual expenditures per consumer
+ * unit, by quintile of the income-before-taxes distribution — U.S. Bureau of Labor Statistics
+ * Consumer Expenditure Survey, 2023 annual averages (the latest year with after-tax income
+ * published; https://www.bls.gov/cex/, via FRED series CXUINCBEFTXLB01*, CXUINCAFTTXLB01*,
+ * CXUTOTALEXPLB01*). Breaking the national averages out by income bracket, rather than blending
+ * everyone into one figure, keeps a handful of very high earners from skewing what a typical
+ * household at a given income level actually makes and spends. The lowest quintile's after-tax
+ * income exceeds its before-tax income because refundable credits (EITC, Child Tax Credit) count
+ * as negative taxes in BLS's methodology — not a data error.
+ */
+const INCOME_VS_SPENDING_BY_QUINTILE: QuintileStat[] = [
+  { label: '0–20%', incomeBeforeTaxes: 15_596, incomeAfterTaxes: 16_171, annualExpenditures: 33_776 },
+  { label: '20–40%', incomeBeforeTaxes: 40_751, incomeAfterTaxes: 40_621, annualExpenditures: 48_923 },
+  { label: '40–60%', incomeBeforeTaxes: 71_057, incomeAfterTaxes: 66_606, annualExpenditures: 65_487 },
+  { label: '60–80%', incomeBeforeTaxes: 116_717, incomeAfterTaxes: 104_559, annualExpenditures: 87_922 },
+  { label: '80–100%', incomeBeforeTaxes: 264_518, incomeAfterTaxes: 211_042, annualExpenditures: 150_093 },
+];
+
 type InfoPopoverKey =
-  'withholdings' | 'costOfLiving' | 'quickFill' | 'effectiveTaxRate' | 'inflationRate';
+  | 'withholdings'
+  | 'costOfLiving'
+  | 'quickFill'
+  | 'effectiveTaxRate'
+  | 'inflationRate'
+  | 'discretionaryIncome';
 
 type StateSortOrder = 'alphabetical' | 'taxRateAsc';
 
@@ -121,9 +156,17 @@ function describeArc(
   return `M ${cx} ${cy} L ${start.x} ${start.y} A ${r} ${r} 0 ${largeArcFlag} 0 ${end.x} ${end.y} Z`;
 }
 
+/** Parses a non-negative number from a text input, capped to 2 decimal places. */
 function toNonNegativeNumber(raw: string): number {
   const value = Number(raw.replace(/,/g, ''));
-  return Number.isFinite(value) && value >= 0 ? value : 0;
+  if (!Number.isFinite(value) || value < 0) return 0;
+  return Math.round(value * 100) / 100;
+}
+
+/** Parses a non-negative whole number from a text input (no decimal places). */
+function toNonNegativeInt(raw: string): number {
+  const value = Number(raw.replace(/,/g, ''));
+  return Number.isFinite(value) && value >= 0 ? Math.round(value) : 0;
 }
 
 function toNonNegativeIntOrNull(raw: string): number | null {
@@ -148,7 +191,17 @@ function formatNumberInputOnBlur(event: Event): void {
   if (normalized === '') return;
   const value = Number(normalized);
   if (!Number.isFinite(value)) return;
-  input.value = value.toLocaleString('en-US', { maximumFractionDigits: 6 });
+  input.value = value.toLocaleString('en-US', { maximumFractionDigits: 2 });
+}
+
+/** Same as formatNumberInputOnBlur, but for whole-number fields (years, months) — no decimal places. */
+function formatIntegerInputOnBlur(event: Event): void {
+  const input = event.target as HTMLInputElement;
+  const normalized = input.value.replace(/,/g, '').trim();
+  if (normalized === '') return;
+  const value = Number(normalized);
+  if (!Number.isFinite(value)) return;
+  input.value = Math.round(value).toLocaleString('en-US');
 }
 
 @Component({
@@ -162,7 +215,14 @@ export class InvestmentCalculator {
 
   readonly formatNumberInputOnBlur = formatNumberInputOnBlur;
 
+  readonly formatIntegerInputOnBlur = formatIntegerInputOnBlur;
+
   readonly ssAverageAnnualBenefit = SS_AVERAGE_ANNUAL_BENEFIT;
+
+  readonly incomeVsSpendingByQuintile = INCOME_VS_SPENDING_BY_QUINTILE.map((q) => ({
+    ...q,
+    discretionaryIncome: q.incomeAfterTaxes - q.annualExpenditures,
+  }));
 
   constructor() {
     afterNextRender(() => this.formatAllNumericInputsSoon());
@@ -180,7 +240,7 @@ export class InvestmentCalculator {
 
   compoundFrequency = signal<CompoundFrequency>('annually');
 
-  years = signal(30);
+  years = signal(37);
 
   months = signal(0);
 
@@ -220,7 +280,7 @@ export class InvestmentCalculator {
       : sorted.sort((a, b) => a.name.localeCompare(b.name));
   });
 
-  stateTaxRatePercent = signal(0);
+  stateTaxRatePercent = signal(AVERAGE_STATE_TAX_RATE_PERCENT);
 
   withholdingsAmount = signal(0);
 
@@ -449,11 +509,11 @@ export class InvestmentCalculator {
   }
 
   setYears(raw: string): void {
-    this.years.set(toNonNegativeNumber(raw));
+    this.years.set(toNonNegativeInt(raw));
   }
 
   setMonths(raw: string): void {
-    this.months.set(Math.min(11, toNonNegativeNumber(raw)));
+    this.months.set(Math.min(11, toNonNegativeInt(raw)));
   }
 
   setInflationRatePercent(raw: string): void {
@@ -505,6 +565,14 @@ export class InvestmentCalculator {
     const rows = this.result().yearRows;
     if (this.currentAge() === null || rows.length === 0) return null;
     return this.ageAtYear(rows[rows.length - 1].year);
+  });
+
+  /** Total withdrawal (portfolio + Social Security, once eligible) in the final year of the horizon. */
+  finalYearWithdrawal = computed<number>(() => {
+    const rows = this.result().yearRows;
+    if (rows.length === 0) return 0;
+    const lastRow = rows[rows.length - 1];
+    return this.totalWithdrawal(lastRow.year, lastRow.endingBalance);
   });
 
   /** Maps each year that first crosses a milestone balance to the milestone(s) it crossed. */
@@ -712,7 +780,7 @@ export class InvestmentCalculator {
     this.contributionTiming.set('end');
     this.annualInterestRatePercent.set(10);
     this.compoundFrequency.set('annually');
-    this.years.set(30);
+    this.years.set(37);
     this.months.set(0);
     this.inflationRatePercent.set(3);
     this.withdrawalRatePercent.set(3.5);
