@@ -15,9 +15,8 @@ holding pen.
   - Question words (who/what/when/where/why/how — だれ, なに, いつ, どこ, なぜ, どう)
   - Numbers + counters (counters are notoriously fiddly: people, flat objects,
     long objects, small animals, cups, books, machines/vehicles)
-  - Months and seasons — days of the week and calendar/relative-day vocabulary are
-    now covered by the Japanese Reference Charts module (see Notes below); month
-    names (一月〜十二月) and the four seasons are still outstanding.
+  - Months and seasons (一月〜十二月 and the four seasons — days of the week and
+    calendar/relative-day vocabulary are already done, see below)
   - Time expressions (telling time, today/yesterday/tomorrow, last/next week, etc.)
   - Colors, shapes
   - Family terms (own family vs. others' family — the two sets of words are a
@@ -37,17 +36,16 @@ holding pen.
   - Occupations/jobs
   - School subjects
 
-  The days-of-the-week/calendar category has been built from its seed notes
-  ([`reference-notes/days-of-week-and-calendar.md`](./reference-notes/days-of-week-and-calendar.md))
-  into the Japanese Reference Charts module (`pages/reference-charts`) — use that
-  module's data-driven table/flashcard pattern (`core/models/ReferenceChart.ts`,
+  The days-of-the-week/calendar category has been built into the Japanese
+  Reference Charts module (`pages/reference-charts`) — use that module's
+  data-driven table/flashcard pattern (`core/models/ReferenceChart.ts`,
   `core/data/reference-charts.ts`) as the template for the remaining categories
   above, rather than building each from scratch.
 - **Song transcription practice** — an interactive practice tool: show song
   lyrics (or play audio) and have the user transcribe/translate them, as a way
-  to drill kana writing and listening/reading comprehension. See the
-  "Immersion practice" section of the learning-resources seed notes above for
-  an example source.
+  to drill kana writing and listening/reading comprehension. Example source:
+  animesonglyrics.com, e.g.
+  https://www.animesonglyrics.com/clannad-after-story/toki-o-kizamu-uta
 
 ## Notes
 
