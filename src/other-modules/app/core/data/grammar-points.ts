@@ -26,12 +26,23 @@ export const GRAMMAR_CATEGORIES: GrammarCategory[] = [
         ],
       },
       {
-        term: 'Adjective',
-        summary: 'A describing word. (Ends with い stem)',
+        term: 'Adjective (i-adjective)',
+        summary:
+          'A describing word ending in い that conjugates on its own, no copula needed (たかい。= "It\'s expensive.").',
         examples: [
           { japanese: 'あかい', translation: 'red' },
           { japanese: 'たかい', translation: 'tall / expensive' },
           { japanese: 'やすい', translation: 'cheap' },
+        ],
+      },
+      {
+        term: 'Adjective (na-adjective)',
+        summary:
+          'A describing word that needs な before a noun and だ/です (not い) as a sentence-ending copula. A few, like きれい, end in い but are still na-adjectives — a common trap.',
+        examples: [
+          { japanese: 'げんき', translation: 'healthy / energetic' },
+          { japanese: 'しずか', translation: 'quiet' },
+          { japanese: 'きれい', translation: 'pretty / clean' },
         ],
       },
     ],
@@ -50,7 +61,7 @@ export const GRAMMAR_CATEGORIES: GrammarCategory[] = [
       },
       {
         term: 'を',
-        summary: 'Marks the object of the sentence — what is being verbed/adjectived.',
+        summary: 'Marks the direct object of a transitive verb — what is being verbed.',
       },
       {
         term: 'に',
@@ -77,11 +88,11 @@ export const GRAMMAR_CATEGORIES: GrammarCategory[] = [
     points: [
       {
         term: 'だ / です',
-        summary: 'Used after nouns, for an "A is B" sentence.',
+        summary: 'Used after nouns and na-adjectives, for an "A is B" sentence.',
       },
       {
-        term: 'い',
-        summary: 'Used after adjectives, for an "A is B" sentence.',
+        term: 'い (i-adjectives)',
+        summary: 'Used directly after i-adjectives, for an "A is B" sentence — no copula needed.',
       },
       {
         term: 'う',
@@ -98,8 +109,12 @@ export const GRAMMAR_CATEGORIES: GrammarCategory[] = [
         summary: 'Follows the usual て form conjugation chart for the verb type.',
       },
       {
-        term: 'Adjectives',
+        term: 'Adjectives (i-adjectives)',
         summary: 'Replace the final い with く, then add て.',
+      },
+      {
+        term: 'Adjectives (na-adjectives)',
+        summary: 'Attach で directly — no い to swap (the same で used for nouns\' て form).',
       },
     ],
   },
@@ -112,8 +127,13 @@ export const GRAMMAR_CATEGORIES: GrammarCategory[] = [
         summary: 'Use the て form conversion, but with た instead of て.',
       },
       {
-        term: 'Adjectives',
+        term: 'Adjectives (i-adjectives)',
         summary: 'Replace the final い with かった.',
+      },
+      {
+        term: 'Adjectives (na-adjectives)',
+        summary:
+          'Add だった (plain) or でした (polite) — the same copula-based past tense used for nouns.',
       },
     ],
   },
@@ -145,11 +165,27 @@ export const GRAMMAR_CATEGORIES: GrammarCategory[] = [
   },
   {
     id: 'adjectives-to-nouns',
-    label: 'Adjectives → Nouns',
+    label: 'Adjectives/Verbs → Nouns',
     points: [
       {
-        term: 'い stem',
-        summary: 'Drop the final い to turn an adjective (or certain verbs) into a noun form.',
+        term: 'i-adjective + さ',
+        summary: 'Drop the final い and add さ to turn an i-adjective into an abstract noun.',
+        examples: [
+          { japanese: 'さむい → さむさ', translation: 'cold (adjective) → coldness (noun)' },
+          { japanese: 'たかい → たかさ', translation: 'tall/expensive (adjective) → height (noun)' },
+        ],
+      },
+      {
+        term: 'na-adjective + さ',
+        summary: 'Attach さ directly to the na-adjective — no い to drop.',
+        examples: [
+          { japanese: 'しずか → しずかさ', translation: 'quiet (adjective) → quietness (noun)' },
+        ],
+      },
+      {
+        term: "Verb's い stem (renyoukei)",
+        summary:
+          "A verb's conjunctive stem — the same い stem used before ます/たい/そう — can stand alone as a noun. This isn't dropping anything off an い ending; it's the verb's own stem form (e.g. an -る ending becomes -り).",
         examples: [
           { japanese: 'まわる → まわり', translation: '"go around" (verb) → "surroundings" (noun)' },
         ],
@@ -159,15 +195,18 @@ export const GRAMMAR_CATEGORIES: GrammarCategory[] = [
   {
     id: 'self-other-move',
     label: 'Self Move / Other Move',
+    description:
+      'Intransitive (self-move) / transitive (other-move) verb pairs. The る/す pattern shown here is one common pairing — Japanese has several other patterns too (e.g. あく/あける, つく/つける), so don\'t rely on word ending alone to tell them apart.',
     points: [
       {
-        term: 'Self Move',
-        summary: 'Ends with る — the subject moves/changes on its own.',
+        term: 'Self Move (intransitive)',
+        summary: 'The subject moves/changes on its own. Often ends with る in this pairing pattern.',
         examples: [{ japanese: 'まわる', translation: 'to go around (by itself)' }],
       },
       {
-        term: 'Other Move',
-        summary: 'Ends with す — the subject causes something else to move/change.',
+        term: 'Other Move (transitive)',
+        summary:
+          'The subject causes something else to move/change. Often ends with す in this pairing pattern.',
         examples: [{ japanese: 'まわす', translation: 'to send/make something go around' }],
       },
     ],
@@ -204,8 +243,12 @@ export const GRAMMAR_CATEGORIES: GrammarCategory[] = [
         summary: 'Swap to the あ stem (ichidan verbs just drop る), then add ない.',
       },
       {
-        term: 'Adjectives',
+        term: 'Adjectives (i-adjectives)',
         summary: 'Replace the final い with く, then add ない.',
+      },
+      {
+        term: 'Adjectives (na-adjectives)',
+        summary: 'Same pattern as nouns — replace だ with では, then add ない.',
       },
       {
         term: 'Past tense negative',
@@ -232,7 +275,8 @@ export const GRAMMAR_CATEGORIES: GrammarCategory[] = [
       },
       {
         term: 'てみる',
-        summary: '"Try and see" — attaches to the て form, somewhat formal in tone.',
+        summary:
+          '"Try and see" — attaches to the て form. Not inherently formal; formality comes from how you conjugate みる (みます for formal, plain みる for casual), same as any other verb.',
         examples: [
           { japanese: 'たべてみる', translation: 'to try eating / eat and see' },
           { japanese: 'やってみる / してみる', translation: 'to give it a try / do and see (やる＝する)' },
