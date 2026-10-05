@@ -780,7 +780,7 @@ export const projects: Project[] = [
         title: 'Japanese Reference Charts',
 
         description:
-            'Browsable vocabulary charts for Japanese — starting with days of the week and calendar terms — paired with a flashcard-style self-test mode to drill recall.',
+            'Browsable vocabulary charts for Japanese — days of the week and calendar terms, greetings, question words, numbers and counters, months and seasons, and time expressions — paired with a flashcard-style self-test mode to drill recall.',
 
         tags: [
             'Angular',

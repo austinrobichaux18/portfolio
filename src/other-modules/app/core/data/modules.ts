@@ -60,7 +60,7 @@ export const modules: Module[] = [
     id: 'reference-charts',
     title: 'Japanese Reference Charts',
     description:
-      'Browsable vocabulary charts for Japanese, starting with days of the week and calendar terms, plus flashcard-style self-testing to drill recall.',
+      'Browsable vocabulary charts for Japanese — days of the week and calendar terms, greetings, question words, numbers and counters, months and seasons, and time expressions — plus flashcard-style self-testing to drill recall.',
     route: 'reference-charts',
     lastUpdated: '2026-10-05',
   },
