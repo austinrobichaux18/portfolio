@@ -42,4 +42,9 @@ export const routes: Routes = [
       import('./pages/learning-resources/learning-resources').then((m) => m.LearningResources),
     title: 'Japanese Learning Resources | Austin Robichaux',
   },
+  {
+    path: 'grammar',
+    loadComponent: () => import('./pages/grammar/grammar').then((m) => m.Grammar),
+    title: 'Japanese Grammar | Austin Robichaux',
+  },
 ];

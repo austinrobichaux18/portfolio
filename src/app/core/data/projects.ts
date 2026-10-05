@@ -711,6 +711,67 @@ export const projects: Project[] = [
             github: 'https://github.com/austinrobichaux18/portfolio/tree/master/src/other-modules/app/pages/learning-resources'
         }
 
+    },
+
+    {
+        id: 'grammar',
+
+        title: 'Japanese Grammar',
+
+        description:
+            'A browsable reference for foundational Japanese grammar — particles, conjugation forms, and sentence structure — paired with a flashcard-style self-test mode to drill recall.',
+
+        tags: [
+            'Angular',
+            'TypeScript',
+            'Signals'
+        ],
+
+        result:
+            'A self-contained tool in this site\'s "Other Modules" section.',
+
+        link: '/projects/grammar',
+
+        overview: [
+            'Collects foundational Japanese grammar points (particles, sentence enders, verb conjugation forms, negation, verb stem swaps, etc.) into a categorized, searchable reference, plus a flashcard practice mode to actively test recall instead of just re-reading.',
+            'Extends the "Other Modules" content-tool pattern established by the Japanese Learning Resources module, adding a lightweight practice mechanic on top of the reference content.'
+        ],
+
+        myRole:
+            'Designed the data model, transcribed and structured the grammar reference content, and built both the reference and practice UI end-to-end.',
+
+        technicalChallenges: [
+            {
+                title: 'Shared Reference/Practice Data Model',
+                description:
+                    'Grammar points are plain data (category, term, summary, optional examples) consumed by two different views — a searchable reference list and a flattened, shuffled flashcard deck — without duplicating any content between them.'
+            },
+            {
+                title: 'Self-Scoring Flashcard Session',
+                description:
+                    'The practice mode shuffles every grammar point into a one-pass deck, lets the user self-judge recall ("knew it" / "missed it") after revealing the answer, and reports a session accuracy score at the end — state managed entirely with signals, no persistence needed for a short per-visit drill.'
+            }
+        ],
+
+        architecture: [
+            'Static grammar reference data (core/data)',
+            'Angular signals (search filter state, flashcard deck/session state)',
+            'computed() cross-field search and derived session stats'
+        ],
+
+        deepDive: [
+            {
+                title: 'Data-Driven Content Model',
+                description:
+                    'Grammar points are organized by category as plain data rather than hardcoded template markup, so adding or editing a grammar point is a data-file edit, not a template change — consistent with the pattern used across this site\'s other content-driven modules.'
+            }
+        ],
+
+        links: {
+            demo: 'https://austinrobichaux.com/other-modules/grammar',
+            github: 'https://github.com/austinrobichaux18/portfolio/tree/master/src/other-modules/app/pages/grammar'
+        }
+
     }
 
 ];

@@ -37,10 +37,6 @@ holding pen.
 
   Seed notes for the days-of-the-week/calendar category already captured:
   [`reference-notes/days-of-week-and-calendar.md`](./reference-notes/days-of-week-and-calendar.md).
-- **Basic Japanese grammar** — a module covering foundational grammar points
-  (particles, verb conjugation forms, sentence structure, etc.), likely reference
-  content plus some kind of practice/quiz component rather than a pure article page.
-  Seed notes already captured: [`reference-notes/basic-grammar.md`](./reference-notes/basic-grammar.md).
 - **Song transcription practice** — an interactive practice tool: show song
   lyrics (or play audio) and have the user transcribe/translate them, as a way
   to drill kana writing and listening/reading comprehension. See the
@@ -49,7 +45,6 @@ holding pen.
 
 ## Notes
 
-- Existing modules: Quiz, LocalFlix, Japanese Kana, Investment Calculator, US Career
-  Data, Learning Resources.
+- Existing modules: Quiz, LocalFlix, Japanese Kana, Investment Calculator, US Career Data, Japanese Learning Resources, Japanese Grammar.
 - When picking one up, move it out of this list and into the actual module work —
   don't let this file describe something that's already been built.

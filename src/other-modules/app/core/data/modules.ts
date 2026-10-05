@@ -48,4 +48,12 @@ export const modules: Module[] = [
     route: 'learning-resources',
     lastUpdated: '2026-10-04',
   },
+  {
+    id: 'grammar',
+    title: 'Japanese Grammar',
+    description:
+      'Browse foundational Japanese grammar — particles, conjugation forms, sentence structure — and self-test with flashcard-style practice.',
+    route: 'grammar',
+    lastUpdated: '2026-10-04',
+  },
 ];

@@ -1,0 +1,143 @@
+<section class="page-container grammar-page">
+  <header class="page-header">
+    <h1>Japanese Grammar</h1>
+    <p>
+      Foundational Japanese grammar &mdash; particles, conjugation forms, and sentence structure
+      &mdash; as a browsable reference, plus flashcard-style self-testing to drill recall.
+    </p>
+  </header>
+
+  <div class="mode-tabs" role="tablist">
+    <button
+      type="button"
+      role="tab"
+      class="mode-tab"
+      [class.active]="viewMode() === 'reference'"
+      [attr.aria-selected]="viewMode() === 'reference'"
+      (click)="setViewMode('reference')"
+    >
+      Reference
+    </button>
+    <button
+      type="button"
+      role="tab"
+      class="mode-tab"
+      [class.active]="viewMode() === 'practice'"
+      [attr.aria-selected]="viewMode() === 'practice'"
+      (click)="setViewMode('practice')"
+    >
+      Practice
+    </button>
+  </div>
+
+  @if (viewMode() === 'reference') {
+    <div class="search-row">
+      <input
+        type="search"
+        class="search-input"
+        placeholder="Search grammar points…"
+        [value]="search()"
+        (input)="search.set($any($event.target).value)"
+        aria-label="Search grammar points"
+      />
+      <span class="result-count"
+        >{{ resultCount() }} point{{ resultCount() === 1 ? '' : 's' }}</span
+      >
+    </div>
+
+    @if (filteredCategories().length === 0) {
+      <p class="status-message">No grammar points match that search.</p>
+    } @else {
+      <div class="category-list">
+        @for (category of filteredCategories(); track category.id) {
+          <section class="category">
+            <h2>{{ category.label }}</h2>
+            @if (category.description) {
+              <p class="category-description">{{ category.description }}</p>
+            }
+            <ul class="point-list">
+              @for (point of category.points; track point.term; let i = $index) {
+                @if (isGroupBreak(category.points, i)) {
+                  <li class="group-break" aria-hidden="true"></li>
+                }
+                <li class="point">
+                  <span class="point-term">{{ point.term }}</span>
+                  <p class="point-summary">{{ point.summary }}</p>
+                  @if (point.examples?.length) {
+                    <ul class="example-list">
+                      @for (example of point.examples; track example.japanese) {
+                        <li class="example">
+                          <span class="example-japanese">{{ example.japanese }}</span>
+                          @if (example.translation) {
+                            <span class="example-translation">{{ example.translation }}</span>
+                          }
+                        </li>
+                      }
+                    </ul>
+                  }
+                </li>
+              }
+            </ul>
+          </section>
+        }
+      </div>
+    }
+  } @else {
+    <div class="practice-panel">
+      @if (practiceState() === 'active' && currentCard(); as card) {
+        <div class="progress-row">
+          <span class="progress-count">{{ progressDisplay() }}</span>
+          <span class="progress-score">{{ knewCount() }} knew &middot; {{ missedCount() }} missed</span>
+        </div>
+
+        <div class="flashcard">
+          <span class="flashcard-category">{{ card.categoryLabel }}</span>
+          <h2 class="flashcard-term">{{ card.point.term }}</h2>
+
+          @if (!revealed()) {
+            <button type="button" class="reveal-button" (click)="revealAnswer()">
+              Show answer
+            </button>
+            <p class="hotkey-hint">Press <kbd>Space</kbd> to show the answer</p>
+          } @else {
+            <div class="flashcard-answer">
+              <p class="point-summary">{{ card.point.summary }}</p>
+              @if (card.point.examples?.length) {
+                <ul class="example-list">
+                  @for (example of card.point.examples; track example.japanese) {
+                    <li class="example">
+                      <span class="example-japanese">{{ example.japanese }}</span>
+                      @if (example.translation) {
+                        <span class="example-translation">{{ example.translation }}</span>
+                      }
+                    </li>
+                  }
+                </ul>
+              }
+            </div>
+
+            <div class="judge-row">
+              <button type="button" class="judge-button missed" (click)="markMissed()">
+                <kbd>1</kbd> I missed it
+              </button>
+              <button type="button" class="judge-button knew" (click)="markKnew()">
+                <kbd>3</kbd> I knew it
+              </button>
+            </div>
+          }
+        </div>
+      } @else {
+        <div class="practice-results">
+          <h2>Session complete</h2>
+          <p class="results-score">{{ accuracyPercent() }}% recalled</p>
+          <p class="results-detail">
+            {{ knewCount() }} knew &middot; {{ missedCount() }} missed &middot; {{ totalCards }} total
+          </p>
+          <button type="button" class="reveal-button" (click)="startPractice()">
+            Practice again
+          </button>
+        </div>
+      }
+    </div>
+  }
+</section>

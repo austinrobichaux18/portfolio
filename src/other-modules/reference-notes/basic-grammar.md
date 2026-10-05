@@ -1,8 +1,9 @@
 # Basic Japanese Grammar — Seed Notes
 
-Raw reference notes for a future "Basic Japanese grammar" module (see
-`../TODO.md`). Captured as given, not yet built into anything or verified for
-completeness — treat as a starting point, not a finished reference.
+Raw reference notes that became the "Japanese Grammar" module
+(`app/pages/grammar/`, data in `app/core/data/grammar-points.ts`). Kept here as
+the original source notes — not necessarily complete, treat the module's data
+file as the maintained copy going forward.
 
 ## Parts of speech
 
