@@ -772,6 +772,73 @@ export const projects: Project[] = [
             github: 'https://github.com/austinrobichaux18/portfolio/tree/master/src/other-modules/app/pages/grammar'
         }
 
+    },
+
+    {
+        id: 'reference-charts',
+
+        title: 'Japanese Reference Charts',
+
+        description:
+            'Browsable vocabulary charts for Japanese — starting with days of the week and calendar terms — paired with a flashcard-style self-test mode to drill recall.',
+
+        tags: [
+            'Angular',
+            'TypeScript',
+            'Signals'
+        ],
+
+        result:
+            'A self-contained tool in this site\'s "Other Modules" section.',
+
+        link: '/projects/reference-charts',
+
+        overview: [
+            'Collects Japanese vocabulary into category-organized, searchable reference charts — tables rather than prose — starting with days of the week (each paired with the elemental kanji it\'s built from) and calendar/relative-day vocabulary, plus a flashcard practice mode over the same data.',
+            'Kanji render with inline furigana (readings in a <ruby>/<rt> annotation above each character) instead of a separate romaji/hiragana column, so the chart reads the way a real Japanese reference does.',
+            'Designed as an open-ended module: each vocabulary category (greetings, numbers, colors, etc.) slots in as another entry in the same data model without touching the page template, so future categories are a data-file edit, not new UI.'
+        ],
+
+        myRole:
+            'Designed the data model, transcribed and verified the vocabulary reference content, and built both the chart and practice UI end-to-end.',
+
+        technicalChallenges: [
+            {
+                title: 'Column-Agnostic Chart Rendering',
+                description:
+                    'Each reference table carries its own column definitions (key + label) alongside its rows, so the template renders any table\'s headers and cells generically — a category with different columns needs no template change.'
+            },
+            {
+                title: 'Per-Character Furigana as Data',
+                description:
+                    'A cell is either plain text or an array of {text, reading} segments; the template renders segments with a reading as a <ruby>/<rt> pair and segments without one as plain text, so a compound word like 日曜日 can carry a different reading per kanji (にち／よう／び) without any string-parsing logic.'
+            },
+            {
+                title: 'Shared Chart/Practice Data Model',
+                description:
+                    'A table opts into practice mode by naming which of its own columns is the flashcard "front"; the rest of that row\'s columns become the "back" automatically, so one data file drives both the browsable chart and a flattened, shuffled flashcard deck with no duplicated content.'
+            }
+        ],
+
+        architecture: [
+            'Static, column-described reference-chart data (core/data)',
+            'Angular signals (search filter state, flashcard deck/session state)',
+            'computed() cross-column search and derived session stats'
+        ],
+
+        deepDive: [
+            {
+                title: 'Data-Driven Content Model',
+                description:
+                    'Vocabulary categories, tables, and flashcard eligibility are all plain data rather than hardcoded template markup, so adding a new chart or vocabulary category is a data-file edit, not a template change — consistent with the pattern used across this site\'s other content-driven modules.'
+            }
+        ],
+
+        links: {
+            demo: 'https://austinrobichaux.com/other-modules/reference-charts',
+            github: 'https://github.com/austinrobichaux18/portfolio/tree/master/src/other-modules/app/pages/reference-charts'
+        }
+
     }
 
 ];

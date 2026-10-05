@@ -47,4 +47,10 @@ export const routes: Routes = [
     loadComponent: () => import('./pages/grammar/grammar').then((m) => m.Grammar),
     title: 'Japanese Grammar | Austin Robichaux',
   },
+  {
+    path: 'reference-charts',
+    loadComponent: () =>
+      import('./pages/reference-charts/reference-charts').then((m) => m.ReferenceCharts),
+    title: 'Japanese Reference Charts | Austin Robichaux',
+  },
 ];

@@ -56,4 +56,12 @@ export const modules: Module[] = [
     route: 'grammar',
     lastUpdated: '2026-10-04',
   },
+  {
+    id: 'reference-charts',
+    title: 'Japanese Reference Charts',
+    description:
+      'Browsable vocabulary charts for Japanese, starting with days of the week and calendar terms, plus flashcard-style self-testing to drill recall.',
+    route: 'reference-charts',
+    lastUpdated: '2026-10-05',
+  },
 ];
