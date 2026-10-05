@@ -812,4 +812,534 @@ export const REFERENCE_CATEGORIES: ReferenceCategory[] = [
     mnemonicsSize: 'full',
     mnemonicsAfterTableId: 'relative-time-weeks-months-years',
   },
+  {
+    id: 'colors-and-shapes',
+    label: 'Colors & Shapes',
+    description:
+      'Basic colors and shapes — note that several colors are i-adjectives (end in い and conjugate on their own) while others are nouns that need の to describe something.',
+    tables: [
+      {
+        id: 'colors',
+        title: 'Colors',
+        columns: [
+          { key: 'english', label: [{ text: '英語', reading: 'えいご' }], tooltip: 'English' },
+          {
+            key: 'japanese',
+            label: [{ text: '日本語', reading: 'にほんご' }],
+            tooltip: 'Japanese',
+          },
+          { key: 'note', label: 'Note' },
+        ],
+        practiceFrontKey: 'japanese',
+        size: 'half',
+        rows: [
+          {
+            english: 'Red',
+            japanese: [{ text: '赤', reading: 'あか' }, { text: 'い' }],
+            note: 'i-adjective.',
+          },
+          {
+            english: 'Blue',
+            japanese: [{ text: '青', reading: 'あお' }, { text: 'い' }],
+            note: 'i-adjective.',
+          },
+          {
+            english: 'Yellow',
+            japanese: [{ text: '黄色', reading: 'きいろ' }, { text: 'い' }],
+            note: 'i-adjective.',
+          },
+          {
+            english: 'Black',
+            japanese: [{ text: '黒', reading: 'くろ' }, { text: 'い' }],
+            note: 'i-adjective.',
+          },
+          {
+            english: 'White',
+            japanese: [{ text: '白', reading: 'しろ' }, { text: 'い' }],
+            note: 'i-adjective.',
+          },
+          {
+            english: 'Green',
+            japanese: [{ text: '緑', reading: 'みどり' }],
+            note: 'Noun — use 緑の to describe something. Often paired with 色 as 緑色 (みどりいろ).',
+          },
+          {
+            english: 'Brown',
+            japanese: [{ text: '茶色', reading: 'ちゃいろ' }],
+            note: 'Noun — use 茶色の to describe something.',
+          },
+          {
+            english: 'Purple',
+            japanese: [{ text: '紫', reading: 'むらさき' }],
+            note: 'Noun — use 紫の to describe something.',
+          },
+          { english: 'Pink', japanese: 'ピンク', note: 'Noun (loanword) — use ピンクの.' },
+          { english: 'Orange', japanese: 'オレンジ', note: 'Noun (loanword) — use オレンジの.' },
+          {
+            english: 'Gray',
+            japanese: [{ text: '灰色', reading: 'はいいろ' }],
+            note: 'Noun — use 灰色の to describe something.',
+          },
+        ],
+      },
+      {
+        id: 'shapes',
+        title: 'Shapes',
+        columns: [
+          { key: 'english', label: [{ text: '英語', reading: 'えいご' }], tooltip: 'English' },
+          {
+            key: 'japanese',
+            label: [{ text: '日本語', reading: 'にほんご' }],
+            tooltip: 'Japanese',
+          },
+        ],
+        practiceFrontKey: 'japanese',
+        size: 'half',
+        rows: [
+          { english: 'Circle', japanese: [{ text: '丸', reading: 'まる' }] },
+          { english: 'Triangle', japanese: [{ text: '三角', reading: 'さんかく' }] },
+          { english: 'Square', japanese: [{ text: '四角', reading: 'しかく' }] },
+          { english: 'Rectangle', japanese: [{ text: '長方形', reading: 'ちょうほうけい' }] },
+          { english: 'Star', japanese: [{ text: '星', reading: 'ほし' }] },
+          { english: 'Heart', japanese: 'ハート' },
+        ],
+      },
+    ],
+    mnemonics: [
+      {
+        term: 'い colors vs. noun colors',
+        title: 'Two Different Grammar Patterns',
+        body: '赤・青・黄色・黒・白 are true i-adjectives — they conjugate on their own (赤くない, "not red"). 緑・茶色・紫・ピンク・オレンジ・灰色 are nouns, so they need の to modify something (緑の車, "a green car") and can\'t conjugate the same way.',
+      },
+      {
+        term: '色 — "color"',
+        title: 'The Shared Suffix',
+        body: '色 (いろ) literally means "color" and shows up inside several noun-colors — 茶色 ("tea color" = brown), 灰色 ("ash color" = gray) — a useful hook for remembering which colors are nouns.',
+      },
+    ],
+    mnemonicsSize: 'full',
+    mnemonicsAfterTableId: 'colors',
+  },
+  {
+    id: 'family-terms',
+    label: 'Family Terms',
+    description:
+      "Japanese uses one set of plain words for your own family and a separate, more honorific set for someone else's family — the honorific set doubles as how you address your own relatives directly.",
+    tables: [
+      {
+        id: 'own-family',
+        title: 'Your Own Family',
+        description: 'Used when talking about your own family to someone else.',
+        columns: [
+          { key: 'english', label: [{ text: '英語', reading: 'えいご' }], tooltip: 'English' },
+          {
+            key: 'japanese',
+            label: [{ text: '日本語', reading: 'にほんご' }],
+            tooltip: 'Japanese',
+          },
+        ],
+        practiceFrontKey: 'japanese',
+        size: 'half',
+        rows: [
+          { english: 'Father', japanese: [{ text: '父', reading: 'ちち' }] },
+          { english: 'Mother', japanese: [{ text: '母', reading: 'はは' }] },
+          { english: 'Older brother', japanese: [{ text: '兄', reading: 'あに' }] },
+          { english: 'Older sister', japanese: [{ text: '姉', reading: 'あね' }] },
+          { english: 'Younger brother', japanese: [{ text: '弟', reading: 'おとうと' }] },
+          { english: 'Younger sister', japanese: [{ text: '妹', reading: 'いもうと' }] },
+          { english: 'Grandfather', japanese: [{ text: '祖父', reading: 'そふ' }] },
+          { english: 'Grandmother', japanese: [{ text: '祖母', reading: 'そぼ' }] },
+          { english: 'Husband', japanese: [{ text: '夫', reading: 'おっと' }] },
+          { english: 'Wife', japanese: [{ text: '妻', reading: 'つま' }] },
+          { english: 'Son', japanese: [{ text: '息子', reading: 'むすこ' }] },
+          { english: 'Daughter', japanese: [{ text: '娘', reading: 'むすめ' }] },
+          { english: 'Family', japanese: [{ text: '家族', reading: 'かぞく' }] },
+        ],
+      },
+      {
+        id: 'other-family',
+        title: "Someone Else's Family (honorific)",
+        description:
+          "Used when talking about someone else's family — and also when addressing your own relatives directly, e.g. calling out お母さん to your own mother.",
+        columns: [
+          { key: 'english', label: [{ text: '英語', reading: 'えいご' }], tooltip: 'English' },
+          {
+            key: 'japanese',
+            label: [{ text: '日本語', reading: 'にほんご' }],
+            tooltip: 'Japanese',
+          },
+        ],
+        practiceFrontKey: 'japanese',
+        size: 'half',
+        rows: [
+          { english: 'Father', japanese: [{ text: 'お父', reading: 'おとう' }, { text: 'さん' }] },
+          { english: 'Mother', japanese: [{ text: 'お母', reading: 'おかあ' }, { text: 'さん' }] },
+          {
+            english: 'Older brother',
+            japanese: [{ text: 'お兄', reading: 'おにい' }, { text: 'さん' }],
+          },
+          {
+            english: 'Older sister',
+            japanese: [{ text: 'お姉', reading: 'おねえ' }, { text: 'さん' }],
+          },
+          {
+            english: 'Younger brother',
+            japanese: [{ text: '弟', reading: 'おとうと' }, { text: 'さん' }],
+          },
+          {
+            english: 'Younger sister',
+            japanese: [{ text: '妹', reading: 'いもうと' }, { text: 'さん' }],
+          },
+          { english: 'Grandfather', japanese: 'おじいさん' },
+          { english: 'Grandmother', japanese: 'おばあさん' },
+          {
+            english: 'Husband',
+            japanese: [{ text: '旦那', reading: 'だんな' }, { text: 'さん' }],
+          },
+          { english: 'Wife', japanese: [{ text: '奥', reading: 'おく' }, { text: 'さん' }] },
+          {
+            english: 'Son',
+            japanese: [{ text: '息子', reading: 'むすこ' }, { text: 'さん' }],
+          },
+          {
+            english: 'Daughter',
+            japanese: [{ text: '娘', reading: 'むすめ' }, { text: 'さん' }],
+          },
+        ],
+      },
+    ],
+    mnemonics: [
+      {
+        term: 'さん makes it honorific',
+        title: 'The Same Suffix, Every Time',
+        body: 'Nearly every "someone else\'s family" word is the plain word (or its respectful root) plus さん — 弟さん, 息子さん, 娘さん — the same pattern used for people\'s names.',
+      },
+      {
+        term: '兄・姉 vs 弟・妹',
+        title: 'No Plain Word for "Brother" or "Sister"',
+        body: 'Japanese has no single word for "brother" or "sister" without specifying age — 兄/姉 always mean older, 弟/妹 always mean younger. There\'s no way to say just "sibling" without picking one.',
+      },
+    ],
+    mnemonicsSize: 'full',
+    mnemonicsAfterTableId: 'other-family',
+  },
+  {
+    id: 'weather-terms',
+    label: 'Weather Terms',
+    description: 'Common weather vocabulary for small talk and forecasts.',
+    tables: [
+      {
+        id: 'weather-conditions',
+        title: 'Weather Conditions',
+        columns: [
+          { key: 'english', label: [{ text: '英語', reading: 'えいご' }], tooltip: 'English' },
+          {
+            key: 'japanese',
+            label: [{ text: '日本語', reading: 'にほんご' }],
+            tooltip: 'Japanese',
+          },
+        ],
+        practiceFrontKey: 'japanese',
+        size: 'half',
+        rows: [
+          { english: 'Sunny / Clear', japanese: [{ text: '晴れ', reading: 'はれ' }] },
+          { english: 'Cloudy', japanese: [{ text: '曇り', reading: 'くもり' }] },
+          { english: 'Rain', japanese: [{ text: '雨', reading: 'あめ' }] },
+          { english: 'Snow', japanese: [{ text: '雪', reading: 'ゆき' }] },
+          { english: 'Wind', japanese: [{ text: '風', reading: 'かぜ' }] },
+          { english: 'Typhoon', japanese: [{ text: '台風', reading: 'たいふう' }] },
+          { english: 'Thunder / Lightning', japanese: [{ text: '雷', reading: 'かみなり' }] },
+          { english: 'Fog', japanese: [{ text: '霧', reading: 'きり' }] },
+        ],
+      },
+      {
+        id: 'describing-weather',
+        title: 'Describing the Weather',
+        columns: [
+          { key: 'english', label: [{ text: '英語', reading: 'えいご' }], tooltip: 'English' },
+          {
+            key: 'japanese',
+            label: [{ text: '日本語', reading: 'にほんご' }],
+            tooltip: 'Japanese',
+          },
+          { key: 'note', label: 'Note' },
+        ],
+        practiceFrontKey: 'japanese',
+        size: 'full',
+        rows: [
+          {
+            english: 'Hot (weather/air)',
+            japanese: [{ text: '暑', reading: 'あつ' }, { text: 'い' }],
+            note: 'For weather and ambient temperature — not the same word as 熱い below.',
+          },
+          {
+            english: 'Cold (weather)',
+            japanese: [{ text: '寒', reading: 'さむ' }, { text: 'い' }],
+          },
+          {
+            english: 'Cold (to the touch)',
+            japanese: [{ text: '冷た', reading: 'つめた' }, { text: 'い' }],
+            note: 'For objects and drinks, not air temperature — e.g. 冷たい水, "cold water".',
+          },
+          {
+            english: 'Hot (to the touch)',
+            japanese: [{ text: '熱', reading: 'あつ' }, { text: 'い' }],
+            note: 'Same pronunciation as 暑い but a different kanji — for objects/liquids, e.g. 熱いお茶, "hot tea".',
+          },
+          { english: 'Warm', japanese: [{ text: '暖か', reading: 'あたたか' }, { text: 'い' }] },
+          { english: 'Cool', japanese: [{ text: '涼し', reading: 'すずし' }, { text: 'い' }] },
+          {
+            english: "What's the weather like?",
+            japanese: [{ text: '天気', reading: 'てんき' }, { text: 'はどうですか' }],
+          },
+        ],
+      },
+    ],
+    mnemonics: [
+      {
+        term: '暑い vs 熱い',
+        title: 'Same Sound, Different Kanji',
+        body: 'Both read あつい, but 暑い describes the weather or the air around you, while 熱い describes a hot object or liquid — the kanji tells you which "hot" is meant.',
+      },
+      {
+        term: '寒い vs 冷たい',
+        title: 'Weather-Cold vs. Object-Cold',
+        body: '寒い is only for ambient/weather cold ("it\'s cold outside"); 冷たい is for a specific cold object or drink ("this water is cold"). Mixing them up is a classic beginner slip.',
+      },
+    ],
+    mnemonicsSize: 'full',
+    mnemonicsAfterTableId: 'describing-weather',
+  },
+  {
+    id: 'body-parts',
+    label: 'Body Parts',
+    description: 'Common body-part vocabulary, head to toe.',
+    tables: [
+      {
+        id: 'head-and-face',
+        title: 'Head & Face',
+        columns: [
+          { key: 'english', label: [{ text: '英語', reading: 'えいご' }], tooltip: 'English' },
+          {
+            key: 'japanese',
+            label: [{ text: '日本語', reading: 'にほんご' }],
+            tooltip: 'Japanese',
+          },
+        ],
+        practiceFrontKey: 'japanese',
+        size: 'half',
+        rows: [
+          { english: 'Head', japanese: [{ text: '頭', reading: 'あたま' }] },
+          { english: 'Face', japanese: [{ text: '顔', reading: 'かお' }] },
+          { english: 'Eye', japanese: [{ text: '目', reading: 'め' }] },
+          { english: 'Ear', japanese: [{ text: '耳', reading: 'みみ' }] },
+          { english: 'Nose', japanese: [{ text: '鼻', reading: 'はな' }] },
+          { english: 'Mouth', japanese: [{ text: '口', reading: 'くち' }] },
+          { english: 'Tooth / teeth', japanese: [{ text: '歯', reading: 'は' }] },
+          { english: 'Hair', japanese: [{ text: '髪', reading: 'かみ' }] },
+          { english: 'Neck', japanese: [{ text: '首', reading: 'くび' }] },
+        ],
+      },
+      {
+        id: 'body-and-limbs',
+        title: 'Body & Limbs',
+        columns: [
+          { key: 'english', label: [{ text: '英語', reading: 'えいご' }], tooltip: 'English' },
+          {
+            key: 'japanese',
+            label: [{ text: '日本語', reading: 'にほんご' }],
+            tooltip: 'Japanese',
+          },
+          { key: 'note', label: 'Note' },
+        ],
+        practiceFrontKey: 'japanese',
+        size: 'half',
+        rows: [
+          { english: 'Shoulder', japanese: [{ text: '肩', reading: 'かた' }] },
+          { english: 'Arm', japanese: [{ text: '腕', reading: 'うで' }] },
+          { english: 'Hand', japanese: [{ text: '手', reading: 'て' }] },
+          { english: 'Finger', japanese: [{ text: '指', reading: 'ゆび' }] },
+          { english: 'Stomach / belly', japanese: [{ text: 'お腹', reading: 'おなか' }] },
+          { english: 'Back', japanese: [{ text: '背中', reading: 'せなか' }] },
+          {
+            english: 'Leg / foot',
+            japanese: [{ text: '足', reading: 'あし' }],
+            note: 'One word covers both "leg" and "foot" — context decides which.',
+          },
+          { english: 'Knee', japanese: [{ text: '膝', reading: 'ひざ' }] },
+          {
+            english: 'Heart (organ)',
+            japanese: [{ text: '心臓', reading: 'しんぞう' }],
+            note: 'The physical organ. 心 (こころ) means "heart" in the emotional/mind sense instead.',
+          },
+        ],
+      },
+    ],
+    mnemonics: [
+      {
+        term: '目・耳・鼻・口',
+        title: 'The Face, Front and Center',
+        body: 'These four kanji for eye, ear, nose, and mouth are among the first ever taught precisely because they\'re simple pictograms of the body part itself — worth learning to actually "see" rather than just memorize.',
+      },
+      {
+        term: '心 vs 心臓',
+        title: 'Heart the Feeling vs. Heart the Organ',
+        body: '心 (こころ) is the figurative heart — feelings, mind, spirit. 心臓 (しんぞう) is the physical organ that pumps blood. English uses "heart" for both; Japanese keeps them separate.',
+      },
+    ],
+    mnemonicsSize: 'full',
+    mnemonicsAfterTableId: 'body-and-limbs',
+  },
+  {
+    id: 'food-and-drink-basics',
+    label: 'Food & Drink Basics',
+    description:
+      'Common foods, fruits, vegetables, and drinks, plus the set phrases said before and after a meal.',
+    tables: [
+      {
+        id: 'meals-and-staples',
+        title: 'Meals & Staples',
+        columns: [
+          { key: 'english', label: [{ text: '英語', reading: 'えいご' }], tooltip: 'English' },
+          {
+            key: 'japanese',
+            label: [{ text: '日本語', reading: 'にほんご' }],
+            tooltip: 'Japanese',
+          },
+          { key: 'note', label: 'Note' },
+        ],
+        practiceFrontKey: 'japanese',
+        size: 'half',
+        rows: [
+          {
+            english: 'Rice / A meal',
+            japanese: [{ text: 'ご' }, { text: '飯', reading: 'はん' }],
+            note: 'Means both "cooked rice" and "a meal" in general.',
+          },
+          { english: 'Bread', japanese: 'パン' },
+          { english: 'Meat', japanese: [{ text: '肉', reading: 'にく' }] },
+          { english: 'Fish', japanese: [{ text: '魚', reading: 'さかな' }] },
+          { english: 'Vegetables', japanese: [{ text: '野菜', reading: 'やさい' }] },
+          { english: 'Fruit', japanese: [{ text: '果物', reading: 'くだもの' }] },
+          { english: 'Egg', japanese: [{ text: '卵', reading: 'たまご' }] },
+          { english: 'Soup', japanese: 'スープ' },
+          { english: 'Noodles', japanese: [{ text: '麺', reading: 'めん' }] },
+        ],
+      },
+      {
+        id: 'fruits-and-vegetables',
+        title: 'Common Fruits & Vegetables',
+        columns: [
+          { key: 'english', label: [{ text: '英語', reading: 'えいご' }], tooltip: 'English' },
+          {
+            key: 'japanese',
+            label: [{ text: '日本語', reading: 'にほんご' }],
+            tooltip: 'Japanese',
+          },
+        ],
+        practiceFrontKey: 'japanese',
+        size: 'half',
+        rows: [
+          { english: 'Apple', japanese: 'りんご' },
+          { english: 'Banana', japanese: 'バナナ' },
+          { english: 'Mandarin orange', japanese: 'みかん' },
+          { english: 'Strawberry', japanese: 'いちご' },
+          { english: 'Grape', japanese: 'ぶどう' },
+          { english: 'Tomato', japanese: 'トマト' },
+          { english: 'Carrot', japanese: 'にんじん' },
+          { english: 'Potato', japanese: 'じゃがいも' },
+          { english: 'Onion', japanese: 'たまねぎ' },
+        ],
+      },
+      {
+        id: 'drinks',
+        title: 'Drinks',
+        columns: [
+          { key: 'english', label: [{ text: '英語', reading: 'えいご' }], tooltip: 'English' },
+          {
+            key: 'japanese',
+            label: [{ text: '日本語', reading: 'にほんご' }],
+            tooltip: 'Japanese',
+          },
+          { key: 'note', label: 'Note' },
+        ],
+        practiceFrontKey: 'japanese',
+        size: 'half',
+        rows: [
+          { english: 'Water', japanese: [{ text: '水', reading: 'みず' }] },
+          { english: 'Tea', japanese: [{ text: 'お茶', reading: 'おちゃ' }] },
+          { english: 'Coffee', japanese: 'コーヒー' },
+          {
+            english: 'Milk',
+            japanese: [{ text: '牛乳', reading: 'ぎゅうにゅう' }],
+            note: 'Casual synonym: ミルク.',
+          },
+          { english: 'Juice', japanese: 'ジュース' },
+          {
+            english: 'Alcohol',
+            japanese: [{ text: 'お酒', reading: 'おさけ' }],
+            note: 'General word for alcoholic drinks, not just sake.',
+          },
+          { english: 'Beer', japanese: 'ビール' },
+        ],
+      },
+      {
+        id: 'meal-phrases',
+        title: 'Meal Phrases',
+        columns: [
+          { key: 'english', label: [{ text: '英語', reading: 'えいご' }], tooltip: 'English' },
+          {
+            key: 'japanese',
+            label: [{ text: '日本語', reading: 'にほんご' }],
+            tooltip: 'Japanese',
+          },
+          { key: 'note', label: 'Note' },
+        ],
+        practiceFrontKey: 'japanese',
+        size: 'full',
+        rows: [
+          {
+            english: 'Said before eating',
+            japanese: 'いただきます',
+            note: 'Roughly "I gratefully receive this" — said before starting a meal.',
+          },
+          {
+            english: 'Said after finishing a meal',
+            japanese: 'ごちそうさまでした',
+            note: 'Roughly "thank you for the feast" — said after eating.',
+          },
+          { english: 'Delicious', japanese: 'おいしい', note: 'i-adjective.' },
+          { english: 'Not tasty', japanese: 'まずい', note: 'i-adjective.' },
+          {
+            english: "I'm hungry",
+            japanese: [
+              { text: 'お' },
+              { text: '腹', reading: 'なか' },
+              { text: 'が' },
+              { text: '空', reading: 'す' },
+              { text: 'いた' },
+            ],
+          },
+          {
+            english: "I'm full",
+            japanese: [{ text: 'お' }, { text: '腹', reading: 'なか' }, { text: 'がいっぱい' }],
+          },
+        ],
+      },
+    ],
+    mnemonics: [
+      {
+        term: 'いただきます・ごちそうさまでした',
+        title: 'Bracketing the Meal',
+        body: "English has no exact equivalent to either phrase — they're fixed social bookends said at the start and end of a meal, regardless of who cooked it or whether anyone else is present.",
+      },
+      {
+        term: 'ご飯 — rice and "a meal"',
+        title: 'One Word, Two Meanings',
+        body: 'ご飯 literally means cooked rice, but because rice is the centerpiece of a traditional meal, it also casually means "a meal" in general — 朝ご飯 (asagohan) is "breakfast," not "morning rice".',
+      },
+    ],
+    mnemonicsSize: 'full',
+    mnemonicsAfterTableId: 'meal-phrases',
+  },
 ];
