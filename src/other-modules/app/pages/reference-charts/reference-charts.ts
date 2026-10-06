@@ -129,6 +129,20 @@ export class ReferenceCharts {
     return `tile tile-${size ?? 'full'}`;
   }
 
+  /**
+   * While browsing, mnemonics render right after their designated anchor table. While searching,
+   * a filtered-out anchor table would otherwise hide the mnemonics entirely, so they always move
+   * to the end instead — see showMnemonicsAtEnd.
+   */
+  showMnemonicsAfterTable(category: ReferenceCategory, table: ReferenceTable): boolean {
+    return !this.isSearching() && table.id === category.mnemonicsAfterTableId;
+  }
+
+  showMnemonicsAtEnd(category: ReferenceCategory): boolean {
+    if (!category.mnemonics?.length) return false;
+    return this.isSearching() || !category.mnemonicsAfterTableId;
+  }
+
   setViewMode(mode: ViewMode): void {
     this.viewMode.set(mode);
     if (mode === 'practice' && this.deck().length === 0) {

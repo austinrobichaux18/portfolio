@@ -15,7 +15,7 @@
 </ng-template>
 
 <ng-template #mnemonicsTile let-category="category">
-  @if (category.mnemonics?.length && !isSearching()) {
+  @if (category.mnemonics?.length) {
     <div [class]="tileClass(category.mnemonicsSize)">
       <div class="mnemonics">
         <h3>Mnemonics</h3>
@@ -135,14 +135,14 @@
                   </div>
                 </div>
 
-                @if (table.id === category.mnemonicsAfterTableId) {
+                @if (showMnemonicsAfterTable(category, table)) {
                   <ng-container
                     *ngTemplateOutlet="mnemonicsTile; context: { category: category }"
                   ></ng-container>
                 }
               }
 
-              @if (!category.mnemonicsAfterTableId) {
+              @if (showMnemonicsAtEnd(category)) {
                 <ng-container
                   *ngTemplateOutlet="mnemonicsTile; context: { category: category }"
                 ></ng-container>

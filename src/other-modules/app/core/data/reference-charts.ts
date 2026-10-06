@@ -158,7 +158,7 @@ export const REFERENCE_CATEGORIES: ReferenceCategory[] = [
     id: 'days-of-week-and-calendar',
     label: 'Days of the Week & Calendar',
     description:
-      'The seven weekdays (each built from an elemental kanji + 曜日, "-day"), and common calendar/relative-day vocabulary.',
+      'The seven weekdays (each built from an elemental kanji + 曜日, "-day"), common calendar/relative-day vocabulary, and the irregular readings for dates of the month.',
     tables: [
       {
         id: 'days-of-week',
@@ -216,6 +216,58 @@ export const REFERENCE_CATEGORIES: ReferenceCategory[] = [
             note: 'げつ appears in relative-month compounds (今月/来月/先月). Counting months (January, "one month", etc.) instead uses がつ/かげつ.',
           },
           { english: 'Year', japanese: [{ text: '年', reading: 'とし・ねん' }] },
+        ],
+      },
+      {
+        id: 'dates-of-month',
+        title: 'Dates of the Month (〜日)',
+        description:
+          'The 1st–10th each have a unique, irregular reading. From the 11th on, most dates are just number + にち, except three repeats of those irregular endings at the 14th, 20th, and 24th.',
+        columns: [
+          { key: 'date', label: 'Date' },
+          {
+            key: 'kanji',
+            label: [{ text: '日本語', reading: 'にほんご' }],
+            tooltip: 'Japanese',
+          },
+          { key: 'note', label: 'Note' },
+        ],
+        practiceFrontKey: 'kanji',
+        size: 'third',
+        rows: [
+          { date: '1st', kanji: [{ text: '一日', reading: 'ついたち' }] },
+          { date: '2nd', kanji: [{ text: '二日', reading: 'ふつか' }] },
+          { date: '3rd', kanji: [{ text: '三日', reading: 'みっか' }] },
+          { date: '4th', kanji: [{ text: '四日', reading: 'よっか' }] },
+          { date: '5th', kanji: [{ text: '五日', reading: 'いつか' }] },
+          { date: '6th', kanji: [{ text: '六日', reading: 'むいか' }] },
+          { date: '7th', kanji: [{ text: '七日', reading: 'なのか' }] },
+          { date: '8th', kanji: [{ text: '八日', reading: 'ようか' }] },
+          { date: '9th', kanji: [{ text: '九日', reading: 'ここのか' }] },
+          { date: '10th', kanji: [{ text: '十日', reading: 'とおか' }] },
+          {
+            date: '11th',
+            kanji: [
+              { text: '十一', reading: 'じゅういち' },
+              { text: '日', reading: 'にち' },
+            ],
+            note: 'The regular pattern starts here — every date below except 14/20/24 just adds にち the same way.',
+          },
+          {
+            date: '14th',
+            kanji: [{ text: '十四日', reading: 'じゅうよっか' }],
+            note: 'Exception — reuses the 4th\'s よっか tail, not じゅうよんにち.',
+          },
+          {
+            date: '20th',
+            kanji: [{ text: '二十日', reading: 'はつか' }],
+            note: 'Exception — fully irregular on its own; doesn\'t reuse any other date\'s reading.',
+          },
+          {
+            date: '24th',
+            kanji: [{ text: '二十四日', reading: 'にじゅうよっか' }],
+            note: 'Exception — 二十 (regular) + よっか (the 4th\'s irregular tail).',
+          },
         ],
       },
       {
@@ -289,6 +341,11 @@ export const REFERENCE_CATEGORIES: ReferenceCategory[] = [
         title: 'The Earth Is Yours',
         body: 'It\'s Saturday at last! The first kanji, 土 (do), means "soil"/"earth".',
       },
+      {
+        term: '14日・20日・24日',
+        title: 'The Date Chart Recycles Its Own Exceptions',
+        body: '十四日 and 二十四日 just reuse 四日\'s よっか tail instead of じゅうよん/にじゅうよんにち — only 二十日 (hatsuka) is fully irregular on its own. Learn the 1st–10th well and these three fall out almost for free.',
+      },
     ],
     mnemonicsSize: 'full',
     mnemonicsAfterTableId: 'days-of-week',
@@ -297,7 +354,7 @@ export const REFERENCE_CATEGORIES: ReferenceCategory[] = [
     id: 'greetings-and-phrases',
     label: 'Greetings & Common Phrases',
     description:
-      'Everyday greetings and set phrases for starting, continuing, and ending a conversation.',
+      'Everyday greetings and set phrases for starting, continuing, and ending a conversation, plus survival phrases for when the conversation gets away from you.',
     tables: [
       {
         id: 'greetings',
@@ -367,6 +424,74 @@ export const REFERENCE_CATEGORIES: ReferenceCategory[] = [
           { english: 'Welcome! (said by shop staff)', japanese: 'いらっしゃいませ' },
         ],
       },
+      {
+        id: 'classroom-and-survival-phrases',
+        title: 'Classroom & Survival Phrases',
+        description: 'For when you get lost in a conversation or a lesson.',
+        columns: [
+          { key: 'english', label: [{ text: '英語', reading: 'えいご' }], tooltip: 'English' },
+          {
+            key: 'japanese',
+            label: [{ text: '日本語', reading: 'にほんご' }],
+            tooltip: 'Japanese',
+          },
+          { key: 'note', label: 'Note' },
+        ],
+        practiceFrontKey: 'japanese',
+        size: 'third',
+        rows: [
+          {
+            english: "I don't understand",
+            japanese: [{ text: '分', reading: 'わ' }, { text: 'かりません' }],
+          },
+          {
+            english: "I don't know",
+            japanese: [{ text: '知', reading: 'し' }, { text: 'りません' }],
+            note: '分かりません is about not following an explanation; 知りません is about not knowing a fact (a name, an address). Mixing them up is a classic beginner slip.',
+          },
+          {
+            english: 'Please say that again',
+            japanese: [
+              { text: 'もう' },
+              { text: '一', reading: 'いち' },
+              { text: '度', reading: 'ど' },
+              { text: 'お願いします', reading: 'おねがいします' },
+            ],
+            note: 'もう一度 = "one more time".',
+          },
+          {
+            english: 'Please speak slowly',
+            japanese: [
+              { text: 'ゆっくり' },
+              { text: '話', reading: 'はな' },
+              { text: 'してください' },
+            ],
+          },
+          {
+            english: 'What does ~ mean?',
+            japanese: [
+              { text: 'どういう' },
+              { text: '意味', reading: 'いみ' },
+              { text: 'ですか' },
+            ],
+          },
+          {
+            english: 'How do you say ~ in Japanese?',
+            japanese: [
+              { text: '日本語', reading: 'にほんご' },
+              { text: 'で' },
+              { text: '何', reading: 'なん' },
+              { text: 'と' },
+              { text: '言', reading: 'い' },
+              { text: 'いますか' },
+            ],
+          },
+          {
+            english: 'I have a question',
+            japanese: [{ text: '質問', reading: 'しつもん' }, { text: 'があります' }],
+          },
+        ],
+      },
     ],
     mnemonics: [
       {
@@ -384,9 +509,113 @@ export const REFERENCE_CATEGORIES: ReferenceCategory[] = [
         title: 'Committing a Small Rudeness',
         body: '失 ("to lose") + 礼 ("courtesy") — literally "I commit a discourtesy," said when interrupting, entering a room, or stepping away.',
       },
+      {
+        term: '分かりません vs 知りません',
+        title: 'Understanding vs. Knowing',
+        body: '分かりません means "I don\'t understand" (an explanation, a concept); 知りません means "I don\'t know" (a fact, like a name or address) — reaching for the wrong one is a classic beginner mix-up.',
+      },
     ],
     mnemonicsSize: 'third',
-    mnemonicsAfterTableId: 'common-phrases',
+    mnemonicsAfterTableId: 'classroom-and-survival-phrases',
+  },
+  {
+    id: 'pronouns-and-address-terms',
+    label: 'Pronouns & Address Terms',
+    description:
+      'Japanese uses personal pronouns far less than English — once the subject is clear from context, it\'s usually dropped entirely, or replaced with the person\'s name plus one of the suffixes below.',
+    tables: [
+      {
+        id: 'personal-pronouns',
+        title: 'Personal Pronouns',
+        columns: [
+          { key: 'english', label: [{ text: '英語', reading: 'えいご' }], tooltip: 'English' },
+          {
+            key: 'japanese',
+            label: [{ text: '日本語', reading: 'にほんご' }],
+            tooltip: 'Japanese',
+          },
+          { key: 'note', label: 'Note' },
+        ],
+        practiceFrontKey: 'japanese',
+        size: 'half',
+        rows: [
+          {
+            english: 'I / me',
+            japanese: [{ text: '私', reading: 'わたし' }],
+            note: 'The safe, neutral default for any gender or politeness level.',
+          },
+          {
+            english: 'I / me (masc., casual)',
+            japanese: [{ text: '僕', reading: 'ぼく' }],
+            note: 'Used mainly by men and boys, in casual-to-neutral settings.',
+          },
+          {
+            english: 'I / me (masc., rough)',
+            japanese: 'おれ',
+            note: 'Blunt and masculine — fine with close friends, too rough for polite settings.',
+          },
+          {
+            english: 'You',
+            japanese: 'あなた',
+            note: 'Grammatically correct but used far less than English "you" — Japanese usually names the person directly instead, e.g. 田中さん rather than あなた. Between spouses it can instead sound affectionate.',
+          },
+          {
+            english: 'He / him',
+            japanese: [{ text: '彼', reading: 'かれ' }],
+            note: 'Also commonly means "boyfriend" — context decides which.',
+          },
+          {
+            english: 'She / her',
+            japanese: [{ text: '彼女', reading: 'かのじょ' }],
+            note: 'Also commonly means "girlfriend" — context decides which.',
+          },
+          {
+            english: 'They (people)',
+            japanese: [{ text: '彼', reading: 'かれ' }, { text: 'ら' }],
+          },
+        ],
+      },
+      {
+        id: 'name-suffixes',
+        title: 'Name Suffixes (敬称)',
+        description: 'Attached directly to a name in place of a pronoun — picking the right one matters.',
+        columns: [
+          { key: 'suffix', label: 'Suffix' },
+          { key: 'usage', label: 'Used for' },
+        ],
+        size: 'half',
+        rows: [
+          { suffix: 'さん', usage: 'The default, respectful-but-ordinary suffix — safe for almost anyone you\'re not close to.' },
+          { suffix: '様', usage: '様 (さま) — more formal than さん: customers, letters, addressing deities.' },
+          { suffix: 'くん', usage: 'Boys and young men, or juniors of either gender in casual/work settings.' },
+          { suffix: 'ちゃん', usage: 'Young children, close friends, and pets — an affectionate diminutive.' },
+          { suffix: '先生', usage: '先生 (せんせい) — teachers, doctors, and other experts, used instead of さん.' },
+          {
+            suffix: '(none)',
+            usage: '呼び捨て, "bare name" — reserved for very close friends/family, or looking down on someone. Risky for a learner to use upward.',
+          },
+        ],
+      },
+    ],
+    mnemonics: [
+      {
+        term: 'あなた — handle with care',
+        title: 'Not a 1:1 "You"',
+        body: 'English reaches for "you" constantly; Japanese usually just uses the listener\'s name + さん, or drops the subject entirely once it\'s clear from context. あなた is grammatically correct but can sound oddly formal or distant between people who already know each other.',
+      },
+      {
+        term: '彼・彼女 — person or partner?',
+        title: 'Same Word, Two Meanings',
+        body: '彼 and 彼女 mean "he"/"she," but in casual conversation they just as often mean "boyfriend"/"girlfriend" — context, and whether a name was already mentioned, tells you which sense is meant.',
+      },
+      {
+        term: 'さん, くん, ちゃん, 様 — the suffix sets the tone',
+        title: 'The Suffix Says the Relationship',
+        body: 'Swapping a name suffix changes the whole tone of a sentence: さん is the safe default, くん softens it for boys or juniors, ちゃん is affectionate, and 様 raises the formality — picking the right one says as much as the words around it.',
+      },
+    ],
+    mnemonicsSize: 'half',
+    mnemonicsAfterTableId: 'name-suffixes',
   },
   {
     id: 'question-words',
@@ -948,6 +1177,26 @@ export const REFERENCE_CATEGORIES: ReferenceCategory[] = [
           { english: 'Wife', japanese: [{ text: '妻', reading: 'つま' }] },
           { english: 'Son', japanese: [{ text: '息子', reading: 'むすこ' }] },
           { english: 'Daughter', japanese: [{ text: '娘', reading: 'むすめ' }] },
+          {
+            english: 'Siblings',
+            japanese: [{ text: '兄弟', reading: 'きょうだい' }],
+            note: 'Collective word for "siblings" (literally "older/younger brothers") — the closest Japanese gets to a single word for "sibling".',
+          },
+          {
+            english: 'Uncle',
+            japanese: [{ text: '叔父', reading: 'おじ' }],
+            note: 'Written 伯父 if older than your parent, 叔父 if younger — same reading either way.',
+          },
+          {
+            english: 'Aunt',
+            japanese: [{ text: '叔母', reading: 'おば' }],
+            note: 'Written 伯母 if older than your parent, 叔母 if younger — same reading either way.',
+          },
+          {
+            english: 'Cousin',
+            japanese: [{ text: '従兄弟', reading: 'いとこ' }],
+            note: 'Unlike parent/sibling terms, いとこ doesn\'t change for someone else\'s cousin — no separate honorific form.',
+          },
           { english: 'Family', japanese: [{ text: '家族', reading: 'かぞく' }] },
         ],
       },
@@ -1000,6 +1249,16 @@ export const REFERENCE_CATEGORIES: ReferenceCategory[] = [
             english: 'Daughter',
             japanese: [{ text: '娘', reading: 'むすめ' }, { text: 'さん' }],
           },
+          {
+            english: 'Uncle',
+            japanese: 'おじさん',
+            note: 'Also the generic, casual way to address or refer to a middle-aged man in general, not only a relative.',
+          },
+          {
+            english: 'Aunt',
+            japanese: 'おばさん',
+            note: 'Also the generic, casual way to address or refer to a middle-aged woman in general, not only a relative.',
+          },
         ],
       },
     ],
@@ -1012,7 +1271,7 @@ export const REFERENCE_CATEGORIES: ReferenceCategory[] = [
       {
         term: '兄・姉 vs 弟・妹',
         title: 'No Plain Word for "Brother" or "Sister"',
-        body: 'Japanese has no single word for "brother" or "sister" without specifying age — 兄/姉 always mean older, 弟/妹 always mean younger. There\'s no way to say just "sibling" without picking one.',
+        body: 'Japanese has no single word for "brother" or "sister" without specifying age — 兄/姉 always mean older, 弟/妹 always mean younger. 兄弟 covers "siblings" as a group, but there\'s no way to name just one sibling without picking an age.',
       },
     ],
     mnemonicsSize: 'third',
