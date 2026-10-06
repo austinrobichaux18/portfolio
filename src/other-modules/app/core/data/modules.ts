@@ -17,14 +17,6 @@ export const modules: Module[] = [
     lastUpdated: '2026-10-02',
   },
   {
-    id: 'kana',
-    title: 'Japanese Kana',
-    description:
-      'Drill hiragana and katakana with adaptive practice that focuses on the characters you miss most.',
-    route: 'kana',
-    lastUpdated: '2026-10-02',
-  },
-  {
     id: 'investment-calculator',
     title: 'Investment Calculator',
     description:
@@ -39,6 +31,14 @@ export const modules: Module[] = [
       'Search, filter, and sort national employment and wage data for ~830 US occupations, straight from the BLS OEWS program.',
     route: 'us-career-data',
     lastUpdated: '2026-10-03',
+  },
+  {
+    id: 'kana',
+    title: 'Japanese Kana',
+    description:
+      'Drill hiragana and katakana with adaptive practice that focuses on the characters you miss most.',
+    route: 'kana',
+    lastUpdated: '2026-10-02',
   },
   {
     id: 'learning-resources',
