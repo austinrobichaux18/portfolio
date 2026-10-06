@@ -28,8 +28,13 @@
         realistic target.
       </li>
       <li>
-        <strong>The "top 10%" live into their mid-90s</strong> — a genuinely great outcome on its
-        own.
+        <strong>1 in 10 healthy people live to their mid-90s</strong> — a genuinely great outcome
+        on its own.
+      </li>
+      <li>
+        Consider your overall life expectancy, your active life expectancy, and what you want to
+        be doing in retirement (e.g. staying home or travelling the world) when running the
+        numbers below.
       </li>
     </ul>
     <a
@@ -88,7 +93,6 @@
   </div>
 
   <div class="calculator-layout">
-    <div class="left-column">
       <div class="form-card">
         <h2 class="card-title">Mission Control</h2>
         <div class="form-row">
@@ -351,9 +355,9 @@
             inputmode="numeric"
             placeholder="e.g. 65"
             [disabled]="currentAge() === null"
-            [value]="goalRetirementAge() ?? ''"
+            [value]="retirementAgeDraft() ?? (goalRetirementAge() ?? '')"
             (input)="setRetirementAge(retirementAgeInput.value)"
-            (blur)="formatIntegerInputOnBlur($event)"
+            (blur)="formatIntegerInputOnBlur($event); clearRetirementAgeDraft()"
           />
           @if (currentAge() === null) {
             <p class="field-note">Enter your current age below to use this.</p>
@@ -788,6 +792,11 @@
             {{ formatCurrency(costOfLivingBreakdown().monthly) }}/month ·
             {{ formatCurrency(costOfLivingBreakdown().yearly) }}/year
           </p>
+          <p class="field-note">
+            Prefilled from your selected state's average. Aim for $45k/year or less outside a big
+            city, or $55k/year or less inside one — that's reasonably doable and nets the most
+            gains.
+          </p>
           <div class="input-prefix">
             <span>$</span>
             <input
@@ -887,7 +896,6 @@
           Use as Monthly Contribution ↑
         </button>
       </div>
-    </div>
 
     <div class="results-card">
       <div class="stat-grid">

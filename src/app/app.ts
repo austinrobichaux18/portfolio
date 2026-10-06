@@ -38,6 +38,16 @@ export class App {
     ),
   );
 
+  // The investment calculator lays its widgets out in three side-by-side columns,
+  // so it also gets the wider page-container.
+  isInvestmentCalculator = toSignal(
+    this.router.events.pipe(
+      filter((event): event is NavigationEnd => event instanceof NavigationEnd),
+      map((event) => event.urlAfterRedirects.startsWith('/other-modules/investment-calculator')),
+      startWith(this.router.url.startsWith('/other-modules/investment-calculator')),
+    ),
+  );
+
   constructor() {
     this.router.events
       .pipe(

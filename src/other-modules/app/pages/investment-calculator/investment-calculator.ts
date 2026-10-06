@@ -535,13 +535,26 @@ export class InvestmentCalculator {
     return Math.round(age + this.years() + this.months() / 12);
   });
 
+  /**
+   * Holds the retirement-age field's in-progress text while the user is typing, so the input
+   * displays what they typed rather than snapping to goalRetirementAge()'s round-tripped value
+   * (which can momentarily differ, e.g. a partial digit that's below the current age clamps to
+   * 0 years). Cleared on blur so the field re-syncs with the authoritative computed value.
+   */
+  retirementAgeDraft = signal<string | null>(null);
+
   /** Editing the goal retirement age re-derives years/months from the gap to current age. */
   setRetirementAge(raw: string): void {
+    this.retirementAgeDraft.set(raw);
     const age = this.currentAge();
     if (age === null) return;
     const totalMonths = Math.max(0, (toNonNegativeInt(raw) - age) * 12);
     this.years.set(Math.floor(totalMonths / 12));
     this.months.set(totalMonths % 12);
+  }
+
+  clearRetirementAgeDraft(): void {
+    this.retirementAgeDraft.set(null);
   }
 
   setInflationRatePercent(raw: string): void {
@@ -822,6 +835,7 @@ export class InvestmentCalculator {
     this.inflationRatePercent.set(3);
     this.withdrawalRatePercent.set(3.5);
     this.currentAge.set(30);
+    this.retirementAgeDraft.set(null);
 
     this.incomeEntries.set([createIncomeEntry(DEFAULT_YEARLY_INCOME)]);
     this.selectedStateCode.set('');
@@ -915,6 +929,7 @@ export class InvestmentCalculator {
     this.inflationRatePercent.set(run.inputs.inflationRatePercent ?? 3);
     this.withdrawalRatePercent.set(run.withdrawalRatePercent);
     this.currentAge.set(run.currentAge);
+    this.retirementAgeDraft.set(null);
 
     const budget = run.householdBudget;
     if (budget) {

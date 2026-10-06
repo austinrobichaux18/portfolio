@@ -353,20 +353,27 @@ h1 {
   }
 }
 
+// Below 1100px there isn't room for three columns without squeezing each one
+// below a usable width, so the layout stacks to a single column there and
+// only goes three-across on wider screens.
 .calculator-layout {
-  display: flex;
-  gap: 24px;
-  flex-wrap: wrap;
-  align-items: flex-start;
-}
-
-.left-column {
-  flex: 1;
-  min-width: 300px;
-  max-width: 400px;
   display: flex;
   flex-direction: column;
   gap: 24px;
+}
+
+// Visual order is budget-card (How Much Can You Invest?) → form-card (Mission
+// Control) → results-card, independent of DOM order, via flex `order`.
+.budget-card {
+  order: 1;
+}
+
+.form-card {
+  order: 2;
+}
+
+.results-card {
+  order: 3;
 }
 
 .form-card,
@@ -379,11 +386,28 @@ h1 {
   display: flex;
   flex-direction: column;
   gap: 18px;
+  width: 100%;
 }
 
-.results-card {
-  flex: 2;
-  min-width: 320px;
+@media (min-width: 1100px) {
+  .calculator-layout {
+    flex-direction: row;
+    align-items: flex-start;
+  }
+
+  .form-card,
+  .budget-card {
+    flex: 1;
+    width: auto;
+    min-width: 320px;
+    max-width: 440px;
+  }
+
+  .results-card {
+    flex: 1.4;
+    width: auto;
+    min-width: 360px;
+  }
 }
 
 .card-title {

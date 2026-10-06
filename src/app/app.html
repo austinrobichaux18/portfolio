@@ -3,7 +3,7 @@
 <main
   class="page-container"
   [class.page-container--flush]="isOtherModules()"
-  [class.page-container--wide]="isReferenceCharts()"
+  [class.page-container--wide]="isReferenceCharts() || isInvestmentCalculator()"
 >
   <router-outlet></router-outlet>
 </main>
