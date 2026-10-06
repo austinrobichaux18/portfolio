@@ -17,6 +17,11 @@ export const LEARNING_RESOURCE_CATEGORIES: LearningResourceCategory[] = [
     label: 'Grammar',
     resources: [
       {
+        title: 'Cure Dolly Grammar',
+        url: 'https://www.youtube.com/watch?v=pSvH9vH60Ig&list=PLg9uYxuZf8x_A-vcqqyOFZu06WlhnypWj',
+        note: 'Popular video series on Japanese grammar, taught from a structural/cognitive-linguistics angle.',
+      },
+      {
         title: "Tae Kim's Guide to Japanese",
         url: 'https://www.guidetojapanese.org/grammar_guide.pdf',
         note: 'A full grammar guide in one PDF, from basic particles through advanced sentence patterns.',
@@ -92,6 +97,7 @@ export const LEARNING_RESOURCE_CATEGORIES: LearningResourceCategory[] = [
     resources: [
       {
         title: 'Kaishi 1.5k',
+        url: 'https://ankiweb.net/shared/info/1196762551',
         note: 'Core vocabulary deck covering about 1,500 of the most common words.',
       },
       {
@@ -125,6 +131,17 @@ export const LEARNING_RESOURCE_CATEGORIES: LearningResourceCategory[] = [
         title: 'YouTuber recommendations (Reddit thread)',
         url: 'https://www.reddit.com/r/LearnJapanese/s/ZJFg9cc3g9',
         note: 'Community recommendations for Japanese-learning and immersion YouTubers.',
+      },
+    ],
+  },
+  {
+    id: 'media-recommendations',
+    label: 'Media Recommendations',
+    resources: [
+      {
+        title: 'Jiten media decks',
+        url: 'https://jiten.moe/decks/media?offset=0',
+        note: 'Browsable catalog of Japanese media (anime, games, novels, etc.) with vocabulary/difficulty stats.',
       },
       {
         title: 'Huge Japanese resource list (donkuri/japanese-resources)',
