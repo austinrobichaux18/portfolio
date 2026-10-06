@@ -921,7 +921,7 @@
           </span>
           <span class="stat-value">{{ formatCurrency(result().endingBalance) }}</span>
         </div>
-        <div class="stat-chip">
+        <div class="stat-chip stat-chip-highlight">
           <span class="stat-label">
             Withdraw Each Year
             @if (finalAge(); as age) {
@@ -1328,14 +1328,13 @@
       <p class="quintile-reality">
         That negative number for most brackets isn't hypothetical, and it doesn't just disappear —
         it gets filled with credit card balances, auto loans, or savings that never get the chance
-        to build up, which is a big part of why household debt is so widespread. If your own
-        numbers look like one of the brackets running a deficit, the two moves that matter most are
-        the ones actually in your control: push to upskill, retrain, or switch fields into
-        higher-paying work as soon as you reasonably can, and treat your cost of living as
-        something you actively manage down rather than a fixed fact of life. Neither is easy, but
-        together they're close to the only realistic path to a genuinely healthy financial future —
-        whether that arrives before age 67 or, for a lot of people starting from behind, sometime
-        well after it.
+        to build up, which is a big part of why household debt is so widespread. If your own numbers
+        look like one of the brackets running a deficit, the two moves that matter most are the ones
+        actually in your control: push to upskill, retrain, or switch fields into higher-paying work
+        as soon as you reasonably can, and treat your cost of living as something you actively
+        manage down rather than a fixed fact of life. Neither is easy, but together they're close to
+        the only realistic path to a genuinely healthy financial future — whether that arrives
+        before age 67 or, for a lot of people starting from behind, sometime well after it.
       </p>
       <div
         class="quintile-table"
@@ -1367,10 +1366,10 @@
                     ✕
                   </button>
                   <p>
-                    What's left from after-tax income once essential spending is covered — the
-                    money actually free to save, invest, or spend however you want. It's after-tax
-                    income minus annual expenditures, so a negative number means that bracket's
-                    typical spending exceeds its take-home pay.
+                    What's left from after-tax income once essential spending is covered — the money
+                    actually free to save, invest, or spend however you want. It's after-tax income
+                    minus annual expenditures, so a negative number means that bracket's typical
+                    spending exceeds its take-home pay.
                   </p>
                 </div>
               }
@@ -1400,9 +1399,9 @@
           >FRED</a
         >) for before-tax income and spending. After-tax income is estimated by applying a
         representative combined effective tax rate (federal income tax, payroll tax, and average
-        state tax) that rises with income, rather than BLS's own after-tax series, which taxes
-        each quintile independently and can otherwise show lower brackets with after-tax income
-        exceeding before-tax income.
+        state tax) that rises with income, rather than BLS's own after-tax series, which taxes each
+        quintile independently and can otherwise show lower brackets with after-tax income exceeding
+        before-tax income.
       </p>
     </div>
 

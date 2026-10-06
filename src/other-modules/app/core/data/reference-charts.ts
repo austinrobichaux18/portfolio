@@ -171,7 +171,7 @@ export const REFERENCE_CATEGORIES: ReferenceCategory[] = [
           { key: 'kanji', label: [{ text: '日本語', reading: 'にほんご' }], tooltip: 'Japanese' },
         ],
         practiceFrontKey: 'kanji',
-        size: 'half',
+        size: 'third',
         rows: DAYS.map((d) => ({
           day: d.day,
           element: [{ text: d.kanji, reading: d.reading }, { text: ` ${d.elementMeaning}` }],
@@ -191,7 +191,7 @@ export const REFERENCE_CATEGORIES: ReferenceCategory[] = [
           { key: 'note', label: 'Note' },
         ],
         practiceFrontKey: 'japanese',
-        size: 'full',
+        size: 'third',
         rows: [
           { english: 'Day', japanese: [{ text: '日', reading: 'ひ' }] },
           { english: 'Days', japanese: [{ text: '日々', reading: 'ひび' }] },
@@ -230,7 +230,7 @@ export const REFERENCE_CATEGORIES: ReferenceCategory[] = [
           },
         ],
         practiceFrontKey: 'japanese',
-        size: 'half',
+        size: 'third',
         rows: [
           { english: 'Today', japanese: [{ text: '今日', reading: 'きょう' }] },
           { english: 'Tomorrow', japanese: [{ text: '明日', reading: 'あした' }] },
@@ -311,7 +311,7 @@ export const REFERENCE_CATEGORIES: ReferenceCategory[] = [
           },
         ],
         practiceFrontKey: 'japanese',
-        size: 'half',
+        size: 'third',
         rows: [
           { english: 'Good morning', japanese: 'おはようございます' },
           { english: 'Hello / Good afternoon', japanese: 'こんにちは' },
@@ -335,19 +335,14 @@ export const REFERENCE_CATEGORIES: ReferenceCategory[] = [
             label: [{ text: '日本語', reading: 'にほんご' }],
             tooltip: 'Japanese',
           },
-          { key: 'note', label: 'Note' },
         ],
         practiceFrontKey: 'japanese',
-        size: 'full',
+        size: 'third',
         rows: [
           { english: 'Thank you', japanese: 'ありがとう' },
           { english: 'Thank you very much', japanese: 'ありがとうございます' },
           { english: "You're welcome", japanese: 'どういたしまして' },
-          {
-            english: 'Excuse me / Sorry',
-            japanese: 'すみません',
-            note: 'Also doubles as "excuse me" to get someone\'s attention.',
-          },
+          { english: 'Excuse me / Sorry', japanese: 'すみません' },
           { english: "I'm sorry", japanese: 'ごめんなさい' },
           {
             english: 'Please (asking for something)',
@@ -390,7 +385,7 @@ export const REFERENCE_CATEGORIES: ReferenceCategory[] = [
         body: '失 ("to lose") + 礼 ("courtesy") — literally "I commit a discourtesy," said when interrupting, entering a room, or stepping away.',
       },
     ],
-    mnemonicsSize: 'full',
+    mnemonicsSize: 'third',
     mnemonicsAfterTableId: 'common-phrases',
   },
   {
@@ -411,7 +406,7 @@ export const REFERENCE_CATEGORIES: ReferenceCategory[] = [
           { key: 'note', label: 'Note' },
         ],
         practiceFrontKey: 'japanese',
-        size: 'full',
+        size: 'half',
         rows: [
           { english: 'Who', japanese: 'だれ', note: 'Polite form: どなた.' },
           {
@@ -445,7 +440,7 @@ export const REFERENCE_CATEGORIES: ReferenceCategory[] = [
         body: 'Most question words besides だれ・いつ・なに・なぜ start with ど — どこ, どう, どちら, どれ, どうして. Spotting that "do" prefix is a fast signal a word is asking a question.',
       },
     ],
-    mnemonicsSize: 'full',
+    mnemonicsSize: 'half',
   },
   {
     id: 'numbers-and-counters',
@@ -466,7 +461,7 @@ export const REFERENCE_CATEGORIES: ReferenceCategory[] = [
           { key: 'note', label: 'Note' },
         ],
         practiceFrontKey: 'kanji',
-        size: 'half',
+        size: 'quarter',
         rows: [
           { value: '0', kanji: 'ゼロ', note: 'Native alternative: 〇 (れい).' },
           { value: '1', kanji: [{ text: '一', reading: 'いち' }] },
@@ -509,7 +504,7 @@ export const REFERENCE_CATEGORIES: ReferenceCategory[] = [
           },
         ],
         practiceFrontKey: 'japanese',
-        size: 'half',
+        size: 'quarter',
         rows: [
           { value: '1', japanese: [{ text: '一', reading: 'ひと' }, { text: 'つ' }] },
           { value: '2', japanese: [{ text: '二', reading: 'ふた' }, { text: 'つ' }] },
@@ -538,7 +533,7 @@ export const REFERENCE_CATEGORIES: ReferenceCategory[] = [
           { key: 'note', label: 'Note' },
         ],
         practiceFrontKey: 'counter',
-        size: 'full',
+        size: 'half',
         rows: [
           {
             category: 'People',
@@ -628,7 +623,7 @@ export const REFERENCE_CATEGORIES: ReferenceCategory[] = [
           { key: 'note', label: 'Note' },
         ],
         practiceFrontKey: 'kanji',
-        size: 'full',
+        size: 'third',
         rows: MONTHS.map((m) => {
           const row: Record<string, string | FuriganaSegment[]> = {
             month: MONTH_NAMES[m.value - 1],
@@ -650,7 +645,7 @@ export const REFERENCE_CATEGORIES: ReferenceCategory[] = [
           },
         ],
         practiceFrontKey: 'japanese',
-        size: 'half',
+        size: 'third',
         rows: [
           { english: 'Spring', japanese: [{ text: '春', reading: 'はる' }] },
           { english: 'Summer', japanese: [{ text: '夏', reading: 'なつ' }] },
@@ -667,7 +662,7 @@ export const REFERENCE_CATEGORIES: ReferenceCategory[] = [
         body: "The same three numbers — 4, 7, and 9 — break the regular pattern in months, hours, and ages alike. Once you've memorized しがつ/しちがつ/くがつ here, you'll recognize the same shape everywhere else.",
       },
     ],
-    mnemonicsSize: 'full',
+    mnemonicsSize: 'third',
     mnemonicsAfterTableId: 'months',
   },
   {
@@ -689,7 +684,7 @@ export const REFERENCE_CATEGORIES: ReferenceCategory[] = [
           { key: 'note', label: 'Note' },
         ],
         practiceFrontKey: 'kanji',
-        size: 'half',
+        size: 'quarter',
         rows: HOURS.map((h) => {
           const row: Record<string, string | FuriganaSegment[]> = {
             hour: HOUR_NAMES[h.value - 1],
@@ -712,7 +707,7 @@ export const REFERENCE_CATEGORIES: ReferenceCategory[] = [
           { key: 'note', label: 'Note' },
         ],
         practiceFrontKey: 'kanji',
-        size: 'half',
+        size: 'quarter',
         rows: MINUTES.map((m) => {
           const row: Record<string, string | FuriganaSegment[]> = {
             minute: `${m.value} minute${m.value === 1 ? '' : 's'}`,
@@ -735,7 +730,7 @@ export const REFERENCE_CATEGORIES: ReferenceCategory[] = [
           { key: 'note', label: 'Note' },
         ],
         practiceFrontKey: 'japanese',
-        size: 'full',
+        size: 'half',
         rows: [
           {
             english: 'What time is it?',
@@ -775,7 +770,7 @@ export const REFERENCE_CATEGORIES: ReferenceCategory[] = [
           { key: 'note', label: 'Note' },
         ],
         practiceFrontKey: 'japanese',
-        size: 'full',
+        size: 'half',
         rows: [
           { english: 'This week', japanese: [{ text: '今週', reading: 'こんしゅう' }] },
           { english: 'Last week', japanese: [{ text: '先週', reading: 'せんしゅう' }] },
@@ -809,7 +804,7 @@ export const REFERENCE_CATEGORIES: ReferenceCategory[] = [
         body: 'よじ, しちじ, and くじ break the pattern for the exact same three numbers that are irregular for months — the exceptions are consistent across the language, not random per chart.',
       },
     ],
-    mnemonicsSize: 'full',
+    mnemonicsSize: 'half',
     mnemonicsAfterTableId: 'relative-time-weeks-months-years',
   },
   {
@@ -831,7 +826,7 @@ export const REFERENCE_CATEGORIES: ReferenceCategory[] = [
           { key: 'note', label: 'Note' },
         ],
         practiceFrontKey: 'japanese',
-        size: 'half',
+        size: 'third',
         rows: [
           {
             english: 'Red',
@@ -894,7 +889,7 @@ export const REFERENCE_CATEGORIES: ReferenceCategory[] = [
           },
         ],
         practiceFrontKey: 'japanese',
-        size: 'half',
+        size: 'third',
         rows: [
           { english: 'Circle', japanese: [{ text: '丸', reading: 'まる' }] },
           { english: 'Triangle', japanese: [{ text: '三角', reading: 'さんかく' }] },
@@ -917,7 +912,7 @@ export const REFERENCE_CATEGORIES: ReferenceCategory[] = [
         body: '色 (いろ) literally means "color" and shows up inside several noun-colors — 茶色 ("tea color" = brown), 灰色 ("ash color" = gray) — a useful hook for remembering which colors are nouns.',
       },
     ],
-    mnemonicsSize: 'full',
+    mnemonicsSize: 'third',
     mnemonicsAfterTableId: 'colors',
   },
   {
@@ -939,7 +934,7 @@ export const REFERENCE_CATEGORIES: ReferenceCategory[] = [
           },
         ],
         practiceFrontKey: 'japanese',
-        size: 'half',
+        size: 'third',
         rows: [
           { english: 'Father', japanese: [{ text: '父', reading: 'ちち' }] },
           { english: 'Mother', japanese: [{ text: '母', reading: 'はは' }] },
@@ -970,7 +965,7 @@ export const REFERENCE_CATEGORIES: ReferenceCategory[] = [
           },
         ],
         practiceFrontKey: 'japanese',
-        size: 'half',
+        size: 'third',
         rows: [
           { english: 'Father', japanese: [{ text: 'お父', reading: 'おとう' }, { text: 'さん' }] },
           { english: 'Mother', japanese: [{ text: 'お母', reading: 'おかあ' }, { text: 'さん' }] },
@@ -1020,7 +1015,7 @@ export const REFERENCE_CATEGORIES: ReferenceCategory[] = [
         body: 'Japanese has no single word for "brother" or "sister" without specifying age — 兄/姉 always mean older, 弟/妹 always mean younger. There\'s no way to say just "sibling" without picking one.',
       },
     ],
-    mnemonicsSize: 'full',
+    mnemonicsSize: 'third',
     mnemonicsAfterTableId: 'other-family',
   },
   {
@@ -1040,7 +1035,7 @@ export const REFERENCE_CATEGORIES: ReferenceCategory[] = [
           },
         ],
         practiceFrontKey: 'japanese',
-        size: 'half',
+        size: 'third',
         rows: [
           { english: 'Sunny / Clear', japanese: [{ text: '晴れ', reading: 'はれ' }] },
           { english: 'Cloudy', japanese: [{ text: '曇り', reading: 'くもり' }] },
@@ -1065,7 +1060,7 @@ export const REFERENCE_CATEGORIES: ReferenceCategory[] = [
           { key: 'note', label: 'Note' },
         ],
         practiceFrontKey: 'japanese',
-        size: 'full',
+        size: 'third',
         rows: [
           {
             english: 'Hot (weather/air)',
@@ -1107,7 +1102,7 @@ export const REFERENCE_CATEGORIES: ReferenceCategory[] = [
         body: '寒い is only for ambient/weather cold ("it\'s cold outside"); 冷たい is for a specific cold object or drink ("this water is cold"). Mixing them up is a classic beginner slip.',
       },
     ],
-    mnemonicsSize: 'full',
+    mnemonicsSize: 'third',
     mnemonicsAfterTableId: 'describing-weather',
   },
   {
@@ -1127,7 +1122,7 @@ export const REFERENCE_CATEGORIES: ReferenceCategory[] = [
           },
         ],
         practiceFrontKey: 'japanese',
-        size: 'half',
+        size: 'third',
         rows: [
           { english: 'Head', japanese: [{ text: '頭', reading: 'あたま' }] },
           { english: 'Face', japanese: [{ text: '顔', reading: 'かお' }] },
@@ -1153,7 +1148,7 @@ export const REFERENCE_CATEGORIES: ReferenceCategory[] = [
           { key: 'note', label: 'Note' },
         ],
         practiceFrontKey: 'japanese',
-        size: 'half',
+        size: 'third',
         rows: [
           { english: 'Shoulder', japanese: [{ text: '肩', reading: 'かた' }] },
           { english: 'Arm', japanese: [{ text: '腕', reading: 'うで' }] },
@@ -1187,7 +1182,7 @@ export const REFERENCE_CATEGORIES: ReferenceCategory[] = [
         body: '心 (こころ) is the figurative heart — feelings, mind, spirit. 心臓 (しんぞう) is the physical organ that pumps blood. English uses "heart" for both; Japanese keeps them separate.',
       },
     ],
-    mnemonicsSize: 'full',
+    mnemonicsSize: 'third',
     mnemonicsAfterTableId: 'body-and-limbs',
   },
   {
@@ -1209,7 +1204,7 @@ export const REFERENCE_CATEGORIES: ReferenceCategory[] = [
           { key: 'note', label: 'Note' },
         ],
         practiceFrontKey: 'japanese',
-        size: 'half',
+        size: 'third',
         rows: [
           {
             english: 'Rice / A meal',
@@ -1238,7 +1233,7 @@ export const REFERENCE_CATEGORIES: ReferenceCategory[] = [
           },
         ],
         practiceFrontKey: 'japanese',
-        size: 'half',
+        size: 'third',
         rows: [
           { english: 'Apple', japanese: 'りんご' },
           { english: 'Banana', japanese: 'バナナ' },
@@ -1264,7 +1259,7 @@ export const REFERENCE_CATEGORIES: ReferenceCategory[] = [
           { key: 'note', label: 'Note' },
         ],
         practiceFrontKey: 'japanese',
-        size: 'half',
+        size: 'third',
         rows: [
           { english: 'Water', japanese: [{ text: '水', reading: 'みず' }] },
           { english: 'Tea', japanese: [{ text: 'お茶', reading: 'おちゃ' }] },
@@ -1296,7 +1291,7 @@ export const REFERENCE_CATEGORIES: ReferenceCategory[] = [
           { key: 'note', label: 'Note' },
         ],
         practiceFrontKey: 'japanese',
-        size: 'full',
+        size: 'half',
         rows: [
           {
             english: 'Said before eating',
@@ -1339,7 +1334,7 @@ export const REFERENCE_CATEGORIES: ReferenceCategory[] = [
         body: 'ご飯 literally means cooked rice, but because rice is the centerpiece of a traditional meal, it also casually means "a meal" in general — 朝ご飯 (asagohan) is "breakfast," not "morning rice".',
       },
     ],
-    mnemonicsSize: 'full',
+    mnemonicsSize: 'half',
     mnemonicsAfterTableId: 'meal-phrases',
   },
 ];

@@ -8,7 +8,7 @@ export interface FuriganaSegment {
 export type ReferenceCellValue = string | FuriganaSegment[];
 
 /** How wide a tile renders in the chart grid. Omit to default to 'full'. */
-export type TileSize = 'full' | 'half' | 'third';
+export type TileSize = 'full' | 'half' | 'third' | 'quarter';
 
 export interface ReferenceTableColumn {
   key: string;
