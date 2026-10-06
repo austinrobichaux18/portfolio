@@ -60,8 +60,8 @@ export const modules: Module[] = [
     id: 'reference-charts',
     title: 'Japanese Reference Charts',
     description:
-      'Browsable vocabulary charts for Japanese — days of the week and calendar terms, greetings, question words, numbers and counters, months and seasons, time expressions, colors and shapes, family terms, weather terms, body parts, and food and drink basics — plus flashcard-style self-testing to drill recall.',
+      'Browsable vocabulary charts for Japanese — days of the week and calendar terms, greetings, question words, numbers and counters, months and seasons, time expressions, colors and shapes, family terms, weather terms, body parts, food and drink basics, animals, places, directions and position words, transportation, common verbs, adjectives, clothing, money and shopping, nationalities and countries, occupations, and school subjects — plus flashcard-style self-testing to drill recall.',
     route: 'reference-charts',
-    lastUpdated: '2026-10-05',
+    lastUpdated: '2026-10-06',
   },
 ];

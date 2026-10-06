@@ -6,30 +6,6 @@ holding pen.
 
 ## New module ideas
 
-- **Japanese reference charts** — Kana-style reference/quiz modules for other
-  vocab categories. Could reuse the Kana module's tile-grid/practice/mastery-badge
-  patterns per category rather than building each from scratch. Candidate
-  categories, roughly in order of how often they actually come up:
-  - Animals (common pets/animals)
-  - Places (station, school, hospital, restaurant, store, park)
-  - Directions & position words (left/right, near/far, in front/behind, N/S/E/W)
-  - Transportation (train, car, bus, bicycle, airplane)
-  - Common verbs (dictionary vs. polite form pairs — eat, drink, go, come, see, do)
-  - Common adjectives (i-adjectives and na-adjectives — big, small, hot, good, bad)
-  - Clothing items
-  - Money & shopping (yen, price, expensive/cheap, buy/sell)
-  - Nationalities & countries
-  - Occupations/jobs
-  - School subjects
-
-  Days of the week/calendar, greetings & common phrases, question words,
-  numbers + counters, months & seasons / time expressions, colors & shapes,
-  family terms, weather terms, body parts, and food & drink basics have all
-  been built into the Japanese Reference Charts module
-  (`pages/reference-charts`) — use that module's data-driven table/flashcard
-  pattern (`core/models/ReferenceChart.ts`, `core/data/reference-charts.ts`)
-  as the template for the remaining categories above, rather than building
-  each from scratch.
 - **Song transcription practice** — an interactive practice tool: show song
   lyrics (or play audio) and have the user transcribe/translate them, as a way
   to drill kana writing and listening/reading comprehension. Example source:
