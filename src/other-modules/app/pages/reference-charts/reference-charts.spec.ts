@@ -30,6 +30,26 @@ describe('ReferenceCharts', () => {
     expect(component.resultCount()).toBeGreaterThan(0);
   });
 
+  it('matches a table title and includes all of that table\'s rows', () => {
+    fixture.detectChanges();
+    component.search.set('days of the week');
+    const matched = component.filteredCategories().flatMap((c) => c.tables);
+    const table = matched.find((t) => t.title === 'Days of the Week');
+    expect(table).toBeTruthy();
+    expect(table!.rows.length).toBe(7);
+  });
+
+  it('matches a category label and includes every table in that category', () => {
+    fixture.detectChanges();
+    component.search.set('time expressions');
+    const category = component
+      .filteredCategories()
+      .find((c) => c.label === 'Time Expressions');
+    const fullCategory = component.categories.find((c) => c.label === 'Time Expressions')!;
+    expect(category).toBeTruthy();
+    expect(category!.tables.length).toBe(fullCategory.tables.length);
+  });
+
   it('shows no categories when nothing matches the search', () => {
     fixture.detectChanges();
     component.search.set('definitely not a real term');

@@ -85,19 +85,28 @@ export class ReferenceCharts {
     if (!query) return this.categories;
 
     return this.categories
-      .map((category) => ({
-        ...category,
-        tables: category.tables
-          .map((table) => ({
-            ...table,
-            rows: table.rows.filter((row) =>
-              Object.values(row).some((value) =>
-                cellSearchText(value).toLowerCase().includes(query),
-              ),
-            ),
-          }))
-          .filter((table: ReferenceTable) => table.rows.length > 0),
-      }))
+      .map((category) => {
+        const categoryHeaderMatches = category.label.toLowerCase().includes(query);
+        return {
+          ...category,
+          tables: category.tables
+            .map((table) => {
+              const headerMatches =
+                categoryHeaderMatches || table.title.toLowerCase().includes(query);
+              return {
+                ...table,
+                rows: headerMatches
+                  ? table.rows
+                  : table.rows.filter((row) =>
+                      Object.values(row).some((value) =>
+                        cellSearchText(value).toLowerCase().includes(query),
+                      ),
+                    ),
+              };
+            })
+            .filter((table: ReferenceTable) => table.rows.length > 0),
+        };
+      })
       .filter((category) => category.tables.length > 0);
   });
 
