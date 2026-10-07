@@ -6,6 +6,7 @@ describe('ReferenceCharts', () => {
   let fixture: ComponentFixture<ReferenceCharts>;
 
   beforeEach(async () => {
+    localStorage.clear();
     await TestBed.configureTestingModule({
       imports: [ReferenceCharts],
     }).compileComponents();
@@ -57,63 +58,201 @@ describe('ReferenceCharts', () => {
     expect(component.resultCount()).toBe(0);
   });
 
-  it('starts a practice session covering every flashcard once', () => {
-    fixture.detectChanges();
-    component.setViewMode('practice');
-    expect(component.deck().length).toBe(component.totalCards);
-    expect(component.currentCard()).toBeTruthy();
+  describe('practice-set selection', () => {
+    it('starts with nothing selected', () => {
+      fixture.detectChanges();
+      expect(component.selectedCountTotal()).toBe(0);
+      expect(component.practiceDeck().length).toBe(0);
+    });
+
+    it('toggles a single table in and out of the practice set', () => {
+      fixture.detectChanges();
+      const table = component.categories[0].tables.find((t) => t.practiceFrontKey)!;
+      expect(component.isTableSelected(table.id)).toBe(false);
+
+      component.toggleTable(table.id);
+      expect(component.isTableSelected(table.id)).toBe(true);
+      expect(component.selectedCountTotal()).toBe(1);
+
+      component.toggleTable(table.id);
+      expect(component.isTableSelected(table.id)).toBe(false);
+      expect(component.selectedCountTotal()).toBe(0);
+    });
+
+    it('selects and clears every practiceable table for a whole category', () => {
+      fixture.detectChanges();
+      const category = component.categories.find(
+        (c) => c.tables.filter((t) => t.practiceFrontKey).length > 0,
+      )!;
+      const total = component.practiceableCountForCategory(category);
+
+      component.selectAllForCategory(category);
+      expect(component.selectedCountForCategory(category)).toBe(total);
+
+      component.clearForCategory(category);
+      expect(component.selectedCountForCategory(category)).toBe(0);
+    });
+
+    it('selects and clears every practiceable table on the page', () => {
+      fixture.detectChanges();
+      component.selectAllGlobal();
+      expect(component.selectedCountTotal()).toBe(component.totalPracticeableCount);
+      expect(component.practiceDeck().length).toBeGreaterThan(component.totalPracticeableCount);
+
+      component.clearGlobal();
+      expect(component.selectedCountTotal()).toBe(0);
+      expect(component.practiceDeck().length).toBe(0);
+    });
+
+    it('toggles via a whole-tile click, but not when the click follows a text selection', () => {
+      fixture.detectChanges();
+      const table = component.categories[0].tables.find((t) => t.practiceFrontKey)!;
+
+      component.onTileClick(new MouseEvent('click'), table.id);
+      expect(component.isTableSelected(table.id)).toBe(true);
+
+      const selection = { toString: () => 'some selected text' } as unknown as Selection;
+      const originalGetSelection = window.getSelection;
+      window.getSelection = () => selection;
+      try {
+        component.onTileClick(new MouseEvent('click'), table.id);
+      } finally {
+        window.getSelection = originalGetSelection;
+      }
+      expect(component.isTableSelected(table.id)).toBe(true);
+    });
+
+    it('toggles via Enter/Space on the tile, ignoring other keys', () => {
+      fixture.detectChanges();
+      const table = component.categories[0].tables.find((t) => t.practiceFrontKey)!;
+
+      component.onTileKeydown(new KeyboardEvent('keydown', { key: 'Tab' }), table.id);
+      expect(component.isTableSelected(table.id)).toBe(false);
+
+      component.onTileKeydown(new KeyboardEvent('keydown', { key: 'Enter' }), table.id);
+      expect(component.isTableSelected(table.id)).toBe(true);
+
+      component.onTileKeydown(new KeyboardEvent('keydown', { key: ' ' }), table.id);
+      expect(component.isTableSelected(table.id)).toBe(false);
+    });
+
+    it('persists selection across component instances via storage', () => {
+      fixture.detectChanges();
+      const table = component.categories[0].tables.find((t) => t.practiceFrontKey)!;
+      component.toggleTable(table.id);
+
+      const fixture2 = TestBed.createComponent(ReferenceCharts);
+      const component2 = fixture2.componentInstance;
+      expect(component2.isTableSelected(table.id)).toBe(true);
+    });
   });
 
-  it('tracks knew/missed counts and finishes after the last card', () => {
-    fixture.detectChanges();
-    component.setViewMode('practice');
-    component.deck.set([0]);
-    component.currentCardIndex.set(0);
+  describe('practice session', () => {
+    it('shows an idle state when switching to Practice with nothing selected', () => {
+      fixture.detectChanges();
+      component.setViewMode('practice');
+      expect(component.practiceState()).toBe('idle');
+      expect(component.currentCard()).toBeNull();
+    });
 
-    component.revealAnswer();
-    expect(component.revealed()).toBe(true);
+    it('builds a shuffled deck covering only the selected tables', () => {
+      fixture.detectChanges();
+      component.selectAllGlobal();
+      component.setViewMode('practice');
+      expect(component.practiceState()).toBe('active');
+      expect(component.sessionDeck().length).toBe(component.practiceDeck().length);
+      expect(component.currentCard()).toBeTruthy();
+    });
 
-    component.markKnew();
-    expect(component.knewCount()).toBe(1);
-    expect(component.practiceState()).toBe('finished');
-  });
+    it('tracks knew/missed counts and finishes after the last card', () => {
+      fixture.detectChanges();
+      component.selectAllGlobal();
+      component.startPractice();
+      component.sessionDeck.set([component.practiceDeck()[0]]);
+      component.currentCardIndex.set(0);
 
-  it('reveals the answer on spacebar', () => {
-    fixture.detectChanges();
-    component.setViewMode('practice');
-    expect(component.revealed()).toBe(false);
+      component.revealAnswer();
+      expect(component.revealed()).toBe(true);
 
-    component.onPracticeKeyDown(new KeyboardEvent('keydown', { key: ' ' }));
-    expect(component.revealed()).toBe(true);
-  });
+      component.markKnew();
+      expect(component.knewCount()).toBe(1);
+      expect(component.practiceState()).toBe('finished');
+    });
 
-  it('marks missed on 1 and knew on 3, only once revealed', () => {
-    fixture.detectChanges();
-    component.setViewMode('practice');
-    component.deck.set([0, 1]);
-    component.currentCardIndex.set(0);
+    it('reveals the answer on spacebar', () => {
+      fixture.detectChanges();
+      component.selectAllGlobal();
+      component.setViewMode('practice');
+      expect(component.revealed()).toBe(false);
 
-    component.onPracticeKeyDown(new KeyboardEvent('keydown', { key: '1' }));
-    expect(component.missedCount()).toBe(0);
+      component.onPracticeKeyDown(new KeyboardEvent('keydown', { key: ' ' }));
+      expect(component.revealed()).toBe(true);
+    });
 
-    component.onPracticeKeyDown(new KeyboardEvent('keydown', { key: ' ' }));
-    expect(component.revealed()).toBe(true);
+    it('marks missed on 1 and knew on 3, only once revealed', () => {
+      fixture.detectChanges();
+      component.selectAllGlobal();
+      component.setViewMode('practice');
+      const deck = component.practiceDeck();
+      component.sessionDeck.set([deck[0], deck[1]]);
+      component.currentCardIndex.set(0);
 
-    component.onPracticeKeyDown(new KeyboardEvent('keydown', { key: '1' }));
-    expect(component.missedCount()).toBe(1);
-    expect(component.currentCardIndex()).toBe(1);
+      component.onPracticeKeyDown(new KeyboardEvent('keydown', { key: '1' }));
+      expect(component.missedCount()).toBe(0);
 
-    component.onPracticeKeyDown(new KeyboardEvent('keydown', { key: ' ' }));
-    component.onPracticeKeyDown(new KeyboardEvent('keydown', { key: '3' }));
-    expect(component.knewCount()).toBe(1);
-    expect(component.practiceState()).toBe('finished');
-  });
+      component.onPracticeKeyDown(new KeyboardEvent('keydown', { key: ' ' }));
+      expect(component.revealed()).toBe(true);
 
-  it('ignores practice hotkeys while in reference mode', () => {
-    fixture.detectChanges();
-    expect(component.viewMode()).toBe('reference');
+      component.onPracticeKeyDown(new KeyboardEvent('keydown', { key: '1' }));
+      expect(component.missedCount()).toBe(1);
+      expect(component.currentCardIndex()).toBe(1);
 
-    component.onPracticeKeyDown(new KeyboardEvent('keydown', { key: ' ' }));
-    expect(component.revealed()).toBe(false);
+      component.onPracticeKeyDown(new KeyboardEvent('keydown', { key: ' ' }));
+      component.onPracticeKeyDown(new KeyboardEvent('keydown', { key: '3' }));
+      expect(component.knewCount()).toBe(1);
+      expect(component.practiceState()).toBe('finished');
+    });
+
+    it('ignores practice hotkeys while in reference mode', () => {
+      fixture.detectChanges();
+      expect(component.viewMode()).toBe('reference');
+
+      component.onPracticeKeyDown(new KeyboardEvent('keydown', { key: ' ' }));
+      expect(component.revealed()).toBe(false);
+    });
+
+    it('records a completed session to history with mastery stats', () => {
+      fixture.detectChanges();
+      component.selectAllGlobal();
+      component.startPractice();
+      const deck = component.practiceDeck();
+      component.sessionDeck.set([deck[0]]);
+      component.currentCardIndex.set(0);
+
+      component.revealAnswer();
+      component.markKnew();
+
+      expect(component.history().length).toBe(1);
+      const entry = component.history()[0];
+      expect(entry.totalAttempts).toBe(1);
+      expect(entry.correctAttempts).toBe(1);
+      expect(component.tileBadgeFor(deck[0].id)).toBe(null);
+    });
+
+    it('marks a card struggling after a run of misses', () => {
+      fixture.detectChanges();
+      component.selectAllGlobal();
+      const card = component.practiceDeck()[0];
+
+      for (let i = 0; i < 3; i++) {
+        component.startPractice();
+        component.sessionDeck.set([card]);
+        component.currentCardIndex.set(0);
+        component.revealAnswer();
+        component.markMissed();
+      }
+
+      expect(component.tileBadgeFor(card.id)).toBe('struggling');
+    });
   });
 });

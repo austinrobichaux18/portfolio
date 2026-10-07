@@ -66,6 +66,138 @@
   </div>
 
   @if (viewMode() === 'reference') {
+    <div class="practice-toolbar">
+      <div class="selection-summary">
+        <span class="selection-count"
+          >{{ selectedCountTotal() }}/{{ totalPracticeableCount }} charts selected for
+          practice</span
+        >
+        @if (masteredCountTotal(); as masteredTotal) {
+          <span class="mastery-count">✓ {{ masteredTotal }} mastered</span>
+        }
+      </div>
+      <div class="selection-actions">
+        <button type="button" class="link-btn" (click)="selectAllGlobal()">Select All</button>
+        <button type="button" class="link-btn" (click)="clearGlobal()">Clear All</button>
+        <button
+          type="button"
+          class="primary"
+          [disabled]="selectedCountTotal() === 0"
+          (click)="startPracticeAndSwitch()"
+        >
+          Start Practice ({{ selectedCountTotal() }})
+        </button>
+      </div>
+
+      <button
+        type="button"
+        class="quick-select-toggle"
+        [attr.aria-expanded]="quickSelectExpanded()"
+        (click)="toggleQuickSelect()"
+      >
+        <span class="quick-select-toggle-icon">{{ quickSelectExpanded() ? '▲' : '▼' }}</span>
+        {{ quickSelectExpanded() ? 'Hide' : 'Show' }} All Charts
+      </button>
+
+      @if (quickSelectExpanded()) {
+        <div class="quick-select-grid">
+          @for (category of categories; track category.id) {
+            @if (practiceableTablesOf(category).length) {
+              <div class="quick-select-group">
+                <span class="quick-select-group-label">{{ category.label }}</span>
+                <div class="quick-select-chips">
+                  @for (table of practiceableTablesOf(category); track table.id) {
+                    <button
+                      type="button"
+                      class="quick-select-chip"
+                      [class.selected]="isTableSelected(table.id)"
+                      (click)="toggleTable(table.id)"
+                    >
+                      {{ table.title }}
+                    </button>
+                  }
+                </div>
+              </div>
+            }
+          }
+        </div>
+      }
+    </div>
+
+    <div class="history-section">
+      <div class="history-summary-header">
+        <h3>Practice History</h3>
+        @if (historySummary(); as summary) {
+          <span class="history-summary-stats">
+            {{ summary.sessions }} session{{ summary.sessions === 1 ? '' : 's' }} &middot;
+            {{ summary.accuracyPercent }}% overall accuracy &middot;
+            {{ summary.totalAttempts }} cards answered
+          </span>
+        } @else {
+          <span class="history-summary-stats">
+            No sessions yet &mdash; select some charts above and give practice a try.
+          </span>
+        }
+      </div>
+
+      @if (historySummary()) {
+        <div class="history-io-actions">
+          <button type="button" class="link-btn danger-link" (click)="clearHistory()">
+            Clear History
+          </button>
+        </div>
+
+        <div class="history-list">
+          @for (entry of historyDescending(); track entry.timestamp) {
+            <div class="history-entry">
+              <button
+                type="button"
+                class="history-row"
+                [class.expanded]="isHistoryEntryExpanded(entry.timestamp)"
+                (click)="toggleHistoryEntry(entry.timestamp)"
+              >
+                <span>{{ entry.timestamp | date: 'medium' }}</span>
+                <span>{{ entry.correctAttempts }} / {{ entry.totalAttempts }} correct</span>
+                <span>{{ entry.cardCount }} cards</span>
+                <span class="history-expand-icon">
+                  {{ isHistoryEntryExpanded(entry.timestamp) ? '▲' : '▼' }}
+                </span>
+              </button>
+
+              @if (isHistoryEntryExpanded(entry.timestamp)) {
+                <div class="history-detail">
+                  <div class="time-summary">
+                    <div>
+                      <span class="time-summary-label">Accuracy</span>
+                      <span class="time-summary-value">{{ accuracyPercentFor(entry) }}%</span>
+                    </div>
+                  </div>
+
+                  @if (missedCardsFor(entry).length) {
+                    <div class="missed-list">
+                      @for (m of missedCardsFor(entry); track m.card.id) {
+                        <div class="missed-row">
+                          <span class="missed-char">
+                            <ng-container
+                              *ngTemplateOutlet="furigana; context: { value: m.card.front }"
+                            ></ng-container>
+                          </span>
+                          <span class="missed-romaji">{{ m.card.tableTitle }}</span>
+                          <span class="missed-count">missed {{ m.missCount }}×</span>
+                        </div>
+                      }
+                    </div>
+                  } @else {
+                    <p class="notice">No misses recorded for this session.</p>
+                  }
+                </div>
+              }
+            </div>
+          }
+        </div>
+      }
+    </div>
+
     <div class="search-row">
       <input
         type="search"
@@ -88,16 +220,50 @@
       <div class="category-list">
         @for (category of filteredCategories(); track category.id) {
           <section class="category">
-            <h2>{{ category.label }}</h2>
+            <div class="category-header-row">
+              <h2>{{ category.label }}</h2>
+              @if (practiceableCountForCategory(category); as total) {
+                <div class="category-select-controls">
+                  <span class="selection-count"
+                    >{{ selectedCountForCategory(category) }}/{{ total }} selected</span
+                  >
+                  @if (masteredCountForCategory(category); as masteredCount) {
+                    <span class="mastery-count">✓ {{ masteredCount }}</span>
+                  }
+                  <button type="button" class="link-btn" (click)="selectAllForCategory(category)">
+                    Select All
+                  </button>
+                  <button type="button" class="link-btn" (click)="clearForCategory(category)">
+                    Clear
+                  </button>
+                </div>
+              }
+            </div>
             @if (category.description) {
               <p class="category-description">{{ category.description }}</p>
             }
 
             <div class="tile-grid">
               @for (table of category.tables; track table.id) {
-                <div [class]="tileClass(table.size)">
+                <div
+                  [class]="tileClass(table.size)"
+                  [class.selectable]="!!table.practiceFrontKey"
+                  [class.tile-selected]="!!table.practiceFrontKey && isTableSelected(table.id)"
+                  [attr.role]="table.practiceFrontKey ? 'button' : null"
+                  [attr.tabindex]="table.practiceFrontKey ? 0 : null"
+                  [attr.aria-pressed]="table.practiceFrontKey ? isTableSelected(table.id) : null"
+                  (click)="table.practiceFrontKey && onTileClick($event, table.id)"
+                  (keydown)="table.practiceFrontKey && onTileKeydown($event, table.id)"
+                >
                   <div class="chart-table-wrap">
-                    <h3>{{ table.title }}</h3>
+                    <div class="table-header-row">
+                      <h3>{{ table.title }}</h3>
+                      @if (table.practiceFrontKey) {
+                        <span class="table-select-badge" [class.selected]="isTableSelected(table.id)">
+                          {{ isTableSelected(table.id) ? '✓ Selected' : '+ Select' }}
+                        </span>
+                      }
+                    </div>
                     @if (table.description) {
                       <p class="table-description">{{ table.description }}</p>
                     }
@@ -119,6 +285,15 @@
                             <tr>
                               @for (column of table.columns; track column.key) {
                                 <td [class.cell-note]="column.key === 'note'">
+                                  @if (column.key === table.practiceFrontKey) {
+                                    @if (tileBadgeFor(rowCardId(table, $index)); as badge) {
+                                      <span
+                                        class="cell-badge"
+                                        [class.struggling]="badge === 'struggling'"
+                                        >{{ badge === 'mastered' ? '○' : '✕' }}</span
+                                      >
+                                    }
+                                  }
                                   <ng-container
                                     *ngTemplateOutlet="
                                       furigana;
@@ -162,7 +337,17 @@
     }
   } @else {
     <div class="practice-panel">
-      @if (practiceState() === 'active' && currentCard(); as card) {
+      @if (practiceState() === 'idle') {
+        <div class="practice-results">
+          <h2>No Charts Selected</h2>
+          <p class="results-detail">
+            Go back to Charts and select at least one table to build a practice set.
+          </p>
+          <button type="button" class="reveal-button" (click)="setViewMode('reference')">
+            Back to Charts
+          </button>
+        </div>
+      } @else if (practiceState() === 'active' && currentCard(); as card) {
         <div class="progress-row">
           <span class="progress-count">{{ progressDisplay() }}</span>
           <span class="progress-score"
@@ -219,7 +404,7 @@
           <p class="results-score">{{ accuracyPercent() }}% recalled</p>
           <p class="results-detail">
             {{ knewCount() }} knew &middot; {{ missedCount() }} missed &middot;
-            {{ totalCards }} total
+            {{ totalCards() }} total
           </p>
           <button type="button" class="reveal-button" (click)="startPractice()">
             Practice again

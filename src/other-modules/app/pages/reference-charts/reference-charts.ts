@@ -1,4 +1,4 @@
-import { NgTemplateOutlet } from '@angular/common';
+import { DatePipe, NgTemplateOutlet } from '@angular/common';
 import { Component, HostListener, computed, signal } from '@angular/core';
 import { REFERENCE_CATEGORIES } from '../../core/data/reference-charts';
 import {
@@ -9,8 +9,22 @@ import {
   ReferenceTableColumn,
   TileSize,
 } from '../../core/models/ReferenceChart';
+import { ReferenceSessionMissedCard, ReferenceSessionSummary } from '../../core/models/ReferenceSessionSummary';
+import { ReferenceCardStatsMap } from '../../core/models/ReferenceCardStats';
+import {
+  loadCardStats,
+  loadHistory,
+  loadSelectedTableIds,
+  mergeSessionIntoStats,
+  saveCardStats,
+  saveHistory,
+  saveSelectedTableIds,
+} from './reference-charts-storage';
 
 interface Flashcard {
+  id: string;
+  tableId: string;
+  categoryId: string;
   categoryLabel: string;
   tableTitle: string;
   front: ReferenceCellValue;
@@ -18,7 +32,17 @@ interface Flashcard {
 }
 
 type ViewMode = 'reference' | 'practice';
-type PracticeState = 'active' | 'finished';
+type PracticeState = 'idle' | 'active' | 'finished';
+type TileBadge = 'mastered' | 'struggling' | null;
+
+const MIN_ATTEMPTS_FOR_RETENTION = 3;
+// A flat cutoff naturally gives the right shape over time: with just 1 attempt, a single
+// miss is a 100% miss rate (clears the bar immediately), but as attempts accumulate,
+// sustained improvement drags the rate below the cutoff and the card drops off the list.
+const STRUGGLING_THRESHOLD_PERCENT = 90;
+// Mirrors the miss-rate cutoff above, but gated by a minimum sample size — a single lucky
+// guess shouldn't earn the "mastered" mark the way a single miss earns "struggling".
+const MASTERED_THRESHOLD_PERCENT = 90;
 
 function isSegments(value: ReferenceCellValue): value is FuriganaSegment[] {
   return Array.isArray(value);
@@ -38,11 +62,14 @@ function buildFlashcards(categories: ReferenceCategory[]): Flashcard[] {
       const backColumnDefs: ReferenceTableColumn[] = table.columns.filter(
         (c) => c.key !== table.practiceFrontKey,
       );
-      for (const row of table.rows) {
+      table.rows.forEach((row, rowIndex) => {
         cards.push({
+          id: `${table.id}::${rowIndex}`,
+          tableId: table.id,
+          categoryId: category.id,
           categoryLabel: category.label,
           tableTitle: table.title,
-          front: row[table.practiceFrontKey],
+          front: row[table.practiceFrontKey!],
           backColumns: backColumnDefs
             .filter((c) => {
               const value = row[c.key];
@@ -50,31 +77,46 @@ function buildFlashcards(categories: ReferenceCategory[]): Flashcard[] {
             })
             .map((c) => ({ label: c.label, value: row[c.key] })),
         });
-      }
+      });
     }
   }
   return cards;
 }
 
-function shuffledIndices(length: number): number[] {
-  const indices = Array.from({ length }, (_, i) => i);
-  for (let i = indices.length - 1; i > 0; i--) {
+function shuffled<T>(items: T[]): T[] {
+  const result = [...items];
+  for (let i = result.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
-    [indices[i], indices[j]] = [indices[j], indices[i]];
+    [result[i], result[j]] = [result[j], result[i]];
   }
-  return indices;
+  return result;
 }
 
 const FLASHCARDS: Flashcard[] = buildFlashcards(REFERENCE_CATEGORIES);
+const FLASHCARDS_BY_ID = new Map(FLASHCARDS.map((f) => [f.id, f]));
+const PRACTICEABLE_TABLE_IDS = new Set(FLASHCARDS.map((f) => f.tableId));
+
+function resolveMissedCards(
+  entries: ReferenceSessionMissedCard[],
+): { card: Flashcard; missCount: number }[] {
+  const resolved: { card: Flashcard; missCount: number }[] = [];
+  for (const entry of entries) {
+    const card = FLASHCARDS_BY_ID.get(entry.cardId);
+    if (card) resolved.push({ card, missCount: entry.missCount });
+  }
+  return resolved.sort((a, b) => b.missCount - a.missCount);
+}
 
 @Component({
   selector: 'app-reference-charts',
-  imports: [NgTemplateOutlet],
+  imports: [NgTemplateOutlet, DatePipe],
   templateUrl: './reference-charts.html',
   styleUrl: './reference-charts.scss',
 })
 export class ReferenceCharts {
   readonly categories = REFERENCE_CATEGORIES;
+
+  readonly totalPracticeableCount = PRACTICEABLE_TABLE_IDS.size;
 
   viewMode = signal<ViewMode>('reference');
 
@@ -143,18 +185,198 @@ export class ReferenceCharts {
     return this.isSearching() || !category.mnemonicsAfterTableId;
   }
 
+  // ---- Practice-set selection ----
+
+  selectedTableIds = signal<Set<string>>(
+    new Set(loadSelectedTableIds().filter((id) => PRACTICEABLE_TABLE_IDS.has(id))),
+  );
+
+  private updateSelectedTableIds(updater: (ids: Set<string>) => Set<string>): void {
+    this.selectedTableIds.update((ids) => {
+      const next = updater(ids);
+      saveSelectedTableIds(next);
+      return next;
+    });
+  }
+
+  isTableSelected(tableId: string): boolean {
+    return this.selectedTableIds().has(tableId);
+  }
+
+  toggleTable(tableId: string): void {
+    this.updateSelectedTableIds((ids) => {
+      const next = new Set(ids);
+      if (next.has(tableId)) {
+        next.delete(tableId);
+      } else {
+        next.add(tableId);
+      }
+      return next;
+    });
+  }
+
+  /** Lets the whole tile act as the click target (like Kana's tiles) without hijacking a text selection made for copying. */
+  onTileClick(event: MouseEvent, tableId: string): void {
+    const selection = window.getSelection();
+    if (selection && selection.toString().length > 0) return;
+    this.toggleTable(tableId);
+  }
+
+  onTileKeydown(event: KeyboardEvent, tableId: string): void {
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault();
+      this.toggleTable(tableId);
+    }
+  }
+
+  practiceableTablesOf(category: ReferenceCategory): ReferenceTable[] {
+    return category.tables.filter((t) => !!t.practiceFrontKey);
+  }
+
+  quickSelectExpanded = signal(false);
+
+  toggleQuickSelect(): void {
+    this.quickSelectExpanded.update((v) => !v);
+  }
+
+  practiceableCountForCategory(category: ReferenceCategory): number {
+    return this.practiceableTablesOf(category).length;
+  }
+
+  selectedCountForCategory(category: ReferenceCategory): number {
+    const ids = this.selectedTableIds();
+    return this.practiceableTablesOf(category).filter((t) => ids.has(t.id)).length;
+  }
+
+  selectAllForCategory(category: ReferenceCategory): void {
+    this.updateSelectedTableIds((ids) => {
+      const next = new Set(ids);
+      for (const t of this.practiceableTablesOf(category)) next.add(t.id);
+      return next;
+    });
+  }
+
+  clearForCategory(category: ReferenceCategory): void {
+    this.updateSelectedTableIds((ids) => {
+      const next = new Set(ids);
+      for (const t of this.practiceableTablesOf(category)) next.delete(t.id);
+      return next;
+    });
+  }
+
+  selectedCountTotal = computed(() => this.selectedTableIds().size);
+
+  selectAllGlobal(): void {
+    this.updateSelectedTableIds(() => new Set(PRACTICEABLE_TABLE_IDS));
+  }
+
+  clearGlobal(): void {
+    this.updateSelectedTableIds(() => new Set());
+  }
+
+  // ---- Mastery (green/red) ----
+
+  cardStats = signal<ReferenceCardStatsMap>(loadCardStats());
+
+  rowCardId(table: ReferenceTable, rowIndex: number): string {
+    return `${table.id}::${rowIndex}`;
+  }
+
+  /** ○ for mastered, ✕ for struggling — matches the Kana trainer's badge convention. */
+  tileBadgeFor(cardId: string): TileBadge {
+    const stat = this.cardStats()[cardId];
+    if (!stat || stat.attempts === 0) return null;
+
+    const missPercent = ((stat.attempts - stat.correct) / stat.attempts) * 100;
+    if (missPercent >= STRUGGLING_THRESHOLD_PERCENT) return 'struggling';
+
+    if (stat.attempts >= MIN_ATTEMPTS_FOR_RETENTION) {
+      const accuracyPercent = (stat.correct / stat.attempts) * 100;
+      if (accuracyPercent >= MASTERED_THRESHOLD_PERCENT) return 'mastered';
+    }
+
+    return null;
+  }
+
+  masteredCountTotal = computed(
+    () => FLASHCARDS.filter((f) => this.tileBadgeFor(f.id) === 'mastered').length,
+  );
+
+  masteredCountForCategory(category: ReferenceCategory): number {
+    return FLASHCARDS.filter((f) => f.categoryId === category.id && this.tileBadgeFor(f.id) === 'mastered')
+      .length;
+  }
+
+  // ---- History ----
+
+  history = signal<ReferenceSessionSummary[]>(loadHistory());
+
+  historyDescending = computed(() =>
+    [...this.history()].sort((a, b) => b.timestamp.localeCompare(a.timestamp)),
+  );
+
+  expandedHistoryTimestamp = signal<string | null>(null);
+
+  historySummary = computed(() => {
+    const entries = this.history();
+    if (entries.length === 0) return null;
+
+    const totalAttempts = entries.reduce((sum, e) => sum + e.totalAttempts, 0);
+    const totalCorrect = entries.reduce((sum, e) => sum + e.correctAttempts, 0);
+    return {
+      sessions: entries.length,
+      totalAttempts,
+      accuracyPercent: totalAttempts > 0 ? Math.round((totalCorrect / totalAttempts) * 100) : 0,
+    };
+  });
+
+  toggleHistoryEntry(timestamp: string): void {
+    this.expandedHistoryTimestamp.update((current) => (current === timestamp ? null : timestamp));
+  }
+
+  isHistoryEntryExpanded(timestamp: string): boolean {
+    return this.expandedHistoryTimestamp() === timestamp;
+  }
+
+  accuracyPercentFor(entry: ReferenceSessionSummary): number {
+    return entry.totalAttempts > 0
+      ? Math.round((entry.correctAttempts / entry.totalAttempts) * 100)
+      : 0;
+  }
+
+  missedCardsFor(entry: ReferenceSessionSummary): { card: Flashcard; missCount: number }[] {
+    return resolveMissedCards(entry.missedCards ?? []);
+  }
+
+  clearHistory(): void {
+    const confirmed = confirm(
+      'Clear all reference-chart practice history and mastery stats? This cannot be undone.',
+    );
+    if (!confirmed) return;
+
+    this.cardStats.set({});
+    this.history.set([]);
+    saveCardStats({});
+    saveHistory([]);
+  }
+
+  // ---- Practice session ----
+
   setViewMode(mode: ViewMode): void {
     this.viewMode.set(mode);
-    if (mode === 'practice' && this.deck().length === 0) {
+    if (mode === 'practice' && this.practiceState() !== 'active') {
       this.startPractice();
     }
   }
 
-  readonly totalCards = FLASHCARDS.length;
+  practiceDeck = computed<Flashcard[]>(() => {
+    const ids = this.selectedTableIds();
+    return FLASHCARDS.filter((f) => ids.has(f.tableId));
+  });
 
-  practiceState = signal<PracticeState>('active');
+  practiceState = signal<PracticeState>('idle');
 
-  deck = signal<number[]>([]);
+  sessionDeck = signal<Flashcard[]>([]);
 
   currentCardIndex = signal(0);
 
@@ -164,15 +386,18 @@ export class ReferenceCharts {
 
   missedCount = signal(0);
 
+  private sessionLog: { cardId: string; correct: boolean }[] = [];
+
   currentCard = computed<Flashcard | null>(() => {
-    const order = this.deck();
+    const cards = this.sessionDeck();
     const i = this.currentCardIndex();
-    if (i >= order.length) return null;
-    return FLASHCARDS[order[i]];
+    return i < cards.length ? cards[i] : null;
   });
 
+  totalCards = computed(() => this.sessionDeck().length);
+
   progressDisplay = computed(
-    () => `${Math.min(this.currentCardIndex() + 1, this.totalCards)} / ${this.totalCards}`,
+    () => `${Math.min(this.currentCardIndex() + 1, this.totalCards())} / ${this.totalCards()}`,
   );
 
   accuracyPercent = computed(() => {
@@ -180,13 +405,21 @@ export class ReferenceCharts {
     return total > 0 ? Math.round((this.knewCount() / total) * 100) : 0;
   });
 
+  /** Builds a fresh, shuffled session from the current table selection. Leaves the deck empty (idle state) if nothing is selected. */
   startPractice(): void {
-    this.deck.set(shuffledIndices(FLASHCARDS.length));
+    const pool = this.practiceDeck();
+    this.sessionDeck.set(shuffled(pool));
     this.currentCardIndex.set(0);
     this.revealed.set(false);
     this.knewCount.set(0);
     this.missedCount.set(0);
-    this.practiceState.set('active');
+    this.sessionLog = [];
+    this.practiceState.set(pool.length > 0 ? 'active' : 'idle');
+  }
+
+  startPracticeAndSwitch(): void {
+    this.startPractice();
+    this.viewMode.set('practice');
   }
 
   revealAnswer(): void {
@@ -194,11 +427,13 @@ export class ReferenceCharts {
   }
 
   markKnew(): void {
+    this.logAttempt(true);
     this.knewCount.update((n) => n + 1);
     this.advanceCard();
   }
 
   markMissed(): void {
+    this.logAttempt(false);
     this.missedCount.update((n) => n + 1);
     this.advanceCard();
   }
@@ -231,13 +466,51 @@ export class ReferenceCharts {
     }
   }
 
+  private logAttempt(correct: boolean): void {
+    const card = this.currentCard();
+    if (card) this.sessionLog.push({ cardId: card.id, correct });
+  }
+
   private advanceCard(): void {
     this.revealed.set(false);
     const next = this.currentCardIndex() + 1;
-    if (next >= this.deck().length) {
-      this.practiceState.set('finished');
+    if (next >= this.sessionDeck().length) {
+      this.finishSession();
     } else {
       this.currentCardIndex.set(next);
     }
+  }
+
+  private computeSessionMissedCards(): ReferenceSessionMissedCard[] {
+    const counts = new Map<string, number>();
+    for (const entry of this.sessionLog) {
+      if (!entry.correct) {
+        counts.set(entry.cardId, (counts.get(entry.cardId) ?? 0) + 1);
+      }
+    }
+    return [...counts.entries()]
+      .map(([cardId, missCount]) => ({ cardId, missCount }))
+      .sort((a, b) => b.missCount - a.missCount);
+  }
+
+  private finishSession(): void {
+    const missedCards = this.computeSessionMissedCards();
+    const summary: ReferenceSessionSummary = {
+      timestamp: new Date().toISOString(),
+      totalAttempts: this.knewCount() + this.missedCount(),
+      correctAttempts: this.knewCount(),
+      cardCount: this.sessionDeck().length,
+      missedCards,
+    };
+
+    const mergedStats = mergeSessionIntoStats(this.cardStats(), this.sessionLog);
+    this.cardStats.set(mergedStats);
+    saveCardStats(mergedStats);
+
+    const updatedHistory = [...this.history(), summary];
+    this.history.set(updatedHistory);
+    saveHistory(updatedHistory);
+
+    this.practiceState.set('finished');
   }
 }
