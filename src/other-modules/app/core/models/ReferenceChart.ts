@@ -21,6 +21,13 @@ export interface ReferenceTableRow {
   [columnKey: string]: ReferenceCellValue;
 }
 
+export interface ReferenceTableImage {
+  src: string;
+  alt: string;
+  /** Shown below the image, e.g. for crediting a source. */
+  caption?: string;
+}
+
 export interface ReferenceTable {
   id: string;
   title: string;
@@ -31,6 +38,8 @@ export interface ReferenceTable {
   practiceFrontKey?: string;
   /** Tile width in the chart grid. Omit for 'full'. */
   size?: TileSize;
+  /** Reference image shown above the table, e.g. a diagram supporting the vocabulary. */
+  image?: ReferenceTableImage;
 }
 
 export interface ReferenceMnemonic {

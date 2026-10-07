@@ -101,6 +101,14 @@
                     @if (table.description) {
                       <p class="table-description">{{ table.description }}</p>
                     }
+                    @if (table.image; as image) {
+                      <figure class="table-image">
+                        <img [src]="image.src" [alt]="image.alt" loading="lazy" />
+                        @if (image.caption) {
+                          <figcaption>{{ image.caption }}</figcaption>
+                        }
+                      </figure>
+                    }
                     <div class="table-scroll">
                       <table class="chart-table">
                         <thead>

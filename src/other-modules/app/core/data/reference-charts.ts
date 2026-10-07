@@ -1759,6 +1759,11 @@ export const REFERENCE_CATEGORIES: ReferenceCategory[] = [
       {
         id: 'compass-directions',
         title: 'Compass Directions',
+        image: {
+          src: '/images/japanese-reference-charts/cardinal-directions-compass.png',
+          alt: 'Compass rose showing the eight Japanese cardinal and intercardinal directions: 北 (kita, north), 南 (minami, south), 東 (higashi, east), 西 (nishi, west), and the four intermediate combinations such as 北東 (hokutou, northeast).',
+          caption: 'Source: japanesewithanime.com',
+        },
         columns: [
           { key: 'english', label: [{ text: '英語', reading: 'えいご' }], tooltip: 'English' },
           {
