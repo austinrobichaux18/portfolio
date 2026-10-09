@@ -214,6 +214,48 @@ h1 {
   }
 }
 
+.key-info-box {
+  margin-bottom: 24px;
+  padding: 16px 20px;
+  background: rgba(251, 191, 36, 0.06);
+  border: 1px solid rgba(251, 191, 36, 0.25);
+  border-radius: 14px;
+
+  h3 {
+    margin: 0 0 10px;
+    color: #fbbf24;
+    font-size: 0.85rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+}
+
+.key-info-highlights {
+  margin: 0;
+  padding-left: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  color: #d6dde6;
+  font-size: 0.85rem;
+  line-height: 1.5;
+
+  strong {
+    color: white;
+  }
+
+  a {
+    color: #fbbf24;
+    text-decoration: underline;
+    text-decoration-color: rgba(251, 191, 36, 0.4);
+
+    &:hover {
+      text-decoration-color: #fbbf24;
+    }
+  }
+}
+
 .longevity-more-link {
   display: inline-block;
   margin-top: 10px;
@@ -362,13 +404,13 @@ h1 {
   gap: 24px;
 }
 
-// Visual order is budget-card (How Much Can You Invest?) → form-card (Mission
-// Control) → results-card, independent of DOM order, via flex `order`.
-.budget-card {
+// On small screens: Mission Control first, then How Much Can You Invest, then results.
+// On wide screens the order reverses (budget-card left, form-card right) via the media query below.
+.form-card {
   order: 1;
 }
 
-.form-card {
+.budget-card {
   order: 2;
 }
 
@@ -393,6 +435,15 @@ h1 {
   .calculator-layout {
     flex-direction: row;
     align-items: flex-start;
+  }
+
+  // Restore wide-screen order: budget-card left, form-card right.
+  .budget-card {
+    order: 1;
+  }
+
+  .form-card {
+    order: 2;
   }
 
   .form-card,
@@ -601,6 +652,41 @@ select {
 }
 
 .reset-btn {
+  align-self: flex-start;
+}
+
+.form-section-header {
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #a78bfa;
+  margin-top: 4px;
+  margin-bottom: 2px;
+}
+
+.boost-entry {
+  background: rgba(167, 139, 250, 0.06);
+  border: 1px solid rgba(167, 139, 250, 0.2);
+  border-radius: 10px;
+  padding: 12px 14px;
+  gap: 8px;
+}
+
+.boost-entry-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 2px;
+}
+
+.boost-entry-title {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #a78bfa;
+}
+
+.add-boost-btn {
   align-self: flex-start;
 }
 
@@ -1147,7 +1233,7 @@ select {
 
 .breakdown-row {
   display: grid;
-  grid-template-columns: 1fr 1fr 1fr 1fr;
+  grid-template-columns: 1fr 1fr 1fr 1fr 1fr;
   gap: 10px;
   padding: 8px 12px;
   border-radius: 8px;
@@ -1160,7 +1246,7 @@ select {
   }
 
   &.breakdown-row-with-age {
-    grid-template-columns: 1fr 1fr 1fr 1fr 1fr;
+    grid-template-columns: 1fr 1fr 1fr 1fr 1fr 1fr;
   }
 }
 

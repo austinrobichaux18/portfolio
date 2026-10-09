@@ -7,6 +7,16 @@ export type ContributionTiming = 'beginning' | 'end';
 export type CompoundFrequency =
   'annually' | 'semiannually' | 'quarterly' | 'monthly' | 'daily' | 'continuously';
 
+export interface ContributionBoost {
+  id: string;
+  /** The age at which this boost starts (used when currentAge is set). */
+  atAge: number | null;
+  /** The year-from-now at which this boost starts (fallback when currentAge is null). */
+  atYear: number | null;
+  additionalMonthlyAmount: number;
+  label: string;
+}
+
 export interface InvestmentInputs {
   startingAmount: number;
   contributionAmount: number;
@@ -20,6 +30,8 @@ export interface InvestmentInputs {
   contributionDelayMonths?: number;
   /** Annual inflation rate used to express balances in today's purchasing power. */
   inflationRatePercent?: number;
+  /** Future step-ups in monthly contribution that start at a specific year in the simulation. */
+  contributionBoosts?: Array<{ startYear: number; additionalMonthly: number }>;
 }
 
 export interface InvestmentYearRow {

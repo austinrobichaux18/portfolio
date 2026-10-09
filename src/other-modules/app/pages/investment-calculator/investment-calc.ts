@@ -35,6 +35,12 @@ export function calculateInvestment(inputs: InvestmentInputs): InvestmentResult 
   const growth = monthlyGrowthFactor(inputs.annualInterestRatePercent, inputs.compoundFrequency);
   const inflationRatePercent = inputs.inflationRatePercent ?? 0;
 
+  const sortedBoosts = [...(inputs.contributionBoosts ?? [])].sort(
+    (a, b) => a.startYear - b.startYear,
+  );
+  let nextBoostIndex = 0;
+  let activeBoostMonthly = 0;
+
   let balance = inputs.startingAmount;
   let totalContributions = 0;
   let yearStartBalance = balance;
@@ -43,16 +49,30 @@ export function calculateInvestment(inputs: InvestmentInputs): InvestmentResult 
 
   for (let month = 1; month <= totalMonths; month++) {
     const monthInYear = ((month - 1) % 12) + 1;
+    const currentYear = Math.ceil(month / 12);
     const isYearEnd = monthInYear === 12 || month === totalMonths;
+
+    // Apply any boosts that kick in at the start of this year.
+    if (monthInYear === 1) {
+      while (
+        nextBoostIndex < sortedBoosts.length &&
+        sortedBoosts[nextBoostIndex].startYear <= currentYear
+      ) {
+        activeBoostMonthly += sortedBoosts[nextBoostIndex].additionalMonthly;
+        nextBoostIndex++;
+      }
+    }
+
+    const effectiveMonthlyContribution = inputs.contributionAmount + activeBoostMonthly;
 
     let contributionNow = 0;
     if (inputs.contributionFrequency === 'monthly') {
-      contributionNow = inputs.contributionAmount;
+      contributionNow = effectiveMonthlyContribution;
     } else if (
       (inputs.contributionTiming === 'beginning' && monthInYear === 1) ||
       (inputs.contributionTiming === 'end' && isYearEnd)
     ) {
-      contributionNow = inputs.contributionAmount;
+      contributionNow = effectiveMonthlyContribution;
     }
 
     // While building savings/checking buffers, the contribution is diverted there instead.

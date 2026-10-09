@@ -45,6 +45,44 @@
     >
   </section>
 
+  <section class="key-info-box">
+    <h3>Key Info</h3>
+    <ul class="key-info-highlights">
+      <li>
+        <strong>The most important levers are simple: make more money and spend less money.</strong>
+      </li>
+      <li>
+        The most common (median) U.S. household earns about
+        <strong>$75,011/year before tax</strong> —
+        <a routerLink="/other-modules/us-career-data">see the US Career Data module</a>. If you're
+        significantly below that number, career growth is the highest-leverage move you can
+        make.
+      </li>
+      <li>
+        Once income is reasonable, the most controllable factor is your
+        <strong>Cost of Living (COL)</strong>. Most households overspend on COL significantly,
+        which is the single biggest thing reducing their ability to save.
+      </li>
+      <li>
+        A family of 3 can comfortably own a home and live on <strong>$45k/year or less</strong>
+        outside of big cities. Even in a big city, <strong>$55k/year</strong> is very achievable.
+        The data shows most households spend everything they earn regardless.
+      </li>
+      <li>
+        The <strong>default inputs below</strong> assume a household with $70k/year income,
+        $45k/year cost of living, and <strong>$0 already saved</strong> (no checking, savings, or
+        401k) — and still project an extremely comfortable retirement with
+        <strong>over $100k/year</strong> in investment income. The higher your income and the more
+        you already have saved, the dramatically better this looks, especially at younger ages.
+      </li>
+      <li>
+        This calculator also <strong>ignores home ownership</strong> — once your mortgage is paid
+        off, you save roughly <strong>$2k/month ($24k+/year)</strong> or more that was going toward
+        housing costs, which can then go straight to investments and further compress your timeline.
+      </li>
+    </ul>
+  </section>
+
   <div class="history-section">
     <div class="history-header">
       <h3>Saved Scenarios</h3>
@@ -441,6 +479,112 @@
             <span>%</span>
           </div>
         </div>
+
+        <div class="form-row">
+          <label for="monthly-mortgage">Monthly Mortgage Payment (optional)</label>
+          <p class="field-note">
+            Your current mortgage payment toward principal + interest. Once the house is paid off,
+            this amount becomes free to invest — add it as a future boost below.
+          </p>
+          <div class="input-prefix">
+            <span>$</span>
+            <input
+              #monthlyMortgageInput
+              id="monthly-mortgage"
+              type="text"
+              data-numeric
+              inputmode="decimal"
+              [value]="monthlyMortgagePayment()"
+              (input)="setMonthlyMortgagePayment(monthlyMortgageInput.value)"
+              (blur)="formatNumberInputOnBlur($event)"
+            />
+          </div>
+          @if (monthlyMortgagePayment() > 0) {
+            <button type="button" class="link-btn" (click)="addMortgageAsBoost()">
+              + Add as future contribution boost ↓
+            </button>
+          }
+        </div>
+
+        <div class="form-section-header">Future Contribution Boosts</div>
+        <p class="field-note">
+          Model a step-up in monthly contributions at a future age — for example, when a mortgage
+          is paid off or a child finishes school.
+        </p>
+
+        @for (boost of contributionBoosts(); track boost.id) {
+          <div class="form-row boost-entry">
+            <div class="boost-entry-header">
+              <span class="boost-entry-title">Boost #{{ $index + 1 }}</span>
+              <button
+                type="button"
+                class="income-remove-btn"
+                aria-label="Remove this boost"
+                (click)="removeContributionBoost(boost.id)"
+              >
+                ✕
+              </button>
+            </div>
+
+            <label [for]="'boost-amount-' + boost.id">Additional Monthly Amount</label>
+            <div class="input-prefix">
+              <span>$</span>
+              <input
+                #boostAmountInput
+                [id]="'boost-amount-' + boost.id"
+                type="text"
+                data-numeric
+                inputmode="decimal"
+                [value]="boost.additionalMonthlyAmount || ''"
+                placeholder="0"
+                (input)="setBoostAmount(boost.id, boostAmountInput.value)"
+                (blur)="formatNumberInputOnBlur($event)"
+              />
+            </div>
+
+            @if (currentAge() !== null) {
+              <label [for]="'boost-age-' + boost.id">Starting at Age</label>
+              <input
+                #boostAgeInput
+                [id]="'boost-age-' + boost.id"
+                type="text"
+                data-numeric
+                inputmode="numeric"
+                placeholder="e.g. 50"
+                [value]="boost.atAge ?? ''"
+                (input)="setBoostAtAge(boost.id, boostAgeInput.value)"
+                (blur)="formatIntegerInputOnBlur($event)"
+              />
+            } @else {
+              <label [for]="'boost-year-' + boost.id">Starting at Year</label>
+              <input
+                #boostYearInput
+                [id]="'boost-year-' + boost.id"
+                type="text"
+                data-numeric
+                inputmode="numeric"
+                placeholder="e.g. 20"
+                [value]="boost.atYear ?? ''"
+                (input)="setBoostAtYear(boost.id, boostYearInput.value)"
+                (blur)="formatIntegerInputOnBlur($event)"
+              />
+            }
+
+            <label [for]="'boost-label-' + boost.id">Note (optional)</label>
+            <input
+              #boostLabelInput
+              [id]="'boost-label-' + boost.id"
+              type="text"
+              placeholder="e.g. house paid off"
+              [value]="boost.label"
+              (input)="setBoostLabel(boost.id, boostLabelInput.value)"
+            />
+          </div>
+        }
+
+        <button type="button" class="secondary add-boost-btn" (click)="addContributionBoost()">
+          + Add Contribution Boost
+        </button>
 
         <button
           type="button"
@@ -1085,10 +1229,11 @@
               [class.breakdown-row-with-age]="currentAge() !== null"
             >
               <span>Year</span>
-              <span>Interest (+{{ annualInterestRatePercent() }}%)</span>
               @if (currentAge() !== null) {
                 <span>Age</span>
               }
+              <span>Contribution</span>
+              <span>Interest (+{{ annualInterestRatePercent() }}%)</span>
               <span>Withdrawal ({{ withdrawalRatePercent() }}%)</span>
               <span>Ending Balance</span>
             </div>
@@ -1100,7 +1245,6 @@
                     <span class="milestone-badge" [title]="milestoneTitleFor(row.year)">★</span>
                   }
                 </span>
-                <span>{{ formatCurrency(row.interestThisYear) }}</span>
                 @if (currentAge() !== null) {
                   <span class="breakdown-cell">
                     {{ ageAtYear(row.year) }}
@@ -1109,6 +1253,8 @@
                     }
                   </span>
                 }
+                <span>{{ formatCurrency(row.depositThisYear) }}</span>
+                <span>{{ formatCurrency(row.interestThisYear) }}</span>
                 <span class="withdrawal-cell">
                   {{ formatCurrency(totalWithdrawal(row.year, row.endingBalance)) }}
                   @if (isSsEligibleYear(row.year)) {
@@ -1325,7 +1471,7 @@
       </ul>
     </div>
 
-    <div class="quintile-chart-section">
+    <div class="quintile-chart-section" id="income-vs-spending-chart">
       <h3>Income vs. Spending, By Income Bracket</h3>
       <p class="field-note">
         A single national average gets pulled way up by a small number of very high earners — it

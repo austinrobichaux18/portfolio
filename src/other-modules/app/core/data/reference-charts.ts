@@ -164,7 +164,7 @@ export const REFERENCE_CATEGORIES: ReferenceCategory[] = [
         id: 'days-of-week',
         title: 'Days of the Week',
         description:
-          'Every weekday name is its elemental kanji followed by 曜日 ("-day") — calendars often abbreviate a weekday to just that first kanji.',
+          'Each weekday is an elemental kanji + 曜日 ("-day") — often abbreviated to just that kanji.',
         columns: [
           { key: 'day', label: 'Day' },
           { key: 'element', label: 'Element' },
@@ -222,7 +222,7 @@ export const REFERENCE_CATEGORIES: ReferenceCategory[] = [
         id: 'dates-of-month',
         title: 'Dates of the Month (〜日)',
         description:
-          'The 1st–10th each have a unique, irregular reading. From the 11th on, most dates are just number + にち, except three repeats of those irregular endings at the 14th, 20th, and 24th.',
+          'The 1st–10th are irregular; from the 11th on it\'s mostly number + にち, with three exceptions.',
         columns: [
           { key: 'date', label: 'Date' },
           {
@@ -722,8 +722,7 @@ export const REFERENCE_CATEGORIES: ReferenceCategory[] = [
       {
         id: 'tsu-counter',
         title: 'Counting Objects (native-Japanese 1–10)',
-        description:
-          'The "つ" counter is the generic, catch-all way to count objects, and uses the older native-Japanese number sequence rather than the いち・に・さん readings above.',
+        description: 'The generic, catch-all counter, using the older native-Japanese numbers.',
         columns: [
           { key: 'value', label: 'Number' },
           {
@@ -1203,8 +1202,7 @@ export const REFERENCE_CATEGORIES: ReferenceCategory[] = [
       {
         id: 'other-family',
         title: "Someone Else's Family (honorific)",
-        description:
-          "Used when talking about someone else's family — and also when addressing your own relatives directly, e.g. calling out お母さん to your own mother.",
+        description: "Used for someone else's family — and to address your own relatives directly.",
         columns: [
           { key: 'english', label: [{ text: '英語', reading: 'えいご' }], tooltip: 'English' },
           {

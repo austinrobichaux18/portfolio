@@ -1,7 +1,9 @@
 import { Component, HostListener, afterNextRender, computed, signal } from '@angular/core';
 import { DatePipe } from '@angular/common';
+import { RouterLink } from '@angular/router';
 import {
   CompoundFrequency,
+  ContributionBoost,
   ContributionFrequency,
   ContributionTiming,
   InvestmentRun,
@@ -214,7 +216,7 @@ function formatIntegerInputOnBlur(event: Event): void {
 
 @Component({
   selector: 'app-investment-calculator',
-  imports: [DatePipe],
+  imports: [DatePipe, RouterLink],
   templateUrl: './investment-calculator.html',
   styleUrl: './investment-calculator.scss',
 })
@@ -262,6 +264,10 @@ export class InvestmentCalculator {
   withdrawalRatePercent = signal(3.5);
 
   currentAge = signal<number | null>(30);
+
+  monthlyMortgagePayment = signal(0);
+
+  contributionBoosts = signal<ContributionBoost[]>([]);
 
   history = signal<InvestmentRun[]>(loadHistory());
 
@@ -376,6 +382,18 @@ export class InvestmentCalculator {
     return Math.ceil(gap / monthly);
   });
 
+  calcContributionBoosts = computed(() => {
+    const age = this.currentAge();
+    return this.contributionBoosts()
+      .map((b) => {
+        const startYear =
+          age !== null && b.atAge !== null ? b.atAge - age : b.atYear;
+        if (startYear === null || startYear <= 0 || b.additionalMonthlyAmount <= 0) return null;
+        return { startYear, additionalMonthly: b.additionalMonthlyAmount };
+      })
+      .filter((b): b is { startYear: number; additionalMonthly: number } => b !== null);
+  });
+
   result = computed(() =>
     calculateInvestment({
       startingAmount: this.startingAmount(),
@@ -388,6 +406,7 @@ export class InvestmentCalculator {
       months: this.months(),
       contributionDelayMonths: this.contributionDelayMonths(),
       inflationRatePercent: this.inflationRatePercent(),
+      contributionBoosts: this.calcContributionBoosts(),
     }),
   );
 
@@ -762,6 +781,64 @@ export class InvestmentCalculator {
     document.getElementById('longevity-details')?.scrollIntoView({ behavior: 'smooth' });
   }
 
+  scrollToIncomeChart(event: Event): void {
+    event.preventDefault();
+    document.getElementById('income-vs-spending-chart')?.scrollIntoView({ behavior: 'smooth' });
+  }
+
+  setMonthlyMortgagePayment(raw: string): void {
+    this.monthlyMortgagePayment.set(toNonNegativeNumber(raw));
+  }
+
+  addContributionBoost(): void {
+    const id = `boost-${Math.random().toString(36).slice(2)}-${Date.now().toString(36)}`;
+    this.contributionBoosts.update((list) => [
+      ...list,
+      { id, atAge: null, atYear: null, additionalMonthlyAmount: 0, label: '' },
+    ]);
+  }
+
+  removeContributionBoost(id: string): void {
+    this.contributionBoosts.update((list) => list.filter((b) => b.id !== id));
+  }
+
+  setBoostAtAge(id: string, raw: string): void {
+    const val = toNonNegativeIntOrNull(raw);
+    this.contributionBoosts.update((list) =>
+      list.map((b) => (b.id === id ? { ...b, atAge: val } : b)),
+    );
+  }
+
+  setBoostAtYear(id: string, raw: string): void {
+    const val = toNonNegativeIntOrNull(raw);
+    this.contributionBoosts.update((list) =>
+      list.map((b) => (b.id === id ? { ...b, atYear: val } : b)),
+    );
+  }
+
+  setBoostAmount(id: string, raw: string): void {
+    const val = toNonNegativeNumber(raw);
+    this.contributionBoosts.update((list) =>
+      list.map((b) => (b.id === id ? { ...b, additionalMonthlyAmount: val } : b)),
+    );
+  }
+
+  setBoostLabel(id: string, val: string): void {
+    this.contributionBoosts.update((list) =>
+      list.map((b) => (b.id === id ? { ...b, label: val } : b)),
+    );
+  }
+
+  addMortgageAsBoost(): void {
+    const amount = this.monthlyMortgagePayment();
+    if (amount <= 0) return;
+    const id = `boost-${Math.random().toString(36).slice(2)}-${Date.now().toString(36)}`;
+    this.contributionBoosts.update((list) => [
+      ...list,
+      { id, atAge: null, atYear: null, additionalMonthlyAmount: amount, label: 'Mortgage paid off' },
+    ]);
+  }
+
   isInfoPopoverOpen(key: InfoPopoverKey): boolean {
     return this.openInfoPopover() === key;
   }
@@ -848,6 +925,8 @@ export class InvestmentCalculator {
     this.currentSavingsBalance.set(0);
     this.ignoreAlreadySaved.set(false);
     this.lastAppliedPresetId.set(null);
+    this.monthlyMortgagePayment.set(0);
+    this.contributionBoosts.set([]);
 
     this.formatAllNumericInputsSoon();
   }
