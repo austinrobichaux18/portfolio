@@ -20,31 +20,13 @@ export class App {
 
   // Signal (not a plain subscription) so this zoneless app's change detection
   // actually re-renders <main> when the route crosses into /other-modules.
+  // Also drives page-container--wide — all other-modules pages use the wider
+  // layout, and any future module added under /other-modules picks it up automatically.
   isOtherModules = toSignal(
     this.router.events.pipe(
       filter((event): event is NavigationEnd => event instanceof NavigationEnd),
       map((event) => event.urlAfterRedirects.startsWith('/other-modules')),
       startWith(this.router.url.startsWith('/other-modules')),
-    ),
-  );
-
-  // The reference-charts module has many data-dense tables, so it gets a wider
-  // page-container than the rest of the site to cut down on side whitespace.
-  isReferenceCharts = toSignal(
-    this.router.events.pipe(
-      filter((event): event is NavigationEnd => event instanceof NavigationEnd),
-      map((event) => event.urlAfterRedirects.startsWith('/other-modules/reference-charts')),
-      startWith(this.router.url.startsWith('/other-modules/reference-charts')),
-    ),
-  );
-
-  // The investment calculator lays its widgets out in three side-by-side columns,
-  // so it also gets the wider page-container.
-  isInvestmentCalculator = toSignal(
-    this.router.events.pipe(
-      filter((event): event is NavigationEnd => event instanceof NavigationEnd),
-      map((event) => event.urlAfterRedirects.startsWith('/other-modules/investment-calculator')),
-      startWith(this.router.url.startsWith('/other-modules/investment-calculator')),
     ),
   );
 
