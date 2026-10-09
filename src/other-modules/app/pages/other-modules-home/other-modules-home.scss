@@ -1,5 +1,5 @@
 .page-header {
-  margin-bottom: 32px;
+  margin-bottom: 40px;
 }
 
 h1 {
@@ -7,6 +7,21 @@ h1 {
 }
 
 p {
+  color: #8f9bad;
+}
+
+.module-group {
+  & + & {
+    margin-top: 40px;
+  }
+}
+
+.group-heading {
+  margin: 0 0 16px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
   color: #8f9bad;
 }
 
@@ -30,8 +45,9 @@ p {
     border-color: #49c6ff;
   }
 
-  h2 {
+  h3 {
     margin: 0 0 12px;
+    font-size: 1.1rem;
     color: #49c6ff;
   }
 

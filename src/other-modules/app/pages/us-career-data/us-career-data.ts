@@ -968,8 +968,10 @@ export class UsCareerData implements OnDestroy {
   syncScroll(source: HTMLElement, target: HTMLElement) {
     if (this.syncingScroll) return;
     this.syncingScroll = true;
-    target.scrollLeft = source.scrollLeft;
-    this.syncingScroll = false;
+    requestAnimationFrame(() => {
+      target.scrollLeft = source.scrollLeft;
+      this.syncingScroll = false;
+    });
   }
 
   startResize(event: MouseEvent, field: SortField) {

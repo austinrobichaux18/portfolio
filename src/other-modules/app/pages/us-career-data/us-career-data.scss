@@ -757,6 +757,7 @@ h1 {
   overflow-y: hidden;
   height: 16px;
   margin-bottom: 4px;
+  will-change: scroll-position;
   scrollbar-color: rgba(73, 198, 255, 0.4) rgba(255, 255, 255, 0.05);
 
   &::-webkit-scrollbar {
@@ -785,6 +786,7 @@ h1 {
 .table-scroll {
   overflow: auto;
   max-height: 65vh;
+  will-change: scroll-position;
   border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 14px;
 }

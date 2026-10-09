@@ -1,5 +1,6 @@
 .page-header {
-  margin-bottom: 32px;
+  max-width: 1040px;
+  margin: 0 auto 32px;
 }
 
 h1 {
@@ -14,6 +15,7 @@ h1 {
 .practice-card,
 .results-card {
   max-width: 800px;
+  margin: 0 auto;
   padding: 40px;
   background: rgba(23, 31, 43, 0.7);
   border: 1px solid rgba(255, 255, 255, 0.08);
