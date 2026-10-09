@@ -1,4 +1,5 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { provideRouter } from '@angular/router';
 import { InvestmentCalculator } from './investment-calculator';
 import { STATE_TAX_RATES } from '../../core/data/state-tax-rates';
 
@@ -13,6 +14,7 @@ describe('InvestmentCalculator', () => {
     localStorage.clear();
     await TestBed.configureTestingModule({
       imports: [InvestmentCalculator],
+      providers: [provideRouter([])],
     }).compileComponents();
     fixture = TestBed.createComponent(InvestmentCalculator);
     component = fixture.componentInstance;
