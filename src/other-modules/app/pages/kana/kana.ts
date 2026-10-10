@@ -727,9 +727,11 @@ export class Kana implements OnDestroy {
     this.charStats.set(mergedStats);
     saveCharStats(mergedStats);
 
-    const updatedHistory = [...this.history(), summary];
-    this.history.set(updatedHistory);
-    saveHistory(updatedHistory);
+    if (attempts > 0) {
+      const updatedHistory = [...this.history(), summary];
+      this.history.set(updatedHistory);
+      saveHistory(updatedHistory);
+    }
 
     this.finalSummary.set(summary);
     this.sessionMissedChars.set(resolveMissedChars(missedChars));
