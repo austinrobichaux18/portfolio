@@ -33,6 +33,21 @@ export class PythonForCsharp {
     return id ? (this.tourFiles.find((f) => f.id === id) ?? null) : null;
   });
 
+  currentLessonIndex = computed(() => {
+    const id = this.selectedLessonId();
+    return id ? this.lessons.findIndex((l) => l.id === id) : -1;
+  });
+
+  prevLesson = computed<PythonLesson | null>(() => {
+    const i = this.currentLessonIndex();
+    return i > 0 ? this.lessons[i - 1] : null;
+  });
+
+  nextLesson = computed<PythonLesson | null>(() => {
+    const i = this.currentLessonIndex();
+    return i >= 0 && i < this.lessons.length - 1 ? this.lessons[i + 1] : null;
+  });
+
   allAnswered = computed(() => this.quizAnswers().every((a) => a !== null));
 
   quizScore = computed(() => {
@@ -67,6 +82,8 @@ export class PythonForCsharp {
 
   openLesson(id: string): void {
     this.selectedLessonId.set(id);
+    this.quizAnswers.set([]);
+    this.quizSubmitted.set(false);
     this.viewState.set('lesson');
   }
 

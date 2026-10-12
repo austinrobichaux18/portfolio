@@ -254,7 +254,46 @@ code {
 .lesson-footer {
   margin-top: 8px;
   display: flex;
-  justify-content: flex-end;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.lesson-nav {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding-top: 8px;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.nav-button {
+  background: none;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  padding: 8px 16px;
+  color: #8f9bad;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s;
+  max-width: 260px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+
+  &:hover {
+    border-color: rgba(73, 198, 255, 0.35);
+    color: #d6dde6;
+  }
+
+  &:focus-visible {
+    outline: 2px solid #49c6ff;
+    outline-offset: 2px;
+  }
+}
+
+.nav-next {
+  margin-left: auto;
 }
 
 // ── Quiz ─────────────────────────────────────────────────────────────────────

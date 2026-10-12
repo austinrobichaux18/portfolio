@@ -95,6 +95,20 @@
       </div>
 
       <div class="lesson-footer">
+        <div class="lesson-nav">
+          @if (prevLesson(); as prev) {
+            <button type="button" class="nav-button nav-prev" (click)="openLesson(prev.id)">
+              ← {{ prev.title }}
+            </button>
+          } @else {
+            <span></span>
+          }
+          @if (nextLesson(); as next) {
+            <button type="button" class="nav-button nav-next" (click)="openLesson(next.id)">
+              {{ next.title }} →
+            </button>
+          }
+        </div>
         <button type="button" class="quiz-button" (click)="startQuiz()">
           Quiz this lesson →
         </button>
@@ -175,6 +189,20 @@
             <button type="button" class="quiz-button" (click)="startQuiz()">
               Retake quiz
             </button>
+          </div>
+          <div class="lesson-nav">
+            @if (prevLesson(); as prev) {
+              <button type="button" class="nav-button nav-prev" (click)="openLesson(prev.id)">
+                ← {{ prev.title }}
+              </button>
+            } @else {
+              <span></span>
+            }
+            @if (nextLesson(); as next) {
+              <button type="button" class="nav-button nav-next" (click)="openLesson(next.id)">
+                {{ next.title }} →
+              </button>
+            }
           </div>
         }
       </div>
