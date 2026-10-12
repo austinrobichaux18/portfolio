@@ -81,4 +81,13 @@ export const modules: Module[] = [
     lastUpdated: '2026-10-11',
     group: 'Music',
   },
+  {
+    id: 'python-for-csharp',
+    title: 'Python for C# Devs',
+    description:
+      'Key Python concepts side-by-side with C# equivalents — variables, null/None, collections, and LINQ translation — with per-lesson quizzes.',
+    route: 'python-for-csharp',
+    lastUpdated: '2026-10-12',
+    group: 'Programming',
+  },
 ];

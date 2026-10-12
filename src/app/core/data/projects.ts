@@ -919,6 +919,67 @@ export const projects: Project[] = [
             github: 'https://github.com/austinrobichaux18/portfolio/tree/master/src/other-modules/app/pages/music-note-trainer'
         }
 
+    },
+
+    {
+        id: 'python-for-csharp',
+
+        title: 'Python for C# Devs',
+
+        description:
+            'A lesson-based reference module for experienced .NET developers learning Python, presenting key concepts side-by-side with their C# equivalents and ending each lesson with a short multiple-choice quiz.',
+
+        tags: [
+            'Angular',
+            'TypeScript',
+            'Signals'
+        ],
+
+        result:
+            'A self-contained tool in this site\'s "Other Modules" section.',
+
+        link: '/projects/python-for-csharp',
+
+        overview: [
+            'A self-contained learning tool that presents Python concepts alongside their C# equivalents — variables, null/None, string formatting, collections, and LINQ translation — framed for developers who already know the .NET ecosystem.',
+            'Each lesson is a set of annotated side-by-side code comparisons (C# on the left, Python on the right) with gotcha notes, followed by a per-lesson multiple-choice quiz to test recall.'
+        ],
+
+        myRole:
+            'Designed the lesson and quiz data model, authored the comparison content, and built the lesson/quiz UI end-to-end.',
+
+        technicalChallenges: [
+            {
+                title: 'Lesson + Quiz State Machine',
+                description:
+                    'A single viewState signal drives three mutually exclusive views — lesson list, lesson content, and quiz — with quiz answer state, submission, and scoring all derived via computed() signals from the selected lesson and the user\'s answers array.'
+            },
+            {
+                title: 'Structured Content Model',
+                description:
+                    'Lessons are plain data (title, description, code comparisons with C#/Python snippets and notes, plus quiz questions with options, correct index, and explanation), so adding a new lesson or question is a data-file edit with no template changes.'
+            }
+        ],
+
+        architecture: [
+            'Static lesson + quiz data (core/data)',
+            'Angular signals (viewState, quiz answers, score)',
+            'computed() quiz scoring and all-answered check'
+        ],
+
+        deepDive: [
+            {
+                title: 'Content Framing',
+                description:
+                    'Comparisons are written from the perspective of someone who already knows C# — notes emphasize gotchas and semantic differences (e.g., `is None` vs `== None`, list comprehension ordering) rather than restating beginner Python fundamentals.'
+            }
+        ],
+
+        links: {
+            demo: 'https://austinrobichaux.com/other-modules/python-for-csharp',
+            github: 'https://github.com/austinrobichaux18/portfolio/tree/master/src/other-modules/app/pages/python-for-csharp'
+        }
+
     }
 
 ];

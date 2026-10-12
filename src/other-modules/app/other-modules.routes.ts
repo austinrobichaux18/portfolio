@@ -59,4 +59,10 @@ export const routes: Routes = [
       import('./pages/music-note-trainer/music-note-trainer').then((m) => m.MusicNoteTrainer),
     title: 'Music Note Trainer | Austin Robichaux',
   },
+  {
+    path: 'python-for-csharp',
+    loadComponent: () =>
+      import('./pages/python-for-csharp/python-for-csharp').then((m) => m.PythonForCsharp),
+    title: 'Python for C# Devs | Austin Robichaux',
+  },
 ];

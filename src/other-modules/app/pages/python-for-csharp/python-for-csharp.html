@@ -1,0 +1,152 @@
+<section class="page-container python-page">
+  <header class="page-header">
+    <h1>Python for C# Devs</h1>
+    <p>
+      Key Python concepts side-by-side with their C# equivalents &mdash; for experienced .NET
+      developers making the switch.
+    </p>
+  </header>
+
+  @if (viewState() === 'list') {
+    <div class="lesson-list">
+      @for (lesson of lessons; track lesson.id) {
+        <button type="button" class="lesson-card" (click)="openLesson(lesson.id)">
+          <div class="lesson-card-body">
+            <span class="lesson-number">Lesson {{ $index + 1 }}</span>
+            <h2>{{ lesson.title }}</h2>
+            <p>{{ lesson.description }}</p>
+          </div>
+          <span class="lesson-arrow" aria-hidden="true">→</span>
+        </button>
+      }
+    </div>
+  }
+
+  @if (viewState() === 'lesson') {
+    @if (selectedLesson(); as lesson) {
+      <nav class="breadcrumb">
+        <button type="button" class="back-link" (click)="backToList()">← All Lessons</button>
+        <span class="breadcrumb-sep" aria-hidden="true">/</span>
+        <span>{{ lesson.title }}</span>
+      </nav>
+
+      <div class="lesson-header">
+        <h2>{{ lesson.title }}</h2>
+        <p>{{ lesson.description }}</p>
+      </div>
+
+      <div class="comparison-list">
+        @for (comparison of lesson.comparisons; track comparison.title) {
+          <div class="comparison-card">
+            <div class="comparison-header">
+              <h3>{{ comparison.title }}</h3>
+              <p class="comparison-description">{{ comparison.description }}</p>
+            </div>
+            <div class="code-pair">
+              <div class="code-block">
+                <span class="lang-label lang-csharp">C#</span>
+                <pre><code>{{ comparison.csharp }}</code></pre>
+              </div>
+              <div class="code-block">
+                <span class="lang-label lang-python">Python</span>
+                <pre><code>{{ comparison.python }}</code></pre>
+              </div>
+            </div>
+            @if (comparison.notes.length) {
+              <ul class="notes-list">
+                @for (note of comparison.notes; track note) {
+                  <li>{{ note }}</li>
+                }
+              </ul>
+            }
+          </div>
+        }
+      </div>
+
+      <div class="lesson-footer">
+        <button type="button" class="quiz-button" (click)="startQuiz()">
+          Quiz this lesson →
+        </button>
+      </div>
+    }
+  }
+
+  @if (viewState() === 'quiz') {
+    @if (selectedLesson(); as lesson) {
+      <nav class="breadcrumb">
+        <button type="button" class="back-link" (click)="backToList()">← All Lessons</button>
+        <span class="breadcrumb-sep" aria-hidden="true">/</span>
+        <button type="button" class="back-link" (click)="backToLesson()">{{ lesson.title }}</button>
+        <span class="breadcrumb-sep" aria-hidden="true">/</span>
+        <span>Quiz</span>
+      </nav>
+
+      <div class="quiz-panel">
+        @if (!quizSubmitted()) {
+          <h2 class="quiz-title">{{ lesson.title }} — Quiz</h2>
+          <p class="quiz-subtitle">{{ lesson.quiz.length }} questions · select an answer for each</p>
+        } @else {
+          <div class="quiz-score-header">
+            <h2>Quiz complete</h2>
+            <p class="score-display">{{ quizScore() }} / {{ lesson.quiz.length }}</p>
+            <p class="score-label">
+              {{ quizScore() === lesson.quiz.length ? 'Perfect!' : quizScore()! >= lesson.quiz.length / 2 ? 'Good work' : 'Keep practicing' }}
+            </p>
+          </div>
+        }
+
+        <div class="question-list">
+          @for (q of lesson.quiz; track q.question; let qi = $index) {
+            <div
+              class="question-card"
+              [class.correct]="quizSubmitted() && quizAnswers()[qi] === q.correctIndex"
+              [class.incorrect]="quizSubmitted() && quizAnswers()[qi] !== q.correctIndex"
+            >
+              <p class="question-text">
+                <span class="question-num">{{ qi + 1 }}.</span> {{ q.question }}
+              </p>
+              <div class="option-list">
+                @for (option of q.options; track option; let oi = $index) {
+                  <button
+                    type="button"
+                    class="option-button"
+                    [class.selected]="quizAnswers()[qi] === oi"
+                    [class.correct-answer]="quizSubmitted() && oi === q.correctIndex"
+                    [class.wrong-answer]="quizSubmitted() && quizAnswers()[qi] === oi && oi !== q.correctIndex"
+                    [disabled]="quizSubmitted()"
+                    (click)="selectAnswer(qi, oi)"
+                  >
+                    {{ option }}
+                  </button>
+                }
+              </div>
+              @if (quizSubmitted()) {
+                <p class="explanation">{{ q.explanation }}</p>
+              }
+            </div>
+          }
+        </div>
+
+        @if (!quizSubmitted()) {
+          <button
+            type="button"
+            class="quiz-button"
+            [disabled]="!allAnswered()"
+            (click)="submitQuiz()"
+          >
+            Submit
+          </button>
+        } @else {
+          <div class="quiz-actions">
+            <button type="button" class="back-link-button" (click)="backToLesson()">
+              ← Back to lesson
+            </button>
+            <button type="button" class="quiz-button" (click)="startQuiz()">
+              Retake quiz
+            </button>
+          </div>
+        }
+      </div>
+    }
+  }
+</section>
