@@ -91,14 +91,18 @@ Targets the UI is built and tested against. "Action" = click, keypress, or paste
 | Recipe IDs | `id`: readable slug generated once from the title (`-2` suffix on collision), used as the folder name, **never changed** — renaming changes `title` only. `uid`: random ID stored on every recipe so IDs never collide when libraries are merged or shared. |
 | Content vs. household data | Recipe content (title, ingredients, steps, options, images, source, times, tags) is separate from our family's take on it (`household`: rating, frequency, trust, favorite options, notes, cook log). Both live in `recipe.json` in v1; with other users, `household` moves to a per-household record keyed by `uid`. |
 | Options | Option groups inside a recipe: `pickOne` (swap, e.g. protein) or `pickAny` (add-ins, e.g. toppings). Each option has its own ingredients and steps, shown as its own section. **Rule:** options are small add-ons/swaps picked at cook time; a `parentId` fork is for a materially different dish (changes more than ~⅓ of the steps). |
-| Trust | `untested` (imported/typed, never cooked) → `tested` (cooked, kept) → `ours` (family-approved, adjustments folded in). Untested recipes show a badge and sort below tested ones by default. |
+| Trust | `untested` (never cooked) → `tested` (cooked, kept) → `ours` (family-approved, adjustments folded in). Untested recipes show a badge and sort below tested ones by default. **Defaults:** imports start `untested` / Want to try. A typed-in recipe asks "Have we made this before?" (default yes) → `tested`, frequency picked right there, optional rough "last made". Entering 100 known family recipes must not bury them all as untested. |
+| Routing | Child routes with a shared `KitchenStateService` (open folder + loaded recipes): `my-kitchen` (library), `my-kitchen/new`, `my-kitchen/r/:id`, `my-kitchen/r/:id/edit`, `my-kitchen/r/:id/cook`. Back button and deep links work, components stay small. Deliberate break from the other modules' single-component `viewState` pattern, because this module has 5+ screens. |
+| Go-live | Route registered in v1a so it's usable on the live site right away, but **not listed** on the Other Modules home page or `/projects` until v1d (demo mode + case study). This bends the CLAUDE.md "add to modules.ts/projects.ts" checklist on purpose; finish it in v1d. |
+| Text round-trip | Editing text must never wipe per-line settings. On re-parse, each line is matched to its previous version by `raw` text and keeps its settings (`ingredientId`, overrides). Flags are visible in the text itself: `(optional)`, `[no-scale]`. Text stays the source of truth; model → text → model is lossless (tested). |
+| Missing options | Cook log entries may reference deleted options; show "(removed option)", never error, and the loader doesn't treat it as invalid. |
 | Recipe checks | On import and save, show warnings (never blocks): missing ingredients or steps, ingredient lines that didn't parse (shown next to their raw text), ingredients never mentioned in any step, steps mentioning something not listed, times that don't add up, steps over ~400 characters ("probably includes tips"). |
 | No bloat | Import skips `description` unless a checkbox is ticked; never imports comments/reviews. Recipe view: title, photo, times, options, then ingredients and steps; notes and source collapsed at the bottom. Classification lives in prefixed tags (`cuisine:japanese`, `meal:dinner`, `equip:instant-pot`, `diet:vegetarian`, `effort:weeknight`) — one autocomplete field instead of five. |
 | Editor | Text-first: ingredients are typed lines (one per line, `## Sauce` starts a group) with live parsed chips and warnings beside them; steps are typed paragraphs (blank line between steps, `##` headings for groups). Fixing a parse = editing the text. Option groups get the same two text boxes per option. Details (servings, times, tags, source) in a collapsed section. Ctrl+S saves. |
 | Drafts | Only the title is required to save. Incomplete recipes show a "draft" badge (derived from the checks, not a stored field). Unsaved editor content autosaves to localStorage per recipe and is offered back on reopen. |
 | Quick add | One big "Paste a recipe" box; splits on headings like Ingredients / Instructions / Directions / Method and opens the editor prefilled. Same code path as the editor's text boxes. |
 | Made-it sheet | One "Made it" button opens a sheet prefilled with today, current scaler servings and current options. Optional: 1–10 rating row, note, photo. First cook of an `untested` recipe adds "Keep it? Anything to change?" in the same sheet (edits save as `origin: 'adapted'`, trust → `tested`; a low rating offers Retired). From v2: pantry deductions listed and prechecked. |
-| Suggestions | Library opens on "What should we make?": Staples/Regulars overdue for their frequency (based on last made), plus "Want to try" picks. Pure function over existing data; no extra fields. |
+| Suggestions | Library opens on "What should we make?": Staples/Regulars overdue for their frequency (based on last made), plus "Want to try" picks. Recipes with no cook log count as "last made unknown" and go in their own "Haven't logged yet" group, never "overdue", so the row is useful from day one. Pure function over existing data; no extra fields. |
 | Unrated reminder | Cooks logged without a rating show a small "rate these" list in the library. |
 | URL import | Turnstile-gated `importRecipe` Cloud Function is a **thin fetch proxy**: verifies the token, applies URL safety checks, returns the page HTML and cover image. The JSON-LD parser runs **in the browser**. |
 | Import fallback | "Paste page source" option that runs the same browser-side parser. Needed because many large recipe sites block server-side fetches from cloud IPs. |
@@ -106,11 +110,11 @@ Targets the UI is built and tested against. "Action" = click, keypress, or paste
 | AI fallback | Not in v1. |
 | Frequency | Staple / Regular / Occasional / Rare / Want to try / Retired |
 | Rating | `household.rating` (integer 1–10) is the overall opinion, set by hand. A cook log entry's `rating` describes that one attempt and never changes `household.rating` automatically. |
-| Photos | Multiple per recipe; drag-drop or paste from clipboard; resized to ~1600px WebP on save, plus a ~400px `thumb` used by the library grid. |
+| Photos | Multiple per recipe; drag-drop or paste from clipboard; resized to ~1600px WebP on save, plus a ~400px `thumb` used by the library grid. Files are named by ID (`img-k3f9a2.webp` + `img-k3f9a2.thumb.webp`), never by role, so changing the cover or reordering never renames files. |
 | Content origin | Each recipe and image records `origin: 'imported' \| 'own' \| 'adapted'`, so it's known later what's safe to publish (a site's instructions text and photos can be copyrighted; ingredient lists generally can't). |
 | Units | Parser saves canonical unit codes (`tbsp`, `cup`, `g`, `oz`, …). Original wording stays in `raw`. |
 | Dates | Cook log dates stored as **local** `YYYY-MM-DD`, never via `toISOString()` (that shifts evening cooks to the next day in UTC). Timestamps (`createdAt`/`updatedAt`) are full ISO strings. |
-| Deleting | Deleting a recipe or photo moves it to `_trash/` in the folder instead of deleting it (a local folder has no undo). The loader ignores any folder starting with `_`. |
+| Deleting | Deleting a recipe or photo moves it to `_trash/` in the folder instead of deleting it (a local folder has no undo). Implemented as copy then `removeEntry` (don't rely on `FileSystemHandle.move()` for local folders). The loader ignores any folder starting with `_`. |
 | Demo mode | Read-only demo with 4–6 sample recipes (own content, `origin: 'own'`, at least one with options) so portfolio visitors without a folder — or on Firefox/Safari, which can't pick one — can still see the module. Same pattern as Quiz's `sample-quizzes.ts`. |
 | Test store | `InMemoryKitchenStore` implements `KitchenStore` for specs (jsdom has no File System Access API) and also backs demo mode. |
 | Backups | Recommend keeping the recipes folder inside OneDrive or a git repo for free backups and history until real export exists. |
@@ -122,13 +126,14 @@ Targets the UI is built and tested against. "Action" = click, keypress, or paste
 MyRecipes/                  ← folder the user picks
   ramen/                    ← stable id, not renamed with the title
     recipe.json
-    cover.webp
-    cover.thumb.webp
+    img-k3f9a2.webp         ← images named by id; cover marked by isCover in recipe.json
+    img-k3f9a2.thumb.webp
   smash-burgers/
     recipe.json
-    cover.webp
-    cover.thumb.webp
+    img-p81xq0.webp
+    img-p81xq0.thumb.webp
   _pantry.json              ← v2: tracked pantry items
+  _receipts/                ← later: scanned receipt photos + extracted JSON
   _trash/                   ← deleted recipes/photos land here; ignored by the loader
 ```
 
@@ -189,8 +194,8 @@ interface RecipeOption {
 }
 
 interface RecipeImage {
-  file: string;             // "cover.webp"
-  thumb: string;            // "cover.thumb.webp"
+  file: string;             // "img-k3f9a2.webp"
+  thumb: string;            // "img-k3f9a2.thumb.webp"
   caption?: string;
   isCover?: boolean;
   origin: ContentOrigin;
@@ -264,6 +269,8 @@ interface PantryItem {
   level?: 'plenty' | 'low' | 'out'; // coarse tracking when amount isn't worth counting
   lowAt?: number;             // amount at or below which it shows as low
   packageAmount?: number;     // "+1 package" adds this (e.g. 12 eggs)
+  upcs?: string[];            // barcodes/receipt codes confirmed as this item, so receipts and
+                              // scans auto-match next time (see "Pantry input methods")
   updatedAt: string;
 }
 ```
@@ -308,14 +315,22 @@ Each phase is usable on its own.
   - [ ] Prep notes after the comma
   - [ ] Unparseable lines keep `raw` and leave parsed fields empty (never throw)
 - [ ] `recipe-text.ts` + spec: text-first editor format ↔ model (ingredient lines with `##`
-      groups, blank-line-separated steps with `##` groups) and Quick add splitting on headings
+      groups, blank-line-separated steps with `##` groups, `(optional)` / `[no-scale]` flags) and
+      Quick add splitting on headings
+  - [ ] Re-parse keeps per-line settings by matching on `raw`
+  - [ ] Round-trip test: model → text → model is lossless
 - [ ] `recipe-loader.ts` + spec: `loadRecipe` upgrade/defaults/validation (see above)
 - [ ] `recipe-id.ts` + spec: slug from title, collision suffix, random `uid`
+      (`crypto.randomUUID()`), image IDs
 - [ ] `kitchen-store.ts`: `KitchenStore` interface (recipes now; pantry v2; catalog/plans later) +
       `FolderKitchenStore` (reopen last folder via IndexedDB like LocalFlix, read every
       `*/recipe.json` through `loadRecipe`, write one recipe at a time, image files, delete =
-      move to `_trash/`)
-- [ ] `InMemoryKitchenStore` implementing the same interface, for specs and demo mode
+      copy to `_trash/` then `removeEntry`; extend `file-system-access.d.ts` as needed)
+- [ ] `InMemoryKitchenStore` implementing the same interface, for specs and demo mode (all specs
+      use it; CI never touches the File System Access API)
+- [ ] `KitchenStateService`: open folder, loaded recipes, load errors; shared by the child routes
+- [ ] Routes: `my-kitchen` child routes (see "Routing"); registered in `other-modules.routes.ts`
+      but **not** listed in `modules.ts` / `projects.ts` until v1d
 - [ ] `image-resize.ts`: ~1600px WebP + ~400px thumbnail via canvas; revoke object URLs when done
 - [ ] Folder screen: unsupported-browser message, empty state for picking/creating the folder,
       "couldn't load" panel for bad files
@@ -323,6 +338,8 @@ Each phase is usable on its own.
       photos and pick the cover, collapsed Details (servings, times, tags with prefix
       autocomplete, source), Ctrl+S, localStorage autosave of unsaved edits, unsaved-changes
       warning on leave, title-only drafts
+- [ ] New-recipe flow: "Have we made this before?" (default yes) → trust `tested`, frequency,
+      optional rough last-made date
 - [ ] Quick add: paste a whole recipe → editor prefilled
 - [ ] Library: thumbnail grid, search across titles, tags **and ingredient names**, filter chips
       grouped by tag prefix plus frequency/rating/trust, sort (rating, last made, newest),
@@ -337,7 +354,8 @@ Each phase is usable on its own.
   - [ ] Countable units round sensibly ("1.5 eggs" → 2, or show "1–2 eggs")
   - [ ] Respect `scales: false`; leave `toTaste` items alone
 - [ ] `recipe-checks.ts` + spec: the warnings listed under "Recipe checks"; shown in editor and import review
-- [ ] `suggestions.ts` + spec: overdue Staples/Regulars by frequency vs. last made, plus "Want to try" picks
+- [ ] `suggestions.ts` + spec: overdue Staples/Regulars by frequency vs. last made, "Want to try"
+      picks, and a separate "Haven't logged yet" group for recipes with no cook log
 - [ ] Cook mode: large text, one step at a time (base steps + a section per selected option),
       ingredient checkboxes, screen stays awake (Wake Lock API), arrow keys / space to move
 - [ ] Made-it sheet: prefilled date/servings/options, optional rating/note/photo, first-cook trust
@@ -386,8 +404,9 @@ Frontend:
 - [ ] `core/data/sample-recipes.ts`: 4–6 self-written sample recipes, at least one with options
 - [ ] Demo mode: "Try the demo" button; read-only library/view/cook mode over sample recipes
       (editing, import and Made-it disabled, clearly labeled as a demo)
-- [ ] Registration (per CLAUDE.md checklist): `core/data/modules.ts` entry with `lastUpdated`,
-      `other-modules.routes.ts` lazy route, case-study entry in `src/app/core/data/projects.ts`
+- [ ] Finish registration (per CLAUDE.md checklist; the route already exists from v1a):
+      `core/data/modules.ts` entry with `lastUpdated`, case-study entry in
+      `src/app/core/data/projects.ts`
 
 ### v2 — Light pantry
 
@@ -446,13 +465,82 @@ here too.
   count)
 - Restock from a checked-off shopping list in one step
 
+### Pantry input methods
+
+How stock gets into the pantry beyond manual +/−. Ordered by how much we like them:
+
+| Source | What it gives | Accuracy | Cost |
+| --- | --- | --- | --- |
+| **Made-it sheet** (v2) | What went out when cooking | Good | Free |
+| **Receipt photo** | What came in, with prices | Very good | ~$0.01–0.05 per receipt (Claude vision) |
+| **Barcode scan** | Exact product, package size, often nutrition | Exact, one item at a time | Free |
+| **Shelf photo audit** | Initial item list; plenty/low/out corrections | Approximate | ~$0.01–0.05 per photo |
+
+Common rules for all of them:
+
+- AI or lookup results are **never saved without review**: a review screen matches each detected
+  line to a pantry item (by `upcs`, then name/aliases), and you confirm, fix or skip.
+- Every confirmed match is remembered (`PantryItem.upcs` / `aliases`), so the same product
+  auto-matches next time. After a few shopping trips, most lines should need no review.
+- Anything calling Claude goes through a Turnstile-gated Cloud Function holding the API key as a
+  Firebase secret (same pattern as `importRecipe`). Request structured output (a fixed JSON
+  schema). Pick the model by testing on real photos; Haiku 4.5 is cheapest, Sonnet 5.5/Opus 5.5
+  if Haiku misses too much.
+- Photos reuse the v1a image resize before upload.
+
+#### Receipt scan (preferred)
+
+Pipeline:
+
+1. Photo of receipt → Claude extracts each line as JSON: `{ rawText, code?, quantity?, weight?,
+   unitPrice?, price, isProduce? }`, plus store, date and total (check the sum against the total
+   to catch misreads).
+2. Codes:
+   - **Walmart:** item lines show an abbreviated name ("GV WHL MLK GAL") plus a 12-digit number.
+     That number is usually the product's UPC, often printed **without its final check digit**
+     (unverified; confirm against real receipts). The app can compute the check digit and try both
+     forms.
+   - **Produce:** 4–5 digit PLU codes (4011 = bananas) map through the free standard PLU list;
+     weighed items carry weight and price per lb.
+   - The barcode/TC number at the bottom is the store's transaction lookup, not useful here.
+3. Lookup order for each code: known `PantryItem.upcs` → Open Food Facts (free; coverage of store
+   brands like Great Value is decent but incomplete) → Claude's best guess from the abbreviation,
+   flagged low-confidence.
+4. Review screen → confirmed lines add `packageAmount` to stock and write price history.
+5. Store receipts in the folder (`_receipts/`) for history and re-processing.
+
+Also worth checking: Walmart.com purchase history / app e-receipts show full product names, which
+may be easier than photos for online or pickup orders.
+
+#### Barcode scan
+
+- Webcam/phone camera reads the barcode in the browser: Chrome's built-in `BarcodeDetector` where
+  available (believed not to be on Windows desktop Chrome), otherwise an open-source library such
+  as ZXing that works in any browser.
+- Look up the barcode in Open Food Facts → product name, package size, often nutrition per 100 g
+  (feeds the nutrition goal).
+- Best for: adding a new pantry item precisely, or "+1" restocking one item without a receipt.
+
+#### Shelf photo audit
+
+- One photo per shelf/section (not video: the API takes images, so video means extracting frames,
+  which costs more and duplicates items).
+- Good at labeled packages, common produce, counting visible items. Bad at how full something is,
+  hidden items, unlabeled containers, tiny spice labels.
+- Use it to set up the pantry the first time and for occasional plenty/low/out corrections — not
+  for exact amounts.
+
+Suggested order: receipt scan first (most accurate, adds prices), then barcode scan, then shelf
+photos. All come after the v2 light pantry exists. Taking photos is easiest on a phone; until phone
+support, take them on the phone and upload on desktop (e.g. via OneDrive sync).
+
 ### Price data
 
 - Manual entry per catalog item, with date and store (keeps price history)
 - Store unit price per standard unit, with a sale/regular flag so a one-time sale doesn't skew
   average meal cost
 - Save a cost snapshot on each cook log entry for history
-- Later: receipt photo + AI to pull out prices
+- Later: receipt scan writes prices automatically (see "Pantry input methods")
 - Later: Kroger developer API for product prices, if a Kroger-family store is nearby
 
 ### Nutrition
@@ -547,4 +635,4 @@ happens once.
 
 - "Suggest a recipe from what's in my pantry"
 - Auto-tagging imported recipes
-- Receipt photo → prices
+- Receipt scan and shelf photo audit (designed under "Pantry input methods")
