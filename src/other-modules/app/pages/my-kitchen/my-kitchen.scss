@@ -32,6 +32,25 @@
   font-size: 0.9rem;
 }
 
+.demo-banner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 20px;
+  padding: 10px 14px;
+  border: 1px solid rgba(95, 211, 141, 0.35);
+  border-radius: 12px;
+  background: rgba(95, 211, 141, 0.06);
+  color: k.$soft;
+  font-size: 0.9rem;
+}
+
+.demo-line {
+  color: k.$soft;
+  font-size: 0.9rem;
+}
+
 .status-card {
   max-width: 800px;
   display: flex;

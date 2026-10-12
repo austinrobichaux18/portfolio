@@ -1,4 +1,9 @@
-@if (notFound) {
+@if (state.readOnly()) {
+  <div class="card">
+    <p>The demo is read-only — editing works once you pick your own recipes folder.</p>
+    <a [routerLink]="isNew ? '..' : '../../..'">← All recipes</a>
+  </div>
+} @else if (notFound) {
   <div class="card">
     <p>That recipe isn't in this folder.</p>
     <a routerLink="../../..">← All recipes</a>

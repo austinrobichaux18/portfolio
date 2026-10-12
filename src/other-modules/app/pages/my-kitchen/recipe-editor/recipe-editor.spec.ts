@@ -134,6 +134,14 @@ describe('RecipeEditor', () => {
     expect((await store.loadLibrary()).recipes[0].origin).toBe('adapted');
   });
 
+  it('refuses to edit in the read-only demo', async () => {
+    const { harness, state } = await setupKitchen([]);
+    await state.openDemo();
+    await harness.navigateByUrl('/r/weeknight-ramen/edit', RecipeEditor);
+    expect(harness.routeNativeElement!.textContent).toContain('The demo is read-only');
+    expect(harness.routeNativeElement!.querySelector('form')).toBeNull();
+  });
+
   it('offers to restore edits autosaved from an earlier visit', async () => {
     localStorage.setItem(
       'other-modules-my-kitchen:draft:Test:new',

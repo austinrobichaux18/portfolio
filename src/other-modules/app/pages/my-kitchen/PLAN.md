@@ -401,8 +401,8 @@ Frontend:
 
 ### v1d — Showcase
 
-- [ ] `core/data/sample-recipes.ts`: 4–6 self-written sample recipes, at least one with options
-- [ ] Demo mode: "Try the demo" button; read-only library/view/cook mode over sample recipes
+- [x] `core/data/sample-recipes.ts`: 4–6 self-written sample recipes, at least one with options
+- [x] Demo mode: "Try the demo" button; read-only library/view/cook mode over sample recipes
       (editing, import and Made-it disabled, clearly labeled as a demo)
 - [x] Registration (per CLAUDE.md checklist): `core/data/modules.ts` entry and `/projects`
       case study — done early, after v1b. Update the case study once demo mode exists.

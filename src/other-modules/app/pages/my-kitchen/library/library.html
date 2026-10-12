@@ -115,7 +115,7 @@
         }
         @if (suggestions().unlogged.length) {
           <div class="suggest-group">
-            <span class="label">Regulars not logged yet</span>
+            <span class="label">Not logged yet</span>
             @for (r of suggestions().unlogged; track r.id) {
               <a class="suggest-item" [routerLink]="['r', r.id]">
                 <span>{{ r.title }}</span>

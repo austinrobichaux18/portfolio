@@ -5,13 +5,21 @@
   </header>
 
   @if (state.status() === 'ready') {
-    <div class="library-bar">
-      <span class="folder-name">📁 {{ state.store()?.label }}</span>
-      @if (state.readOnly()) {
-        <span class="badge">Read-only</span>
-      }
-      <button type="button" class="link-button" (click)="state.closeLibrary()">Close</button>
-    </div>
+    @if (state.readOnly()) {
+      <div class="demo-banner">
+        <span class="badge ours">Demo</span>
+        <span>
+          You're looking at sample recipes (read-only). Try the options, servings scaler and cook
+          mode.
+        </span>
+        <button type="button" class="link-button" (click)="state.closeLibrary()">Exit demo</button>
+      </div>
+    } @else {
+      <div class="library-bar">
+        <span class="folder-name">📁 {{ state.store()?.label }}</span>
+        <button type="button" class="link-button" (click)="state.closeLibrary()">Close</button>
+      </div>
+    }
     <router-outlet />
   } @else if (state.status() === 'loading') {
     <div class="card status-card"><p class="muted">Loading recipes…</p></div>
@@ -21,6 +29,10 @@
         My Kitchen keeps recipes in a folder on your computer, which needs a Chromium-based desktop
         browser (Chrome, Edge, or Opera) that supports the File System Access API.
       </p>
+      <div class="actions">
+        <button type="button" class="primary" (click)="state.openDemo()">Try the demo</button>
+      </div>
+      <p class="muted">The demo uses sample recipes and works in any browser.</p>
     </div>
   } @else {
     <div class="card status-card">
@@ -44,6 +56,12 @@
       @if (state.errorMessage()) {
         <span class="error">{{ state.errorMessage() }}</span>
       }
+
+      <p class="demo-line">
+        Just looking?
+        <button type="button" class="link-button" (click)="state.openDemo()">Try the demo</button>
+        with sample recipes — nothing to set up.
+      </p>
 
       <div class="help">
         <h3>How it works</h3>

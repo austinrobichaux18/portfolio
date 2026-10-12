@@ -51,7 +51,7 @@ describe('Library', () => {
     ]);
     expect(groups).toEqual([
       ['Due again', ['Tacos']],
-      ['Regulars not logged yet', ['Ramen']],
+      ['Not logged yet', ['Ramen']],
       ['Want to try', ['Chocolate Cake']],
     ]);
     const reminder = harness.routeNativeElement!.querySelector('.rate-reminder') as HTMLElement;

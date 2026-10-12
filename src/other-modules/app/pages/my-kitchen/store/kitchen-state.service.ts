@@ -3,6 +3,7 @@ import { ContentOrigin, HouseholdRecipeData, Recipe, RecipeImage } from '../../.
 import { FULL_IMAGE_MAX_EDGE, resizeImage, THUMB_IMAGE_MAX_EDGE } from '../lib/image-resize';
 import { newImageBaseName, uniqueId } from '../lib/recipe-id';
 import { newRecipe } from '../lib/recipe-loader';
+import { createDemoStore } from './demo-library';
 import { FolderKitchenStore } from './folder-kitchen-store';
 import { clearLastFolderHandle, loadLastFolderHandle, saveLastFolderHandle } from './kitchen-folder-handle';
 import { KitchenStore, RecipeLoadError, sortRecipes } from './kitchen-store';
@@ -80,6 +81,12 @@ export class KitchenStateService {
       return;
     }
     await this.useStore(new FolderKitchenStore(handle));
+  }
+
+  /** Read-only sample recipes, for visitors without a recipes folder (or a supported browser). */
+  async openDemo(): Promise<void> {
+    this.errorMessage.set('');
+    await this.useStore(createDemoStore());
   }
 
   /** Opens any store: the picked folder, the demo, or an in-memory store in specs. */

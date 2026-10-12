@@ -36,7 +36,14 @@ export function checkRecipe(recipe: Recipe): RecipeCheck[] {
       checks.push({ level: 'info', message: `Not mentioned in any step: ${list(unmentioned)}` });
     }
 
-    const ingredientText = allIngredients.map((i) => i.raw.toLowerCase()).join('\n');
+    // Group and option names count too: "ladle the broth" is fine when there's a "## Broth" group.
+    const ingredientText = [
+      ...allIngredients.map((i) => i.raw),
+      ...recipe.ingredientGroups.flatMap((g) => (g.name ? [g.name] : [])),
+      ...recipe.optionGroups.flatMap((g) => g.options.map((o) => o.name)),
+    ]
+      .join('\n')
+      .toLowerCase();
     const missing = COMMON_STEP_INGREDIENTS.filter(
       (word) => wordPattern(word).test(stepText) && !ingredientText.includes(word),
     );

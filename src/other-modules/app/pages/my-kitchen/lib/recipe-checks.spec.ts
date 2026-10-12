@@ -47,6 +47,12 @@ describe('checkRecipe', () => {
     );
   });
 
+  it('counts an ingredient group name as listed', () => {
+    const r = recipe(['4 cups chicken stock'], ['Ladle the broth over the noodles and stock.']);
+    r.ingredientGroups[0].name = 'Broth';
+    expect(messages(r)).toEqual([]);
+  });
+
   it('does not treat "boil" as oil or "creamy" as cream', () => {
     expect(messages(recipe(['1 lb pasta'], ['Boil the pasta until creamy.']))).toEqual([]);
   });

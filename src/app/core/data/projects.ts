@@ -1005,7 +1005,8 @@ export const projects: Project[] = [
 
         overview: [
             'A recipe library for the dishes a family actually cooks, stored as one folder per recipe (recipe.json plus photos) in a local folder the user picks — nothing is uploaded.',
-            'Recipes are typed or pasted as plain text and parsed live into structured ingredients (quantity, range, unit, package size, prep, flags), support option groups like toppings or protein swaps, scale by servings, and log each cook with options, rating and notes.'
+            'Recipes are typed or pasted as plain text and parsed live into structured ingredients (quantity, range, unit, package size, prep, flags), support option groups like toppings or protein swaps, scale by servings, and log each cook with options, rating and notes.',
+            'A read-only demo with sample recipes runs in any browser, so it can be tried without a recipes folder or File System Access API support.'
         ],
 
         myRole:
