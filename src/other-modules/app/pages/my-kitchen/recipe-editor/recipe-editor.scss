@@ -1,0 +1,345 @@
+@use '../kitchen-shared' as k;
+
+.editor {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding-bottom: 80px;
+}
+
+.crumbs a {
+  color: k.$accent;
+  text-decoration: none;
+  font-size: 0.9rem;
+}
+
+.banner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  border-color: rgba(245, 194, 107, 0.4);
+}
+
+.paste {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+
+  h3,
+  p {
+    margin: 0;
+  }
+}
+
+.paste-link {
+  align-self: flex-start;
+}
+
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+}
+
+.title-input {
+  font-size: 1.3rem;
+  font-weight: 600;
+}
+
+.made-before {
+  margin-top: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+
+  .fields > div {
+    flex: 1 1 220px;
+  }
+}
+
+.hint {
+  margin: 0 0 8px;
+  color: k.$muted;
+  font-size: 0.8rem;
+
+  code {
+    color: k.$accent;
+  }
+}
+
+.columns {
+  display: grid;
+  grid-template-columns: 1.2fr 1fr;
+  gap: 16px;
+
+  @media (max-width: 860px) {
+    grid-template-columns: 1fr;
+  }
+}
+
+#ingredients,
+.option textarea {
+  font-family: ui-monospace, 'Cascadia Code', Consolas, monospace;
+  font-size: 0.9rem;
+}
+
+.preview {
+  ul {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    font-size: 0.88rem;
+  }
+
+  li {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 6px;
+    padding: 4px 8px;
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.03);
+
+    &.warn {
+      background: rgba(245, 194, 107, 0.08);
+    }
+  }
+
+  .preview-heading {
+    background: none;
+    padding: 6px 0 0;
+    color: k.$accent;
+    font-weight: 600;
+  }
+
+  .amount {
+    color: k.$accent-warm;
+    font-weight: 600;
+  }
+
+  .prep {
+    color: k.$muted;
+    font-style: italic;
+  }
+
+  .warning {
+    color: k.$warning;
+    font-size: 0.8rem;
+  }
+}
+
+.section-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 10px;
+  margin-bottom: 10px;
+
+  .label {
+    margin: 0;
+  }
+
+  .hint {
+    margin: 0;
+  }
+}
+
+.options {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+
+  > .secondary {
+    align-self: flex-start;
+  }
+}
+
+.option-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 14px;
+  border: 1px solid k.$border;
+  border-radius: 12px;
+
+  > .link-button {
+    align-self: flex-start;
+  }
+}
+
+.group-head input {
+  flex: 1 1 220px;
+}
+
+.group-head select {
+  width: auto;
+}
+
+.option {
+  border-left: 2px solid k.$border-strong;
+  padding-left: 10px;
+
+  summary {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    cursor: pointer;
+
+    input[type='text'] {
+      flex: 1 1 200px;
+    }
+  }
+}
+
+.option-fields {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin: 10px 0 4px;
+
+  .full {
+    grid-column: 1 / -1;
+  }
+
+  @media (max-width: 700px) {
+    grid-template-columns: 1fr;
+  }
+}
+
+label.inline {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin: 0;
+  white-space: nowrap;
+}
+
+.remove {
+  color: k.$error;
+}
+
+.photo-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 12px;
+
+  figure {
+    margin: 0;
+    border-radius: 12px;
+    overflow: hidden;
+    border: 1px solid k.$border;
+
+    &.is-cover {
+      border-color: k.$success;
+    }
+
+    img,
+    app-kitchen-image {
+      display: block;
+      width: 100%;
+      aspect-ratio: 1;
+      object-fit: cover;
+    }
+  }
+
+  figcaption {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: 6px;
+    padding: 6px 8px;
+    font-size: 0.8rem;
+  }
+
+  .photo-actions {
+    display: flex;
+    gap: 8px;
+  }
+}
+
+.add-photo {
+  display: grid;
+  place-items: center;
+  min-height: 150px;
+  margin: 0;
+  border: 1px dashed k.$border-strong;
+  border-radius: 12px;
+  color: k.$soft;
+  cursor: pointer;
+
+  &:hover {
+    border-color: k.$accent;
+  }
+
+  input {
+    display: none;
+  }
+}
+
+.details {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+
+  summary {
+    cursor: pointer;
+    color: k.$soft;
+  }
+
+  &[open] > summary {
+    margin-bottom: 14px;
+  }
+
+  > div + div {
+    margin-top: 14px;
+  }
+}
+
+.detail-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+  gap: 12px;
+
+  .wide {
+    grid-column: span 2;
+
+    @media (max-width: 500px) {
+      grid-column: auto;
+    }
+  }
+}
+
+.tags .chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 8px;
+
+  &:empty {
+    display: none;
+  }
+}
+
+.save-bar {
+  position: sticky;
+  bottom: 0;
+  z-index: 5;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 18px;
+  background: rgba(10, 16, 24, 0.92);
+  border: 1px solid k.$border;
+  border-radius: 14px;
+  backdrop-filter: blur(6px);
+
+  .shortcut {
+    font-size: 0.8rem;
+  }
+}

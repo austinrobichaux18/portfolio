@@ -1,0 +1,62 @@
+<section class="page-container kitchen-page">
+  <header class="page-header">
+    <h1><a routerLink="/other-modules/my-kitchen">My Kitchen</a></h1>
+    <p>The recipes our family actually cooks — with options, ratings, and how often we make them.</p>
+  </header>
+
+  @if (state.status() === 'ready') {
+    <div class="library-bar">
+      <span class="folder-name">📁 {{ state.store()?.label }}</span>
+      @if (state.readOnly()) {
+        <span class="badge">Read-only</span>
+      }
+      <button type="button" class="link-button" (click)="state.closeLibrary()">Close</button>
+    </div>
+    <router-outlet />
+  } @else if (state.status() === 'loading') {
+    <div class="card status-card"><p class="muted">Loading recipes…</p></div>
+  } @else if (!state.supported) {
+    <div class="card status-card">
+      <p>
+        My Kitchen keeps recipes in a folder on your computer, which needs a Chromium-based desktop
+        browser (Chrome, Edge, or Opera) that supports the File System Access API.
+      </p>
+    </div>
+  } @else {
+    <div class="card status-card">
+      @if (state.lastFolderName()) {
+        <p>Continue with your recipes folder, or pick a different one.</p>
+        <div class="actions">
+          <button type="button" class="primary" (click)="state.continueWithLastFolder()">
+            Continue with "{{ state.lastFolderName() }}"
+          </button>
+          <button type="button" class="secondary" (click)="state.pickFolder()">
+            Choose a different folder
+          </button>
+        </div>
+      } @else {
+        <p>Pick (or create) a folder to keep your recipes in.</p>
+        <div class="actions">
+          <button type="button" class="primary" (click)="state.pickFolder()">Choose folder</button>
+        </div>
+      }
+
+      @if (state.errorMessage()) {
+        <span class="error">{{ state.errorMessage() }}</span>
+      }
+
+      <div class="help">
+        <h3>How it works</h3>
+        <p>
+          Everything stays on your computer — nothing is uploaded. Each recipe gets its own
+          subfolder with a <code>recipe.json</code> file and its photos. An empty folder is fine;
+          My Kitchen fills it in as you add recipes.
+        </p>
+        <p>
+          Tip: keep the folder inside OneDrive (or a git repo) for free backups and history.
+          Deleted recipes go to a <code>_trash</code> folder rather than disappearing.
+        </p>
+      </div>
+    </div>
+  }
+</section>

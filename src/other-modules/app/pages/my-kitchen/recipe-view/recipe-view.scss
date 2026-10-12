@@ -1,0 +1,155 @@
+@use '../kitchen-shared' as k;
+
+.recipe {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.crumbs a {
+  color: k.$accent;
+  text-decoration: none;
+  font-size: 0.9rem;
+}
+
+.hero {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 24px;
+
+  .cover {
+    flex: 0 1 380px;
+    aspect-ratio: 4 / 3;
+    border-radius: 16px;
+  }
+}
+
+.hero-text {
+  flex: 1 1 320px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+
+  h2 {
+    margin: 0;
+    font-size: 2.2rem;
+  }
+}
+
+.badges,
+.facts,
+.actions,
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.facts {
+  gap: 6px 16px;
+  color: k.$soft;
+  font-size: 0.9rem;
+}
+
+.options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+
+  fieldset {
+    border: none;
+    margin: 0;
+    padding: 0;
+  }
+
+  legend {
+    margin-bottom: 8px;
+    font-weight: 600;
+  }
+
+  .chip {
+    font-size: 0.9rem;
+    padding: 6px 14px;
+  }
+}
+
+.columns {
+  display: grid;
+  grid-template-columns: minmax(260px, 1fr) minmax(320px, 1.6fr);
+  gap: 20px;
+  align-items: start;
+
+  @media (max-width: 760px) {
+    grid-template-columns: 1fr;
+  }
+}
+
+.ingredients,
+.steps {
+  h3 {
+    margin: 0 0 12px;
+  }
+
+  h4 {
+    margin: 16px 0 6px;
+    color: k.$accent;
+    font-size: 0.95rem;
+  }
+
+  ul,
+  ol {
+    margin: 0;
+    padding-left: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    line-height: 1.5;
+  }
+
+  li {
+    white-space: pre-line;
+  }
+
+  .optional {
+    color: k.$muted;
+  }
+
+  .note {
+    margin: 0 0 8px;
+    color: k.$soft;
+  }
+}
+
+.gallery {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 12px;
+
+  .gallery-image {
+    aspect-ratio: 1;
+    border-radius: 12px;
+  }
+}
+
+.more {
+  summary {
+    cursor: pointer;
+    color: k.$soft;
+  }
+
+  p {
+    margin: 12px 0 0;
+  }
+
+  .pre {
+    white-space: pre-line;
+  }
+
+  a {
+    color: k.$accent;
+  }
+
+  .chips {
+    margin-top: 12px;
+  }
+}

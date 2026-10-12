@@ -1,0 +1,149 @@
+<div class="library">
+  <div class="toolbar">
+    <input
+      type="search"
+      class="search"
+      placeholder="Search recipes, ingredients, tags…"
+      aria-label="Search recipes"
+      [value]="filter().query"
+      (input)="setQuery($any($event.target).value)"
+    />
+    <button
+      type="button"
+      class="secondary"
+      [class.has-filters]="activeFilterCount() > 0"
+      (click)="showFilters.set(!showFilters())"
+      [attr.aria-expanded]="showFilters()"
+    >
+      Filters{{ activeFilterCount() ? ' (' + activeFilterCount() + ')' : '' }}
+    </button>
+    <select aria-label="Sort" [value]="sort()" (change)="setSort($any($event.target).value)">
+      @for (option of sortOptions; track option.id) {
+        <option [value]="option.id">{{ option.label }}</option>
+      }
+    </select>
+    @if (!state.readOnly()) {
+      <a class="primary" routerLink="new">+ New recipe</a>
+      <a class="secondary" routerLink="new" [queryParams]="{ paste: 1 }">Quick add</a>
+    }
+  </div>
+
+  @if (showFilters()) {
+    <div class="card filters">
+      <div class="filter-row">
+        <div>
+          <label for="f-frequency">How often</label>
+          <select id="f-frequency" [value]="filter().frequency" (change)="setFrequency($any($event.target).value)">
+            <option value="">Any</option>
+            @for (f of frequencies; track f.id) {
+              <option [value]="f.id">{{ f.label }}</option>
+            }
+          </select>
+        </div>
+        <div>
+          <label for="f-trust">Status</label>
+          <select id="f-trust" [value]="filter().trust" (change)="setTrust($any($event.target).value)">
+            <option value="">Any</option>
+            @for (t of trustLevels; track t.id) {
+              <option [value]="t.id">{{ t.label }}</option>
+            }
+          </select>
+        </div>
+        <div>
+          <label for="f-rating">Rating at least</label>
+          <select id="f-rating" [value]="filter().minRating" (change)="setMinRating($any($event.target).value)">
+            <option value="0">Any</option>
+            @for (n of [5, 6, 7, 8, 9, 10]; track n) {
+              <option [value]="n">{{ n }}</option>
+            }
+          </select>
+        </div>
+      </div>
+
+      @for (group of tagGroups(); track group.prefix) {
+        <div class="tag-group">
+          <span class="label">{{ group.prefix }}</span>
+          <div class="chips">
+            @for (tag of group.tags; track tag) {
+              <button
+                type="button"
+                class="chip"
+                [class.active]="filter().tags.includes(tag)"
+                (click)="toggleTag(tag)"
+              >
+                {{ tagLabel(tag) }}
+              </button>
+            }
+          </div>
+        </div>
+      }
+
+      @if (activeFilterCount()) {
+        <button type="button" class="link-button" (click)="clearFilters()">Clear filters</button>
+      }
+    </div>
+  }
+
+  @if (state.loadErrors().length) {
+    <details class="card load-errors">
+      <summary>
+        {{ state.loadErrors().length }} folder{{ state.loadErrors().length === 1 ? '' : 's' }} couldn't be
+        loaded
+      </summary>
+      <ul>
+        @for (err of state.loadErrors(); track err.folder) {
+          <li><code>{{ err.folder }}</code> — {{ err.message }}</li>
+        }
+      </ul>
+    </details>
+  }
+
+  @if (state.recipes().length === 0) {
+    <div class="card empty">
+      <h2>No recipes yet</h2>
+      <p class="muted">Start with the dishes you already make — typing or pasting one takes a minute.</p>
+      @if (!state.readOnly()) {
+        <div class="actions">
+          <a class="primary" routerLink="new">+ New recipe</a>
+          <a class="secondary" routerLink="new" [queryParams]="{ paste: 1 }">Paste a recipe</a>
+        </div>
+      }
+    </div>
+  } @else if (visibleRecipes().length === 0) {
+    <p class="muted">No recipes match.</p>
+  } @else {
+    <p class="count muted">{{ visibleRecipes().length }} of {{ state.recipes().length }} recipes</p>
+    <div class="grid">
+      @for (recipe of visibleRecipes(); track recipe.id) {
+        <a class="recipe-card" [routerLink]="['r', recipe.id]">
+          <app-kitchen-image class="thumb" [recipeId]="recipe.id" [file]="cover(recipe)" />
+          <div class="card-body">
+            <h3>{{ recipe.title }}</h3>
+            <div class="meta">
+              @if (recipe.household.rating) {
+                <span class="rating">★ {{ recipe.household.rating }}/10</span>
+              }
+              <span>{{ frequencyLabel(recipe) }}</span>
+            </div>
+            <div class="badges">
+              @if (recipe.household.trust === 'untested') {
+                <span class="badge untested">Untested</span>
+              } @else if (recipe.household.trust === 'ours') {
+                <span class="badge ours">Ours</span>
+              }
+              @if (isDraft(recipe)) {
+                <span class="badge draft">Draft</span>
+              }
+              @if (recipe.optionGroups.length) {
+                <span class="badge">Options</span>
+              }
+            </div>
+            @if (lastMadeLabel(recipe); as made) {
+              <span class="made muted">{{ made }}</span>
+            }
+          </div>
+        </a>
+      }
+    </div>
+  }
+</div>

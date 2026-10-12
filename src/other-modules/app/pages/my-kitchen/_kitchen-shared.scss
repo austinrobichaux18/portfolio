@@ -1,0 +1,211 @@
+// Shared look for the My Kitchen screens; each component @use's this so its encapsulated styles
+// get the same buttons, cards, inputs and chips. Colors match the other Other Modules pages.
+
+$text: #e6edf3;
+$muted: #8f9bad;
+$soft: #b8c1ce;
+$accent: #49c6ff;
+$accent-warm: #ff6a3d;
+$card-bg: rgba(23, 31, 43, 0.7);
+$border: rgba(255, 255, 255, 0.08);
+$border-strong: rgba(255, 255, 255, 0.14);
+$error: #ff7b7b;
+$success: #5fd38d;
+$warning: #f5c26b;
+
+.card {
+  padding: 24px;
+  background: $card-bg;
+  border: 1px solid $border;
+  border-radius: 16px;
+}
+
+button {
+  cursor: pointer;
+  font-family: inherit;
+  transition: 0.2s;
+}
+
+.primary,
+.secondary,
+.danger,
+a.primary,
+a.secondary {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 20px;
+  border-radius: 10px;
+  font-size: 0.95rem;
+  text-decoration: none;
+  line-height: 1.2;
+}
+
+.primary {
+  border: none;
+  background: $accent;
+  color: #081018;
+  font-weight: 600;
+
+  &:hover:not(:disabled) {
+    opacity: 0.85;
+  }
+}
+
+.secondary {
+  border: 1px solid $border-strong;
+  background: transparent;
+  color: $soft;
+
+  &:hover:not(:disabled) {
+    border-color: $accent;
+    color: $text;
+  }
+}
+
+.danger {
+  border: 1px solid rgba(255, 123, 123, 0.4);
+  background: transparent;
+  color: $error;
+
+  &:hover:not(:disabled) {
+    background: rgba(255, 123, 123, 0.1);
+  }
+}
+
+.primary:disabled,
+.secondary:disabled,
+.danger:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.link-button {
+  border: none;
+  background: none;
+  padding: 0;
+  color: $accent;
+  font-size: inherit;
+
+  &:hover {
+    text-decoration: underline;
+  }
+}
+
+input[type='text'],
+input[type='search'],
+input[type='url'],
+input[type='number'],
+input[type='date'],
+select,
+textarea {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 10px 12px;
+  border: 1px solid $border-strong;
+  border-radius: 10px;
+  background: rgba(8, 16, 24, 0.6);
+  color: $text;
+  font-family: inherit;
+  font-size: 0.95rem;
+
+  &:focus {
+    outline: none;
+    border-color: $accent;
+  }
+}
+
+textarea {
+  resize: vertical;
+  line-height: 1.5;
+}
+
+label,
+.label {
+  display: block;
+  margin-bottom: 6px;
+  color: $muted;
+  font-size: 0.85rem;
+}
+
+.badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  border: 1px solid $border-strong;
+  color: $soft;
+
+  &.untested {
+    border-color: rgba(245, 194, 107, 0.5);
+    color: $warning;
+  }
+
+  &.draft {
+    border-color: rgba(143, 155, 173, 0.5);
+    color: $muted;
+  }
+
+  &.ours {
+    border-color: rgba(95, 211, 141, 0.5);
+    color: $success;
+  }
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  border: 1px solid $border-strong;
+  background: transparent;
+  color: $soft;
+  font-size: 0.8rem;
+
+  &.active {
+    border-color: $accent;
+    background: rgba(73, 198, 255, 0.12);
+    color: $text;
+  }
+}
+
+.muted {
+  color: $muted;
+}
+
+.error {
+  color: $error;
+  font-size: 0.85rem;
+}
+
+.rating-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+
+  button {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    border: 1px solid $border-strong;
+    background: transparent;
+    color: $soft;
+    font-size: 0.85rem;
+
+    &.filled {
+      background: rgba(255, 106, 61, 0.18);
+      border-color: rgba(255, 106, 61, 0.6);
+      color: $text;
+    }
+
+    &:hover:not(:disabled) {
+      border-color: $accent-warm;
+    }
+
+    &:disabled {
+      cursor: default;
+    }
+  }
+}

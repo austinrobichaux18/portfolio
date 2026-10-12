@@ -1,0 +1,197 @@
+@if (recipe(); as recipe) {
+  <article class="recipe">
+    <nav class="crumbs">
+      <a routerLink="../..">← All recipes</a>
+    </nav>
+
+    <header class="hero">
+      @if (cover(); as coverImage) {
+        <app-kitchen-image
+          class="cover"
+          [recipeId]="recipe.id"
+          [file]="coverImage.file"
+          [alt]="recipe.title"
+        />
+      }
+      <div class="hero-text">
+        <h2>{{ recipe.title }}</h2>
+        <div class="badges">
+          <span class="badge" [class.untested]="recipe.household.trust === 'untested'" [class.ours]="recipe.household.trust === 'ours'">
+            {{ trustLabel(recipe) }}
+          </span>
+          <span class="badge">{{ frequencyLabel(recipe) }}</span>
+        </div>
+
+        <div class="facts">
+          @if (recipe.servings) {
+            <span>Serves {{ recipe.servings }}{{ recipe.servingsMax ? '–' + recipe.servingsMax : '' }}</span>
+          }
+          @if (recipe.yieldText) {
+            <span>Makes {{ recipe.yieldText }}</span>
+          }
+          @for (time of times(); track time.label) {
+            <span>{{ time.label }} {{ time.text }}</span>
+          }
+          @if (lastMade()) {
+            <span>Last made {{ lastMade() }}</span>
+          }
+        </div>
+
+        <div class="rating-block">
+          <span class="label">Our rating</span>
+          <div class="rating-row" role="group" aria-label="Rating out of 10">
+            @for (n of ratingValues; track n) {
+              <button
+                type="button"
+                [class.filled]="(recipe.household.rating ?? 0) >= n"
+                [disabled]="state.readOnly() || saving()"
+                [attr.aria-pressed]="recipe.household.rating === n"
+                [attr.aria-label]="n + ' out of 10'"
+                (click)="setRating(n)"
+              >
+                {{ n }}
+              </button>
+            }
+          </div>
+        </div>
+
+        @if (!state.readOnly()) {
+          <div class="actions">
+            <a class="primary" routerLink="edit">Edit</a>
+            <button type="button" class="danger" (click)="deleteRecipe()">Delete</button>
+          </div>
+        }
+        @if (errorMessage()) {
+          <span class="error">{{ errorMessage() }}</span>
+        }
+      </div>
+    </header>
+
+    @if (recipe.optionGroups.length) {
+      <section class="card options">
+        @for (group of recipe.optionGroups; track group.id) {
+          <fieldset>
+            <legend>{{ group.name }} <span class="muted">({{ group.kind === 'pickOne' ? 'pick one' : 'pick any' }})</span></legend>
+            <div class="chips">
+              @for (option of group.options; track option.id) {
+                <button
+                  type="button"
+                  class="chip"
+                  [class.active]="isSelected(group, option)"
+                  [attr.aria-pressed]="isSelected(group, option)"
+                  (click)="toggleOption(group, option)"
+                >
+                  {{ option.name }}
+                </button>
+              }
+            </div>
+          </fieldset>
+        }
+      </section>
+    }
+
+    <div class="columns">
+      <section class="card ingredients">
+        <h3>Ingredients</h3>
+        @for (group of recipe.ingredientGroups; track $index) {
+          @if (group.name) {
+            <h4>{{ group.name }}</h4>
+          }
+          <ul>
+            @for (item of group.items; track $index) {
+              <li [class.optional]="item.optional">{{ item.raw }}</li>
+            }
+          </ul>
+        }
+        @for (section of selectedSections(); track section.option.id) {
+          @if (section.option.ingredients.length) {
+            <h4>{{ section.option.name }} <span class="muted">· {{ section.group.name }}</span></h4>
+            <ul>
+              @for (item of section.option.ingredients; track $index) {
+                <li [class.optional]="item.optional">{{ item.raw }}</li>
+              }
+            </ul>
+          }
+        }
+        @if (!recipe.ingredientGroups.length && !selectedSections().length) {
+          <p class="muted">No ingredients yet.</p>
+        }
+      </section>
+
+      <section class="card steps">
+        <h3>Steps</h3>
+        @for (group of recipe.stepGroups; track $index) {
+          @if (group.name) {
+            <h4>{{ group.name }}</h4>
+          }
+          <ol>
+            @for (step of group.steps; track $index) {
+              <li>{{ step.text }}</li>
+            }
+          </ol>
+        }
+        @for (section of selectedSections(); track section.option.id) {
+          @if (section.option.steps.length || section.option.note) {
+            <h4>{{ section.option.name }} <span class="muted">· {{ section.group.name }}</span></h4>
+            @if (section.option.note) {
+              <p class="note">{{ section.option.note }}</p>
+            }
+            <ol>
+              @for (step of section.option.steps; track $index) {
+                <li>{{ step.text }}</li>
+              }
+            </ol>
+          }
+        }
+        @if (!recipe.stepGroups.length && !selectedSections().length) {
+          <p class="muted">No steps yet.</p>
+        }
+      </section>
+    </div>
+
+    @if (gallery().length) {
+      <section class="gallery">
+        @for (image of gallery(); track image.file) {
+          <app-kitchen-image class="gallery-image" [recipeId]="recipe.id" [file]="image.thumb" [alt]="image.caption ?? ''" />
+        }
+      </section>
+    }
+
+    @if (recipe.household.notes || recipe.description || recipe.source || recipe.tags.length) {
+      <details class="card more">
+        <summary>Notes &amp; source</summary>
+        @if (recipe.household.notes) {
+          <p class="pre">{{ recipe.household.notes }}</p>
+        }
+        @if (recipe.description) {
+          <p class="pre muted">{{ recipe.description }}</p>
+        }
+        @if (recipe.source; as source) {
+          <p class="muted">
+            Source:
+            @if (source.url) {
+              <a [href]="source.url" target="_blank" rel="noopener noreferrer">{{ source.siteName || source.url }}</a>
+            } @else {
+              {{ source.siteName }}
+            }
+            @if (source.author) {
+              · {{ source.author }}
+            }
+          </p>
+        }
+        @if (recipe.tags.length) {
+          <div class="chips">
+            @for (tag of recipe.tags; track tag) {
+              <span class="chip">{{ tagLabel(tag) }}</span>
+            }
+          </div>
+        }
+      </details>
+    }
+  </article>
+} @else {
+  <div class="card">
+    <p>That recipe isn't in this folder.</p>
+    <a routerLink="../..">← All recipes</a>
+  </div>
+}

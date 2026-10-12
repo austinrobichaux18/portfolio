@@ -1,0 +1,169 @@
+import { newRecipe, serializeRecipe } from '../lib/recipe-loader';
+import { FolderKitchenStore } from './folder-kitchen-store';
+import { InMemoryKitchenStore } from './in-memory-kitchen-store';
+
+/** Just enough of the File System Access API for the store, backed by maps. */
+class FakeDir {
+  readonly kind = 'directory';
+  readonly files = new Map<string, Blob>();
+  readonly dirs = new Map<string, FakeDir>();
+
+  constructor(readonly name: string) {}
+
+  async *entries(): AsyncGenerator<[string, unknown]> {
+    for (const name of this.files.keys()) yield [name, this.fileHandle(name)];
+    for (const [name, dir] of this.dirs) yield [name, dir];
+  }
+
+  async getDirectoryHandle(name: string, options?: { create?: boolean }): Promise<FakeDir> {
+    let dir = this.dirs.get(name);
+    if (!dir) {
+      if (!options?.create) throw new DOMException('missing', 'NotFoundError');
+      dir = new FakeDir(name);
+      this.dirs.set(name, dir);
+    }
+    return dir;
+  }
+
+  async getFileHandle(name: string, options?: { create?: boolean }) {
+    if (!this.files.has(name)) {
+      if (!options?.create) throw new DOMException('missing', 'NotFoundError');
+      this.files.set(name, new Blob([]));
+    }
+    return this.fileHandle(name);
+  }
+
+  async removeEntry(name: string): Promise<void> {
+    if (!this.files.delete(name) && !this.dirs.delete(name)) throw new DOMException('missing', 'NotFoundError');
+  }
+
+  private fileHandle(name: string) {
+    return {
+      kind: 'file' as const,
+      name,
+      getFile: async () => this.files.get(name)!,
+      createWritable: async () => {
+        const chunks: Blob[] = [];
+        return {
+          write: async (data: Blob) => void chunks.push(data),
+          close: async () => void this.files.set(name, new Blob(chunks)),
+          abort: async () => {},
+        };
+      },
+    };
+  }
+}
+
+function readText(blob: Blob): Promise<string> {
+  return blob.text();
+}
+
+function makeStore(root: FakeDir): FolderKitchenStore {
+  return new FolderKitchenStore(root as unknown as FileSystemDirectoryHandle);
+}
+
+describe('FolderKitchenStore', () => {
+  let root: FakeDir;
+  let store: FolderKitchenStore;
+
+  beforeEach(() => {
+    root = new FakeDir('MyRecipes');
+    store = makeStore(root);
+  });
+
+  it('saves a recipe into a folder named by its id and loads it back', async () => {
+    const recipe = newRecipe('ramen', 'Ramen');
+    await store.saveRecipe(recipe);
+
+    expect(root.dirs.get('ramen')?.files.has('recipe.json')).toBe(true);
+    const library = await store.loadLibrary();
+    expect(library.recipes).toEqual([recipe]);
+    expect(library.errors).toEqual([]);
+  });
+
+  it('skips reserved folders and reports broken ones without failing the rest', async () => {
+    await store.saveRecipe(newRecipe('good', 'Good'));
+    await root.getDirectoryHandle('_trash', { create: true });
+    await root.getDirectoryHandle('.git', { create: true });
+    await root.getDirectoryHandle('empty', { create: true });
+    const broken = await root.getDirectoryHandle('broken', { create: true });
+    broken.files.set('recipe.json', new Blob(['{ not json']));
+    root.files.set('_pantry.json', new Blob(['{}']));
+
+    const library = await store.loadLibrary();
+
+    expect(library.recipes.map((r) => r.id)).toEqual(['good']);
+    expect(library.errors).toEqual([
+      { folder: 'empty', message: 'No recipe.json in this folder.' },
+      { folder: 'broken', message: 'recipe.json is not valid JSON.' },
+    ]);
+  });
+
+  it('writes back a generated uid so it stays stable', async () => {
+    const dir = await root.getDirectoryHandle('toast', { create: true });
+    dir.files.set('recipe.json', new Blob([JSON.stringify({ title: 'Toast' })]));
+
+    const first = await store.loadLibrary();
+    const second = await store.loadLibrary();
+
+    expect(first.recipes[0].uid).toBe(second.recipes[0].uid);
+    expect(await readText(dir.files.get('recipe.json')!)).toContain(first.recipes[0].uid);
+  });
+
+  it('moves a deleted recipe and its images into _trash instead of deleting them', async () => {
+    await store.saveRecipe(newRecipe('ramen', 'Ramen'));
+    await store.writeImage('ramen', 'img-a.webp', new Blob(['photo']));
+
+    await store.deleteRecipe('ramen');
+
+    expect(root.dirs.has('ramen')).toBe(false);
+    const trashed = [...root.dirs.get('_trash')!.dirs.values()];
+    expect(trashed).toHaveLength(1);
+    expect(trashed[0].name).toMatch(/^\d{8}-\d{6}-ramen$/);
+    expect([...trashed[0].files.keys()].sort()).toEqual(['img-a.webp', 'recipe.json']);
+  });
+
+  it('moves a deleted image into _trash', async () => {
+    await store.saveRecipe(newRecipe('ramen', 'Ramen'));
+    await store.writeImage('ramen', 'img-a.webp', new Blob(['photo']));
+
+    await store.deleteImage('ramen', 'img-a.webp');
+
+    expect(root.dirs.get('ramen')!.files.has('img-a.webp')).toBe(false);
+    const trashed = [...root.dirs.get('_trash')!.dirs.values()][0];
+    expect(await readText(trashed.files.get('img-a.webp')!)).toBe('photo');
+    expect(await store.readImage('ramen', 'img-a.webp')).toBeNull();
+  });
+
+  it('refuses ids and file names that could escape the folder or hit reserved names', async () => {
+    await expect(store.saveRecipe(newRecipe('../evil', 'Evil'))).rejects.toThrow();
+    await expect(store.saveRecipe(newRecipe('_trash', 'Trash'))).rejects.toThrow();
+    await store.saveRecipe(newRecipe('ok', 'Ok'));
+    await expect(store.writeImage('ok', '../x.webp', new Blob([]))).rejects.toThrow();
+  });
+});
+
+describe('InMemoryKitchenStore', () => {
+  it('behaves like the folder store for load errors and trash', async () => {
+    const store = new InMemoryKitchenStore([newRecipe('a', 'A')]);
+    store.setRawJson('bad', 'nope');
+    const library = await store.loadLibrary();
+    expect(library.recipes.map((r) => r.id)).toEqual(['a']);
+    expect(library.errors[0].folder).toBe('bad');
+
+    await store.deleteRecipe('a');
+    expect(store.trash).toEqual(['a']);
+  });
+
+  it('rejects writes when read-only', async () => {
+    const store = new InMemoryKitchenStore([], 'Demo', true);
+    await expect(store.saveRecipe(newRecipe('a', 'A'))).rejects.toThrow('read-only');
+  });
+
+  it('round-trips through serialized JSON like the disk does', async () => {
+    const recipe = newRecipe('a', 'A', { rating: 9 });
+    const store = new InMemoryKitchenStore();
+    await store.saveRecipe(recipe);
+    expect((await store.loadLibrary()).recipes[0]).toEqual(JSON.parse(serializeRecipe(recipe)));
+  });
+});

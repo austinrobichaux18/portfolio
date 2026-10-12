@@ -301,50 +301,50 @@ Each phase is usable on its own.
 
 ### v1a — Capture (start entering recipes here)
 
-- [ ] Models under `src/other-modules/app/core/models/`: `Recipe`, `HouseholdRecipeData`,
+- [x] Models under `src/other-modules/app/core/models/`: `Recipe`, `HouseholdRecipeData`,
       `RecipeIngredient`, `RecipeStep`, `RecipeOptionGroup`, `RecipeOption`, `RecipeImage`,
       `CookLogEntry`, `RecipeFrequency`, `RecipeTrust`, `UnitCode`, `ContentOrigin`, `Nutrition`
-- [ ] `ingredient-parser.ts` + spec, covering:
-  - [ ] Fractions (`2 1/2`, `½`, `1½`) and decimals
-  - [ ] Ranges (`2–3`, `2-3`, `2 to 3`)
-  - [ ] Unit aliases mapped to canonical `UnitCode` (`T`, `Tbsp`, `tablespoons` → `tbsp`)
-  - [ ] Package sizes: `1 (14 oz) can tomatoes`
-  - [ ] Non-numeric amounts: `pinch`, `dash`, `a handful`
-  - [ ] `salt to taste`, `salt and pepper` → `toTaste`
-  - [ ] `(optional)`
-  - [ ] Prep notes after the comma
-  - [ ] Unparseable lines keep `raw` and leave parsed fields empty (never throw)
-- [ ] `recipe-text.ts` + spec: text-first editor format ↔ model (ingredient lines with `##`
+- [x] `ingredient-parser.ts` + spec, covering:
+  - [x] Fractions (`2 1/2`, `½`, `1½`) and decimals
+  - [x] Ranges (`2–3`, `2-3`, `2 to 3`)
+  - [x] Unit aliases mapped to canonical `UnitCode` (`T`, `Tbsp`, `tablespoons` → `tbsp`)
+  - [x] Package sizes: `1 (14 oz) can tomatoes`
+  - [x] Non-numeric amounts: `pinch`, `dash`, `a handful`
+  - [x] `salt to taste`, `salt and pepper` → `toTaste`
+  - [x] `(optional)`
+  - [x] Prep notes after the comma
+  - [x] Unparseable lines keep `raw` and leave parsed fields empty (never throw)
+- [x] `recipe-text.ts` + spec: text-first editor format ↔ model (ingredient lines with `##`
       groups, blank-line-separated steps with `##` groups, `(optional)` / `[no-scale]` flags) and
       Quick add splitting on headings
-  - [ ] Re-parse keeps per-line settings by matching on `raw`
-  - [ ] Round-trip test: model → text → model is lossless
-- [ ] `recipe-loader.ts` + spec: `loadRecipe` upgrade/defaults/validation (see above)
-- [ ] `recipe-id.ts` + spec: slug from title, collision suffix, random `uid`
+  - [x] Re-parse keeps per-line settings by matching on `raw`
+  - [x] Round-trip test: model → text → model is lossless
+- [x] `recipe-loader.ts` + spec: `loadRecipe` upgrade/defaults/validation (see above)
+- [x] `recipe-id.ts` + spec: slug from title, collision suffix, random `uid`
       (`crypto.randomUUID()`), image IDs
-- [ ] `kitchen-store.ts`: `KitchenStore` interface (recipes now; pantry v2; catalog/plans later) +
+- [x] `kitchen-store.ts`: `KitchenStore` interface (recipes now; pantry v2; catalog/plans later) +
       `FolderKitchenStore` (reopen last folder via IndexedDB like LocalFlix, read every
       `*/recipe.json` through `loadRecipe`, write one recipe at a time, image files, delete =
       copy to `_trash/` then `removeEntry`; extend `file-system-access.d.ts` as needed)
-- [ ] `InMemoryKitchenStore` implementing the same interface, for specs and demo mode (all specs
+- [x] `InMemoryKitchenStore` implementing the same interface, for specs and demo mode (all specs
       use it; CI never touches the File System Access API)
-- [ ] `KitchenStateService`: open folder, loaded recipes, load errors; shared by the child routes
-- [ ] Routes: `my-kitchen` child routes (see "Routing"); registered in `other-modules.routes.ts`
+- [x] `KitchenStateService`: open folder, loaded recipes, load errors; shared by the child routes
+- [x] Routes: `my-kitchen` child routes (see "Routing"); registered in `other-modules.routes.ts`
       but **not** listed in `modules.ts` / `projects.ts` until v1d
-- [ ] `image-resize.ts`: ~1600px WebP + ~400px thumbnail via canvas; revoke object URLs when done
-- [ ] Folder screen: unsupported-browser message, empty state for picking/creating the folder,
+- [x] `image-resize.ts`: ~1600px WebP + ~400px thumbnail via canvas; revoke object URLs when done
+- [x] Folder screen: unsupported-browser message, empty state for picking/creating the folder,
       "couldn't load" panel for bad files
-- [ ] Editor: text-first ingredients/steps with live parse chips, option groups, drag-drop/paste
+- [x] Editor: text-first ingredients/steps with live parse chips, option groups, drag-drop/paste
       photos and pick the cover, collapsed Details (servings, times, tags with prefix
       autocomplete, source), Ctrl+S, localStorage autosave of unsaved edits, unsaved-changes
       warning on leave, title-only drafts
-- [ ] New-recipe flow: "Have we made this before?" (default yes) → trust `tested`, frequency,
+- [x] New-recipe flow: "Have we made this before?" (default yes) → trust `tested`, frequency,
       optional rough last-made date
-- [ ] Quick add: paste a whole recipe → editor prefilled
-- [ ] Library: thumbnail grid, search across titles, tags **and ingredient names**, filter chips
+- [x] Quick add: paste a whole recipe → editor prefilled
+- [x] Library: thumbnail grid, search across titles, tags **and ingredient names**, filter chips
       grouped by tag prefix plus frequency/rating/trust, sort (rating, last made, newest),
       untested and draft badges
-- [ ] Recipe view: option checkboxes/radios (defaults preselected), ingredients and steps first,
+- [x] Recipe view: option checkboxes/radios (defaults preselected), ingredients and steps first,
       inline 1–10 rating, notes/source collapsed at the bottom, photo gallery, delete (→ `_trash/`)
 
 ### v1b — Cooking

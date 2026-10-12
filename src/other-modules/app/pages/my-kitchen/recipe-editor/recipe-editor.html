@@ -1,0 +1,397 @@
+@if (notFound) {
+  <div class="card">
+    <p>That recipe isn't in this folder.</p>
+    <a routerLink="../../..">← All recipes</a>
+  </div>
+} @else {
+  <form class="editor" (submit)="$event.preventDefault(); save()">
+    <nav class="crumbs">
+      @if (isNew) {
+        <a routerLink="..">← All recipes</a>
+      } @else {
+        <a routerLink="..">← Back to recipe</a>
+      }
+    </nav>
+
+    @if (draftToRestore(); as draft) {
+      <div class="card banner">
+        <span>You have unsaved changes from an earlier visit.</span>
+        <button type="button" class="primary" (click)="restoreDraft()">Restore them</button>
+        <button type="button" class="secondary" (click)="discardDraft()">Discard</button>
+      </div>
+    }
+
+    @if (showPaste()) {
+      <section class="card paste">
+        <h3>Paste a recipe</h3>
+        <p class="muted">
+          Paste the whole thing — title, ingredients, steps. It gets split into the boxes below for
+          you to check. Intros and life stories are left out.
+        </p>
+        <textarea
+          rows="10"
+          aria-label="Pasted recipe"
+          [value]="pasteText()"
+          (input)="pasteText.set($any($event.target).value)"
+        ></textarea>
+        <div class="row">
+          <button type="button" class="primary" [disabled]="!pasteText().trim()" (click)="applyPaste()">
+            Fill in the form
+          </button>
+          <button type="button" class="secondary" (click)="showPaste.set(false)">Type it instead</button>
+        </div>
+      </section>
+    } @else if (isNew) {
+      <button type="button" class="link-button paste-link" (click)="showPaste.set(true)">
+        Paste a whole recipe instead
+      </button>
+    }
+
+    <section class="card">
+      <label for="title">Title</label>
+      <input
+        id="title"
+        type="text"
+        class="title-input"
+        placeholder="e.g. Weeknight Ramen"
+        [value]="form().title"
+        (input)="update({ title: $any($event.target).value })"
+      />
+
+      @if (isNew) {
+        <div class="made-before">
+          <span class="label">Have we made this before?</span>
+          <div class="row">
+            <button type="button" class="chip" [class.active]="madeBefore()" (click)="madeBefore.set(true)">
+              Yes
+            </button>
+            <button type="button" class="chip" [class.active]="!madeBefore()" (click)="madeBefore.set(false)">
+              No, want to try it
+            </button>
+          </div>
+          @if (madeBefore()) {
+            <div class="row fields">
+              <div>
+                <label for="frequency-new">How often</label>
+                <select id="frequency-new" [value]="form().frequency" (change)="setFrequency($any($event.target).value)">
+                  @for (f of frequencies; track f.id) {
+                    @if (f.id !== 'want-to-try') {
+                      <option [value]="f.id">{{ f.label }} — {{ f.description }}</option>
+                    }
+                  }
+                </select>
+              </div>
+              <div>
+                <label for="last-made">Last made (optional, roughly)</label>
+                <input
+                  id="last-made"
+                  type="date"
+                  [max]="today"
+                  [value]="lastMade()"
+                  (input)="lastMade.set($any($event.target).value)"
+                />
+              </div>
+            </div>
+          }
+        </div>
+      }
+    </section>
+
+    <div class="columns">
+      <section class="card">
+        <label for="ingredients">Ingredients</label>
+        <p class="hint">
+          One per line. <code>## Sauce</code> starts a group. Add <code>(optional)</code> or
+          <code>[no-scale]</code> to a line when it applies.
+        </p>
+        <textarea
+          id="ingredients"
+          rows="14"
+          spellcheck="false"
+          [value]="form().ingredientsText"
+          (input)="update({ ingredientsText: $any($event.target).value })"
+        ></textarea>
+      </section>
+
+      <section class="card preview" aria-live="polite">
+        <span class="label">How it was read</span>
+        @if (preview().length === 0) {
+          <p class="muted">Each ingredient line shows up here as you type.</p>
+        }
+        <ul>
+          @for (line of preview(); track $index) {
+            @if (line.heading) {
+              <li class="preview-heading">{{ line.heading }}</li>
+            } @else {
+              <li [class.warn]="line.warning" [title]="line.raw">
+                @if (line.amount) {
+                  <span class="amount">{{ line.amount }}</span>
+                }
+                <span class="name">{{ line.name || line.raw }}</span>
+                @if (line.prep) {
+                  <span class="prep">{{ line.prep }}</span>
+                }
+                @for (flag of line.flags; track flag) {
+                  <span class="badge">{{ flag }}</span>
+                }
+                @if (line.warning) {
+                  <span class="warning">{{ line.warning }}</span>
+                }
+              </li>
+            }
+          }
+        </ul>
+      </section>
+    </div>
+
+    <section class="card">
+      <label for="steps">Steps</label>
+      <p class="hint">Leave a blank line between steps. <code>## Sauce</code> starts a group.</p>
+      <textarea
+        id="steps"
+        rows="12"
+        [value]="form().stepsText"
+        (input)="update({ stepsText: $any($event.target).value })"
+      ></textarea>
+    </section>
+
+    <section class="card options">
+      <div class="section-head">
+        <span class="label">Options</span>
+        <span class="hint">Add-ins or swaps picked at cook time — e.g. toppings, or chicken vs. tofu.</span>
+      </div>
+
+      @for (group of form().optionGroups; track $index; let gi = $index) {
+        <div class="option-group">
+          <div class="row group-head">
+            <input
+              type="text"
+              placeholder="Group name, e.g. Toppings"
+              aria-label="Option group name"
+              [value]="group.name"
+              (input)="updateGroup(gi, { name: $any($event.target).value })"
+            />
+            <select
+              aria-label="How many can be picked"
+              [value]="group.kind"
+              (change)="updateGroup(gi, { kind: $any($event.target).value })"
+            >
+              <option value="pickAny">Pick any (add-ins)</option>
+              <option value="pickOne">Pick one (swap)</option>
+            </select>
+            <button type="button" class="link-button remove" (click)="removeGroup(gi)">Remove group</button>
+          </div>
+
+          @for (option of group.options; track $index; let oi = $index) {
+            <details class="option" [open]="!option.name">
+              <summary>
+                <input
+                  type="text"
+                  placeholder="Option name, e.g. Soft-boiled egg"
+                  aria-label="Option name"
+                  [value]="option.name"
+                  (click)="$event.stopPropagation()"
+                  (keydown.space)="$event.stopPropagation()"
+                  (input)="updateOption(gi, oi, { name: $any($event.target).value })"
+                />
+                <label class="inline">
+                  <input
+                    type="checkbox"
+                    [checked]="option.isDefault"
+                    (click)="$event.stopPropagation()"
+                    (change)="updateOption(gi, oi, { isDefault: $any($event.target).checked })"
+                  />
+                  Usual
+                </label>
+                <button type="button" class="link-button remove" (click)="removeOption(gi, oi)">Remove</button>
+              </summary>
+              <div class="option-fields">
+                <div>
+                  <span class="label">Extra ingredients</span>
+                  <textarea
+                    rows="3"
+                    spellcheck="false"
+                    aria-label="Option ingredients"
+                    [value]="option.ingredientsText"
+                    (input)="updateOption(gi, oi, { ingredientsText: $any($event.target).value })"
+                  ></textarea>
+                </div>
+                <div>
+                  <span class="label">Extra steps</span>
+                  <textarea
+                    rows="3"
+                    aria-label="Option steps"
+                    [value]="option.stepsText"
+                    (input)="updateOption(gi, oi, { stepsText: $any($event.target).value })"
+                  ></textarea>
+                </div>
+                <div class="full">
+                  <span class="label">Note</span>
+                  <input
+                    type="text"
+                    aria-label="Option note"
+                    [value]="option.note"
+                    (input)="updateOption(gi, oi, { note: $any($event.target).value })"
+                  />
+                </div>
+              </div>
+            </details>
+          }
+          <button type="button" class="link-button" (click)="addOption(gi)">+ Add option</button>
+        </div>
+      }
+
+      <button type="button" class="secondary" (click)="addOptionGroup()">+ Add option group</button>
+    </section>
+
+    <section class="card photos" (dragover)="$event.preventDefault()" (drop)="onDrop($event)">
+      <div class="section-head">
+        <span class="label">Photos</span>
+        <span class="hint">Drop images here, paste one, or choose files. The first is the cover unless you pick another.</span>
+      </div>
+      <div class="photo-grid">
+        @for (item of images(); track item.image.file; let i = $index; let last = $last; let first = $first) {
+          <figure [class.is-cover]="item.image.isCover">
+            @if (item.previewUrl) {
+              <img [src]="item.previewUrl" alt="" />
+            } @else if (base) {
+              <app-kitchen-image [recipeId]="base.id" [file]="item.image.thumb" />
+            }
+            <figcaption>
+              @if (item.image.isCover) {
+                <span class="badge ours">Cover</span>
+              } @else {
+                <button type="button" class="link-button" (click)="setCover(i)">Make cover</button>
+              }
+              <span class="photo-actions">
+                <button type="button" class="link-button" [disabled]="first" (click)="moveImage(i, -1)" aria-label="Move left">←</button>
+                <button type="button" class="link-button" [disabled]="last" (click)="moveImage(i, 1)" aria-label="Move right">→</button>
+                <button type="button" class="link-button remove" (click)="removeImage(i)">Remove</button>
+              </span>
+            </figcaption>
+          </figure>
+        }
+        <label class="add-photo">
+          <input type="file" accept="image/*" multiple (change)="onFilesChosen($any($event.target))" />
+          {{ addingPhotos() ? 'Adding…' : '+ Add photos' }}
+        </label>
+      </div>
+    </section>
+
+    <details class="card details" [open]="showDetails()" (toggle)="showDetails.set($any($event.target).open)">
+      <summary>Details — servings, times, tags, source, notes</summary>
+      <div class="detail-grid">
+        <div>
+          <label for="servings">Servings</label>
+          <input id="servings" type="number" min="1" [value]="form().servings" (input)="update({ servings: $any($event.target).value })" />
+        </div>
+        <div>
+          <label for="servings-max">…up to (optional)</label>
+          <input id="servings-max" type="number" min="1" [value]="form().servingsMax" (input)="update({ servingsMax: $any($event.target).value })" />
+        </div>
+        <div>
+          <label for="yield">Makes (e.g. 24 cookies)</label>
+          <input id="yield" type="text" [value]="form().yieldText" (input)="update({ yieldText: $any($event.target).value })" />
+        </div>
+        <div>
+          <label for="prep">Prep (min)</label>
+          <input id="prep" type="number" min="0" [value]="form().prepMinutes" (input)="update({ prepMinutes: $any($event.target).value })" />
+        </div>
+        <div>
+          <label for="cook">Cook (min)</label>
+          <input id="cook" type="number" min="0" [value]="form().cookMinutes" (input)="update({ cookMinutes: $any($event.target).value })" />
+        </div>
+        <div>
+          <label for="rest">Rest / marinate (min)</label>
+          <input id="rest" type="number" min="0" [value]="form().restMinutes" (input)="update({ restMinutes: $any($event.target).value })" />
+        </div>
+        <div>
+          <label for="total">Total (min)</label>
+          <input id="total" type="number" min="0" [value]="form().totalMinutes" (input)="update({ totalMinutes: $any($event.target).value })" />
+        </div>
+        @if (!isNew) {
+          <div>
+            <label for="frequency">How often</label>
+            <select id="frequency" [value]="form().frequency" (change)="setFrequency($any($event.target).value)">
+              @for (f of frequencies; track f.id) {
+                <option [value]="f.id">{{ f.label }}</option>
+              }
+            </select>
+          </div>
+          <div>
+            <label for="trust">Status</label>
+            <select id="trust" [value]="form().trust" (change)="setTrust($any($event.target).value)">
+              @for (t of trustLevels; track t.id) {
+                <option [value]="t.id">{{ t.label }} — {{ t.description }}</option>
+              }
+            </select>
+          </div>
+        }
+      </div>
+
+      <div class="tags">
+        <label for="tag-input">Tags</label>
+        <div class="chips">
+          @for (tag of form().tags; track tag) {
+            <span class="chip active">
+              {{ tagLabel(tag) }}
+              <button type="button" class="link-button" (click)="removeTag(tag)" [attr.aria-label]="'Remove ' + tag">×</button>
+            </span>
+          }
+        </div>
+        <input
+          id="tag-input"
+          type="text"
+          list="tag-suggestions"
+          placeholder="e.g. cuisine:japanese, meal:dinner, effort:weeknight — Enter to add"
+          [value]="tagDraft()"
+          (input)="tagDraft.set($any($event.target).value)"
+          (keydown)="onTagKeydown($event)"
+          (blur)="addTag()"
+        />
+        <datalist id="tag-suggestions">
+          @for (tag of tagSuggestions(); track tag) {
+            <option [value]="tag"></option>
+          }
+        </datalist>
+      </div>
+
+      <div class="detail-grid">
+        <div class="wide">
+          <label for="source-url">Source link</label>
+          <input id="source-url" type="url" placeholder="https://…" [value]="form().sourceUrl" (input)="update({ sourceUrl: $any($event.target).value })" />
+        </div>
+        <div>
+          <label for="source-site">Site / book</label>
+          <input id="source-site" type="text" [value]="form().sourceSiteName" (input)="update({ sourceSiteName: $any($event.target).value })" />
+        </div>
+        <div>
+          <label for="source-author">Author</label>
+          <input id="source-author" type="text" [value]="form().sourceAuthor" (input)="update({ sourceAuthor: $any($event.target).value })" />
+        </div>
+      </div>
+
+      <div>
+        <label for="notes">Our notes</label>
+        <textarea id="notes" rows="3" placeholder="What we change, what the kids think…" [value]="form().notes" (input)="update({ notes: $any($event.target).value })"></textarea>
+      </div>
+      <div>
+        <label for="description">Short description (optional)</label>
+        <textarea id="description" rows="2" [value]="form().description" (input)="update({ description: $any($event.target).value })"></textarea>
+      </div>
+    </details>
+
+    <div class="save-bar">
+      <button type="submit" class="primary" [disabled]="saving() || addingPhotos()">
+        {{ saving() ? 'Saving…' : 'Save recipe' }}
+      </button>
+      <span class="muted shortcut">Ctrl+S</span>
+      @if (dirty()) {
+        <span class="muted">Unsaved changes</span>
+      }
+      @if (errorMessage()) {
+        <span class="error">{{ errorMessage() }}</span>
+      }
+    </div>
+  </form>
+}

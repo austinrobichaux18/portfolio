@@ -65,4 +65,10 @@ export const routes: Routes = [
       import('./pages/python-for-csharp/python-for-csharp').then((m) => m.PythonForCsharp),
     title: 'Python for C# Devs | Austin Robichaux',
   },
+  {
+    // Live but intentionally not listed in modules.ts / projects.ts until v1d (see my-kitchen/PLAN.md).
+    path: 'my-kitchen',
+    loadChildren: () => import('./pages/my-kitchen/my-kitchen.routes').then((m) => m.routes),
+    title: 'My Kitchen | Austin Robichaux',
+  },
 ];
