@@ -839,6 +839,86 @@ export const projects: Project[] = [
             github: 'https://github.com/austinrobichaux18/portfolio/tree/master/src/other-modules/app/pages/reference-charts'
         }
 
+    },
+
+    {
+        id: 'music-note-trainer',
+
+        title: 'Music Note Trainer',
+
+        description:
+            'An adaptive treble and bass clef note-reading drill that weights which notes you\'re quizzed on by miss rate, with classic mnemonics ("Every Good Boy Does Fine", "All Cows Eat Grass") surfaced as an on-demand hint.',
+
+        tags: [
+            'Angular',
+            'TypeScript',
+            'SVG',
+            'Signals'
+        ],
+
+        result:
+            'A self-contained tool in this site\'s "Other Modules" section.',
+
+        link: '/projects/music-note-trainer',
+
+        overview: [
+            'A spaced-practice tool for reading notes on the treble and bass clef that adapts in real time to what the user is actually struggling with, weighted by per-note accuracy and response time across sessions.',
+            'Covers the standard mnemonic note sets — "Every Good Boy Does Fine" (treble lines), "FACE" (treble spaces), "Good Boys Do Fine Always" (bass lines), "All Cows Eat Grass" (bass spaces) — plus the middle C ledger line, with each note\'s mnemonic word highlighted during practice.'
+        ],
+
+        myRole:
+            'Designed and built the SVG staff renderer, adaptive selection algorithm, practice-session state machine, mnemonic hint system, and stats/history persistence end-to-end.',
+
+        technicalChallenges: [
+            {
+                title: 'Inline SVG Staff Renderer',
+                description:
+                    'Renders a five-line staff with treble or bass clef symbol, note head at the correct staff position (1–5 for lines, 1.5–4.5 for spaces, 0 for ledger below), note stem direction determined by staff position, and a short ledger line drawn through note heads outside the staff — all from a staffPosition number, no image assets.'
+            },
+            {
+                title: 'Weighted-Random Adaptive Selection',
+                description:
+                    'Uses the same Laplace-smoothed miss-rate weighting as the Kana Trainer: misses plus a time penalty (for notes answered slowly but correctly) over attempts plus two, so notes the user struggles with are sampled more often without repeating the immediately-previous note.'
+            },
+            {
+                title: 'Mnemonic-Aware Hint System',
+                description:
+                    'Each note carries its mnemonic phrase and word index as data; the hint renders the full phrase with the current note\'s word highlighted in blue, so users can reinforce the memory hook without leaving the practice flow.'
+            },
+            {
+                title: 'Single-Keystroke Answer Loop',
+                description:
+                    'Note names are single letters (A–G), so the answer loop is near-instantaneous: the first keystroke either matches and advances, or mismatches and shows the correct letter after a 900ms delay — tighter feedback than multi-character romaji entry.'
+            }
+        ],
+
+        architecture: [
+            'Static note dataset (treble/bass lines, spaces, ledger)',
+            'Weighted selection algorithm (shared with Kana Trainer)',
+            'Angular signals (practice loop)',
+            'Per-note stats + session history',
+            'LocalStorage persistence + JSON import/export',
+            'Inline SVG staff rendering'
+        ],
+
+        deepDive: [
+            {
+                title: 'Algorithm Correctness',
+                description:
+                    'The note matching, weighting, and persistence logic are unit-tested in isolation from the component, independent of the UI — mirroring the same test coverage pattern as the Kana Trainer.'
+            },
+            {
+                title: 'Shared Architecture with Kana Trainer',
+                description:
+                    'Deliberately mirrors the Kana Trainer\'s component architecture (same signal/state-machine pattern, same storage/selector structure) so the two tools are maintained consistently and new practice modules can follow the same blueprint.'
+            }
+        ],
+
+        links: {
+            demo: 'https://austinrobichaux.com/other-modules/music-note-trainer',
+            github: 'https://github.com/austinrobichaux18/portfolio/tree/master/src/other-modules/app/pages/music-note-trainer'
+        }
+
     }
 
 ];

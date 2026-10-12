@@ -1,0 +1,471 @@
+<section class="page-container music-page">
+  <header class="page-header">
+    <h1>Music Note Trainer</h1>
+    <p>Drill treble and bass clef note reading. Practice leans toward the notes you miss most.</p>
+  </header>
+
+  @if (viewState() === 'setup') {
+    <div class="setup-card">
+      <p>Select notes to build a practice set — mix clefs and groups freely.</p>
+
+      <div class="history-section">
+        <div class="history-summary-header">
+          <h3>Session History</h3>
+          @if (historySummary(); as summary) {
+            <span class="history-summary-stats">
+              {{ summary.sessions }} session{{ summary.sessions === 1 ? '' : 's' }} ·
+              {{ summary.accuracyPercent }}% overall accuracy ·
+              {{ summary.totalAttempts }} notes answered
+            </span>
+          } @else {
+            <span class="history-summary-stats">
+              No sessions yet — practice, or import a backup below.
+            </span>
+          }
+        </div>
+
+        <div class="history-io-actions">
+          @if (historySummary()) {
+            <button type="button" class="link-btn" (click)="downloadJson()">
+              Download All History
+            </button>
+          }
+          <input
+            #importFileInput
+            type="file"
+            accept="application/json"
+            class="visually-hidden"
+            (change)="onImportFileSelected(importFileInput.files); importFileInput.value = ''"
+          />
+          <button type="button" class="link-btn" (click)="importFileInput.click()">
+            Import From File
+          </button>
+          @if (historySummary()) {
+            <button type="button" class="link-btn danger-link" (click)="clearHistory()">
+              Clear History
+            </button>
+          }
+        </div>
+
+        @if (importMessage(); as msg) {
+          <p class="notice" [class.error-text]="msg.isError">{{ msg.text }}</p>
+        }
+
+        @if (accuracyTrend(); as trend) {
+          <div class="trend-chart-wrap">
+            <p class="row-section-label">Accuracy Trend</p>
+            <svg
+              [attr.viewBox]="'0 0 ' + trend.width + ' ' + trend.height"
+              class="trend-chart"
+              preserveAspectRatio="none"
+              role="img"
+              [attr.aria-label]="
+                'Accuracy across ' +
+                trend.points.length +
+                ' sessions, most recently ' +
+                trend.points[trend.points.length - 1].accuracyPercent +
+                ' percent'
+              "
+            >
+              @for (g of trend.gridLines; track g.label) {
+                <line
+                  class="trend-gridline"
+                  [attr.x1]="trend.left"
+                  [attr.x2]="trend.width - trend.right"
+                  [attr.y1]="g.y"
+                  [attr.y2]="g.y"
+                />
+                <text class="trend-axis-label" x="2" [attr.y]="g.y + 3">{{ g.label }}</text>
+              }
+
+              @if (trend.points.length > 1) {
+                <path class="trend-line" [attr.d]="trend.linePath" fill="none" />
+              }
+
+              @for (p of trend.points; track $index; let i = $index) {
+                <circle class="trend-dot" [attr.cx]="p.x" [attr.cy]="p.y" r="4"></circle>
+                <circle
+                  class="trend-dot-hit"
+                  [attr.cx]="p.x"
+                  [attr.cy]="p.y"
+                  r="12"
+                  tabindex="0"
+                  [attr.aria-label]="p.dateLabel + ', ' + p.accuracyPercent + ' percent'"
+                  (mouseenter)="hoveredTrendIndex.set(i)"
+                  (mouseleave)="hoveredTrendIndex.set(null)"
+                  (focus)="hoveredTrendIndex.set(i)"
+                  (blur)="hoveredTrendIndex.set(null)"
+                ></circle>
+              }
+
+              <text
+                class="trend-endpoint-label"
+                [attr.x]="trend.points[trend.points.length - 1].x"
+                [attr.y]="trend.points[trend.points.length - 1].y - 10"
+                text-anchor="end"
+              >
+                {{ trend.points[trend.points.length - 1].accuracyPercent }}%
+              </text>
+            </svg>
+
+            @if (hoveredTrendPoint(); as hp) {
+              <div
+                class="trend-tooltip"
+                [style.left.%]="(hp.x / trend.width) * 100"
+                [style.top.%]="(hp.y / trend.height) * 100"
+              >
+                {{ hp.dateLabel }} — {{ hp.accuracyPercent }}%
+              </div>
+            }
+          </div>
+        }
+
+        @if (historySummary()) {
+          <div class="history-list">
+            @for (entry of historyDescending(); track entry.timestamp) {
+              <div class="history-entry">
+                <button
+                  type="button"
+                  class="history-row"
+                  [class.expanded]="isHistoryEntryExpanded(entry.timestamp)"
+                  (click)="toggleHistoryEntry(entry.timestamp)"
+                >
+                  <span>{{ entry.timestamp | date: 'medium' }}</span>
+                  <span>{{ entry.correctAttempts }} / {{ entry.totalAttempts }} correct</span>
+                  <span>{{ entry.noteCount }} notes</span>
+                  <span>{{ formatSeconds(entry.avgTimeMsPerNote) }}s avg</span>
+                  <span class="history-expand-icon">
+                    {{ isHistoryEntryExpanded(entry.timestamp) ? '▲' : '▼' }}
+                  </span>
+                </button>
+
+                @if (isHistoryEntryExpanded(entry.timestamp)) {
+                  <div class="history-detail">
+                    <div class="time-summary">
+                      <div>
+                        <span class="time-summary-label">Accuracy</span>
+                        <span class="time-summary-value">{{ accuracyPercentFor(entry) }}%</span>
+                      </div>
+                      <div>
+                        <span class="time-summary-label">Total Time</span>
+                        <span class="time-summary-value">{{ durationDisplayFor(entry) }}</span>
+                      </div>
+                      <div>
+                        <span class="time-summary-label">Avg. per Note</span>
+                        <span class="time-summary-value">
+                          {{ formatSeconds(entry.avgTimeMsPerNote) }}s
+                        </span>
+                      </div>
+                    </div>
+
+                    @if (missedNotesFor(entry).length) {
+                      <div class="missed-list">
+                        @for (m of missedNotesFor(entry); track m.note.id) {
+                          <div class="missed-row">
+                            <span class="missed-char">{{ m.note.noteName }}</span>
+                            <span class="missed-romaji">{{ m.note.fullName }} · {{ m.note.clef }}</span>
+                            <span class="missed-count">missed {{ m.missCount }}×</span>
+                          </div>
+                        }
+                      </div>
+                    } @else {
+                      <p class="notice">No misses recorded for this session.</p>
+                    }
+
+                    <button
+                      type="button"
+                      class="secondary history-download-one"
+                      (click)="downloadSession(entry)"
+                    >
+                      Download This Session
+                    </button>
+                  </div>
+                }
+              </div>
+            }
+          </div>
+        }
+      </div>
+
+      <button type="button" class="primary" [disabled]="!canStart()" (click)="startSession()">
+        Start Practice ({{ selectedNotes().length }} note{{ selectedNotes().length === 1 ? '' : 's' }} selected)
+      </button>
+
+      <div class="clef-columns">
+        @for (col of clefColumns; track col.clef) {
+          <div class="clef-column">
+            <button
+              type="button"
+              class="most-missed-btn"
+              [disabled]="!mostMissedNotesForClef(col.clef).length"
+              (click)="selectMostMissedForClef(col.clef)"
+            >
+              @if (mostMissedNotesForClef(col.clef).length; as count) {
+                ⭐ Select My {{ count }} Most-Missed {{ col.label === 'Treble Clef' ? 'Treble' : 'Bass' }}
+              } @else {
+                ⭐ No Struggling {{ col.label === 'Treble Clef' ? 'Treble' : 'Bass' }} Notes Yet
+              }
+            </button>
+
+            <div class="clef-column-header">
+              <h3>
+                {{ col.label }}
+                ({{ selectedCountForClef(col.clef) }}/{{ totalForClef(col.clef) }})
+                <span class="mastery-count">
+                  ○ {{ masteredCountForClef(col.clef) }}/{{ totalForClef(col.clef) }}
+                </span>
+              </h3>
+              <div class="clef-actions">
+                <button type="button" class="link-btn" (click)="selectAllForClef(col.clef)">
+                  Select All
+                </button>
+                <button type="button" class="link-btn" (click)="clearAllForClef(col.clef)">
+                  Clear
+                </button>
+              </div>
+            </div>
+
+            @for (group of col.groups; track group.id) {
+              <div class="group-section">
+                <div class="group-section-header">
+                  <h4 class="row-section-label">
+                    {{ group.label }} ({{ groupSelectedCount(group.id) }}/{{ groupTotalCount(group.id) }})
+                    <span class="mnemonic-badge">{{ group.mnemonic }}</span>
+                  </h4>
+                  <div class="row-section-actions">
+                    <button
+                      type="button"
+                      class="row-select-chip"
+                      [class.active]="isGroupFullySelected(group.id)"
+                      (click)="toggleGroup(group.id)"
+                      title="Toggle all {{ group.label }}"
+                    >
+                      {{ group.kind === 'lines' ? '—' : group.kind === 'spaces' ? '○' : '♩' }}
+                    </button>
+                  </div>
+                </div>
+                <div class="tile-row">
+                  @for (note of notesForGroup(group.id); track note.id) {
+                    <button
+                      type="button"
+                      class="note-tile"
+                      [class.selected]="isNoteSelected(note.id)"
+                      (click)="toggleNote(note.id)"
+                      [title]="note.fullName + ' — ' + note.mnemonicWord"
+                    >
+                      @if (tileBadgeFor(note.id); as badge) {
+                        <span class="tile-badge" [class.struggling]="badge === 'struggling'">
+                          {{ badge === 'mastered' ? '○' : '✕' }}
+                        </span>
+                      }
+                      <span class="tile-char">{{ note.noteName }}</span>
+                      <span class="tile-romaji">{{ note.fullName }}</span>
+                    </button>
+                  }
+                </div>
+              </div>
+            }
+          </div>
+        }
+      </div>
+    </div>
+
+  } @else if (viewState() === 'practice' || viewState() === 'paused') {
+    <div class="practice-card">
+      <button type="button" class="back-link" (click)="exitPracticeToSetup()">
+        ← Back to Selection (saves progress)
+      </button>
+
+      <div class="practice-header">
+        <div class="stat-chip">⏱ {{ elapsedDisplay() }}</div>
+        <div class="stat-chip">{{ sessionCorrect() }} / {{ sessionAttempts() }} correct</div>
+        <div class="stat-chip">Avg {{ liveAvgTimeDisplay() }}s / note</div>
+        <button
+          type="button"
+          class="stat-chip stat-chip-toggle"
+          [class.active]="hintVisible()"
+          (click)="toggleHint()"
+        >
+          ⇧ Hint {{ hintVisible() ? 'On' : 'Off' }} (Shift)
+        </button>
+
+        @if (viewState() === 'practice') {
+          <button type="button" class="secondary" (click)="pause()">Pause (Ctrl)</button>
+        } @else {
+          <button type="button" class="primary" (click)="resume()">Resume (Ctrl)</button>
+        }
+        <button type="button" class="secondary" (click)="endSession()">
+          End &amp; Save (Enter ×2)
+        </button>
+      </div>
+
+      <p class="shortcut-hint">
+        ⇧ Shift toggles the mnemonic hint — stays on until toggled off, doesn't affect scoring
+      </p>
+
+      @if (currentNote(); as note) {
+        <!-- Staff SVG -->
+        <div
+          class="staff-container"
+          [class.feedback-correct]="feedback() === 'correct'"
+          [class.feedback-incorrect]="feedback() === 'incorrect'"
+          [attr.aria-label]="'Staff: identify the note shown'"
+        >
+          <svg viewBox="0 0 280 190" class="staff-svg" role="img">
+            <!-- Staff lines -->
+            @for (lineY of STAFF_LINE_Y; track lineY) {
+              <line x1="50" x2="250" [attr.y1]="lineY" [attr.y2]="lineY" class="staff-line" />
+            }
+
+            <!-- Clef symbol -->
+            @if (note.clef === 'treble') {
+              <text x="4" y="148" class="clef-symbol treble-clef">𝄞</text>
+            } @else {
+              <text x="8" y="110" class="clef-symbol bass-clef">𝄢</text>
+            }
+
+            <!-- Ledger line (for notes outside the 5-line staff) -->
+            @if (noteNeedsLedgerLine()) {
+              <line
+                [attr.x1]="NOTE_X - LEDGER_HALF_WIDTH"
+                [attr.x2]="NOTE_X + LEDGER_HALF_WIDTH"
+                [attr.y1]="noteY()"
+                [attr.y2]="noteY()"
+                class="ledger-line"
+              />
+            }
+
+            <!-- Note stem -->
+            @if (noteStemGoesUp()) {
+              <line
+                [attr.x1]="NOTE_X + 9"
+                [attr.y1]="noteY() - 2"
+                [attr.x2]="NOTE_X + 9"
+                [attr.y2]="noteY() - 38"
+                class="note-stem"
+              />
+            } @else {
+              <line
+                [attr.x1]="NOTE_X - 9"
+                [attr.y1]="noteY() + 2"
+                [attr.x2]="NOTE_X - 9"
+                [attr.y2]="noteY() + 38"
+                class="note-stem"
+              />
+            }
+
+            <!-- Note head -->
+            <ellipse
+              [attr.cx]="NOTE_X"
+              [attr.cy]="noteY()"
+              rx="10"
+              ry="7.5"
+              class="note-head"
+            />
+          </svg>
+
+          <p class="clef-label">{{ note.clef === 'treble' ? 'Treble Clef' : 'Bass Clef' }}</p>
+        </div>
+
+        @if (viewState() === 'paused') {
+          <p class="reveal-tag">Paused</p>
+        } @else if (revealedNote()) {
+          <p class="reveal-tag">{{ revealedNote() }}</p>
+        }
+
+        <input
+          #noteInput
+          type="text"
+          class="note-input"
+          autocomplete="off"
+          autocapitalize="off"
+          spellcheck="false"
+          placeholder="type note letter…"
+          maxlength="1"
+          [value]="inputValue()"
+          [disabled]="viewState() === 'paused' || feedback() === 'incorrect'"
+          (input)="onInput(noteInput.value)"
+        />
+
+        @if (hintVisible() && viewState() === 'practice') {
+          <div class="mnemonic-hint">
+            <p class="row-section-label">{{ currentGroupLabel() }} — {{ note.clef }} clef</p>
+            <p class="mnemonic-phrase">
+              @for (part of currentMnemonicParts(); track $index) {
+                <span [class.mnemonic-highlight]="part.highlight">{{ part.word }}</span>
+                @if (!$last) { &nbsp;}
+              }
+            </p>
+          </div>
+        }
+      }
+    </div>
+
+  } @else if (viewState() === 'results') {
+    <div class="results-card">
+      <button type="button" class="back-link" (click)="backToSetup()">← Back to Selection</button>
+
+      <h2>Session Complete</h2>
+
+      <div class="time-summary">
+        <div>
+          <span class="time-summary-label">Accuracy</span>
+          <span class="time-summary-value">{{ resultsAccuracyPercent() }}%</span>
+        </div>
+        <div>
+          <span class="time-summary-label">Total Time</span>
+          <span class="time-summary-value">{{ resultsTotalTimeDisplay() }}</span>
+        </div>
+        <div>
+          <span class="time-summary-label">Avg. per Note</span>
+          <span class="time-summary-value">{{ resultsAvgTimeDisplay() }}s</span>
+        </div>
+      </div>
+
+      @if (sessionMissedNotes().length) {
+        <div class="missed-section">
+          <h3>Missed This Session</h3>
+          <p class="notice">Every note you got wrong, most-missed first.</p>
+          <div class="missed-list">
+            @for (entry of sessionMissedNotes(); track entry.note.id) {
+              <div class="missed-row">
+                <span class="missed-char">{{ entry.note.noteName }}</span>
+                <span class="missed-romaji">
+                  {{ entry.note.fullName }} · {{ entry.note.clef }} ·
+                  {{ entry.note.mnemonicWord }}
+                </span>
+                <span class="missed-count">missed {{ entry.missCount }}×</span>
+              </div>
+            }
+          </div>
+        </div>
+      }
+
+      @if (worstNotes().length) {
+        <div class="retention-section">
+          <h3>Notes You Frequently Forget</h3>
+          <p class="notice">All-time miss rate across every session (3+ attempts) — longer bar, worse.</p>
+          <div class="retention-chart">
+            @for (entry of worstNotes(); track entry.note.id) {
+              <div class="retention-row" [class.severity-serious]="entry.missPercent <= 50">
+                <span class="retention-char">{{ entry.note.noteName }}</span>
+                <span class="retention-romaji">{{ entry.note.fullName }} · {{ entry.note.clef }}</span>
+                <div class="retention-bar-track">
+                  <div class="retention-bar-fill" [style.width.%]="entry.missPercent"></div>
+                </div>
+                <span class="retention-pct">{{ entry.missPercent }}%</span>
+              </div>
+            }
+          </div>
+        </div>
+      }
+
+      <div class="results-actions">
+        <button type="button" class="primary" (click)="practiceAgain()">Practice Again</button>
+        <button type="button" class="secondary" (click)="backToSetup()">Change Selection</button>
+        <button type="button" class="secondary" (click)="downloadJson()">Download JSON</button>
+        <a routerLink="/other-modules" class="back-link">← Back to Other Modules</a>
+      </div>
+    </div>
+  }
+</section>

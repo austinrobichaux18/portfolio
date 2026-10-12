@@ -53,4 +53,10 @@ export const routes: Routes = [
       import('./pages/reference-charts/reference-charts').then((m) => m.ReferenceCharts),
     title: 'Japanese Reference Charts | Austin Robichaux',
   },
+  {
+    path: 'music-note-trainer',
+    loadComponent: () =>
+      import('./pages/music-note-trainer/music-note-trainer').then((m) => m.MusicNoteTrainer),
+    title: 'Music Note Trainer | Austin Robichaux',
+  },
 ];

@@ -12,6 +12,6 @@ import { ModuleGroup } from '../../core/models/Module';
 })
 export class OtherModulesHome {
   readonly groups: { label: ModuleGroup; modules: typeof modules }[] = (
-    ['Local Folder', 'Finance', 'Japanese'] as ModuleGroup[]
+    ['Local Folder', 'Finance', 'Japanese', 'Music'] as ModuleGroup[]
   ).map((label) => ({ label, modules: modules.filter((m) => m.group === label) }));
 }

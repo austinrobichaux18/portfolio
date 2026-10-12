@@ -1,4 +1,4 @@
-export type ModuleGroup = 'Japanese' | 'Local Folder' | 'Finance';
+export type ModuleGroup = 'Japanese' | 'Local Folder' | 'Finance' | 'Music';
 
 export interface Module {
   id: string;

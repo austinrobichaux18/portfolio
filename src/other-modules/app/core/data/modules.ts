@@ -72,4 +72,13 @@ export const modules: Module[] = [
     lastUpdated: '2026-10-03',
     group: 'Finance',
   },
+  {
+    id: 'music-note-trainer',
+    title: 'Music Note Trainer',
+    description:
+      'Drill treble and bass clef note reading with adaptive practice and classic mnemonics like "Every Good Boy Does Fine."',
+    route: 'music-note-trainer',
+    lastUpdated: '2026-10-11',
+    group: 'Music',
+  },
 ];
