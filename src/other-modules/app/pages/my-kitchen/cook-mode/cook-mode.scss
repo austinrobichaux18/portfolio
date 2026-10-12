@@ -1,0 +1,165 @@
+@use '../kitchen-shared' as k;
+
+.cook {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.top {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px 20px;
+
+  h2 {
+    margin: 0;
+    font-size: 1.8rem;
+  }
+
+  .progress {
+    flex: 1;
+  }
+}
+
+.layout {
+  display: grid;
+  grid-template-columns: minmax(240px, 1fr) 2.4fr;
+  gap: 16px;
+  align-items: start;
+
+  @media (max-width: 860px) {
+    grid-template-columns: 1fr;
+
+    .stage {
+      order: -1;
+    }
+  }
+}
+
+.checklist {
+  h3 {
+    margin: 0 0 10px;
+  }
+
+  ul {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .section {
+    margin-top: 8px;
+    color: k.$accent;
+    font-weight: 600;
+    font-size: 0.9rem;
+  }
+
+  label {
+    display: flex;
+    gap: 10px;
+    align-items: flex-start;
+    margin: 0;
+    color: k.$text;
+    font-size: 1rem;
+    line-height: 1.4;
+    cursor: pointer;
+
+    input {
+      margin-top: 4px;
+      width: 18px;
+      height: 18px;
+      flex-shrink: 0;
+    }
+
+    &.optional {
+      color: k.$muted;
+    }
+
+    &.checked {
+      color: k.$muted;
+      text-decoration: line-through;
+    }
+  }
+}
+
+.stage {
+  min-height: 420px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.section-label {
+  margin: 0;
+  color: k.$accent;
+  font-weight: 600;
+  font-size: 1.1rem;
+}
+
+.step-note {
+  margin: 0;
+  color: k.$soft;
+  font-size: 1.1rem;
+}
+
+.step-text {
+  flex: 1;
+  margin: 0;
+  font-size: clamp(1.5rem, 2.6vw, 2.2rem);
+  line-height: 1.45;
+  white-space: pre-line;
+}
+
+.finished {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 20px;
+}
+
+.controls {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.big {
+  padding: 14px 26px;
+  font-size: 1.1rem;
+}
+
+.dots {
+  flex: 1;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 6px;
+}
+
+.dot {
+  width: 10px;
+  height: 10px;
+  padding: 0;
+  border-radius: 50%;
+  border: none;
+  background: k.$border-strong;
+
+  &.past {
+    background: rgba(73, 198, 255, 0.4);
+  }
+
+  &.active {
+    background: k.$accent;
+  }
+}
+
+.keys {
+  margin: 0;
+  font-size: 0.8rem;
+  text-align: center;
+}

@@ -7,6 +7,8 @@ import { KitchenImage } from '../kitchen-image/kitchen-image';
 import { formatAmount } from '../lib/format';
 import { applyForm, formFromRecipe, normalizeTags, OptionForm, OptionGroupForm, RecipeForm } from '../lib/recipe-form';
 import { localDateString, shortRandomId } from '../lib/recipe-id';
+import { checkRecipe } from '../lib/recipe-checks';
+import { newRecipe } from '../lib/recipe-loader';
 import { parseIngredientsText, splitPastedRecipe } from '../lib/recipe-text';
 import { KitchenStateService, PreparedImage } from '../store/kitchen-state.service';
 import { HasUnsavedChanges } from '../unsaved-changes.guard';
@@ -124,6 +126,15 @@ export class RecipeEditor implements HasUnsavedChanges, OnDestroy {
       ...group.items.map((item) => this.previewLine(item)),
     ]),
   );
+
+  private readonly previewBase: Recipe = this.base ?? newRecipe('preview', '');
+
+  /** Warnings about the recipe as currently typed (never block saving). */
+  protected readonly checks = computed(() => {
+    const form = this.form();
+    if (!form.ingredientsText.trim() && !form.stepsText.trim()) return [];
+    return checkRecipe(applyForm(form, this.previewBase));
+  });
 
   protected readonly tagSuggestions = computed(() => {
     const existing = this.state.allTags();
@@ -392,6 +403,13 @@ export class RecipeEditor implements HasUnsavedChanges, OnDestroy {
 
       const recipe = applyForm(formToApply, base);
       recipe.images = this.images().map((i) => i.image);
+      // Our own changes to an imported recipe's ingredients or steps make it our adaptation.
+      if (base.origin === 'imported') {
+        const original = formFromRecipe(base);
+        if (original.ingredientsText !== form.ingredientsText || original.stepsText !== form.stepsText) {
+          recipe.origin = 'adapted';
+        }
+      }
       if (this.isNew && this.madeBefore() && this.lastMade()) {
         recipe.household.cookLog = [
           ...recipe.household.cookLog,

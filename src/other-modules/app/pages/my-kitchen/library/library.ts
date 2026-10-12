@@ -14,6 +14,7 @@ import {
   sortLibrary,
 } from '../lib/library-filter';
 import { localDateString } from '../lib/recipe-id';
+import { suggest } from '../lib/suggestions';
 import { KitchenStateService } from '../store/kitchen-state.service';
 
 interface TagGroup {
@@ -64,6 +65,17 @@ export class Library {
   });
 
   private readonly today = localDateString();
+
+  /** "What should we make?" — shown when not searching or filtering. */
+  protected readonly suggestions = computed(() => suggest(this.state.recipes(), this.today));
+  protected readonly showSuggestions = computed(() => {
+    const s = this.suggestions();
+    const browsing = !this.filter().query.trim() && this.activeFilterCount() === 0;
+    return browsing && (s.overdue.length > 0 || s.unlogged.length > 0 || s.wantToTry.length > 0);
+  });
+  protected readonly showRateReminder = computed(
+    () => !this.filter().query.trim() && this.activeFilterCount() === 0 && this.suggestions().unrated.length > 0,
+  );
 
   setQuery(query: string): void {
     this.filter.update((f) => ({ ...f, query }));

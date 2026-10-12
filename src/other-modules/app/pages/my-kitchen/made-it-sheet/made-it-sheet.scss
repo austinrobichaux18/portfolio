@@ -1,0 +1,96 @@
+@use '../kitchen-shared' as k;
+
+.backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  background: rgba(0, 0, 0, 0.6);
+}
+
+.sheet {
+  position: fixed;
+  z-index: 51;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: min(520px, calc(100vw - 32px));
+  max-height: calc(100vh - 32px);
+  overflow-y: auto;
+  box-sizing: border-box;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  background: #121a25;
+  border: 1px solid k.$border-strong;
+  border-radius: 18px;
+
+  h3 {
+    margin: 0;
+  }
+}
+
+.row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.options {
+  margin: 0;
+  font-size: 0.9rem;
+}
+
+.first-cook {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px;
+  border: 1px solid rgba(245, 194, 107, 0.35);
+  border-radius: 12px;
+
+  .chips {
+    display: flex;
+    gap: 8px;
+  }
+
+  label {
+    margin: 4px 0 0;
+  }
+}
+
+.hint {
+  margin: 0;
+  font-size: 0.8rem;
+}
+
+.photo {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+
+  img {
+    width: 72px;
+    height: 72px;
+    object-fit: cover;
+    border-radius: 10px;
+  }
+}
+
+.add-photo {
+  margin: 0;
+  padding: 8px 14px;
+  border: 1px dashed k.$border-strong;
+  border-radius: 10px;
+  color: k.$soft;
+  cursor: pointer;
+
+  input {
+    display: none;
+  }
+}
+
+.actions {
+  display: flex;
+  gap: 10px;
+}

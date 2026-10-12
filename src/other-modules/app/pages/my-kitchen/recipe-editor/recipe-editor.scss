@@ -325,6 +325,22 @@ label.inline {
   }
 }
 
+.checks {
+  ul {
+    margin: 0;
+    padding-left: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    color: k.$soft;
+    font-size: 0.9rem;
+  }
+
+  .warning {
+    color: k.$warning;
+  }
+}
+
 .save-bar {
   position: sticky;
   bottom: 0;

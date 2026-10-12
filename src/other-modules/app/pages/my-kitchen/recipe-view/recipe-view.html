@@ -23,9 +23,6 @@
         </div>
 
         <div class="facts">
-          @if (recipe.servings) {
-            <span>Serves {{ recipe.servings }}{{ recipe.servingsMax ? '–' + recipe.servingsMax : '' }}</span>
-          }
           @if (recipe.yieldText) {
             <span>Makes {{ recipe.yieldText }}</span>
           }
@@ -55,12 +52,16 @@
           </div>
         </div>
 
-        @if (!state.readOnly()) {
-          <div class="actions">
-            <a class="primary" routerLink="edit">Edit</a>
+        <div class="actions">
+          @if (!state.readOnly()) {
+            <button type="button" class="primary" (click)="sheet.set('new')">✓ Made it</button>
+          }
+          <a class="secondary" routerLink="cook" [queryParams]="cookQueryParams()">Cook mode</a>
+          @if (!state.readOnly()) {
+            <a class="secondary" routerLink="edit">Edit</a>
             <button type="button" class="danger" (click)="deleteRecipe()">Delete</button>
-          </div>
-        }
+          }
+        </div>
         @if (errorMessage()) {
           <span class="error">{{ errorMessage() }}</span>
         }
@@ -92,14 +93,30 @@
 
     <div class="columns">
       <section class="card ingredients">
-        <h3>Ingredients</h3>
+        <div class="ingredients-head">
+          <h3>Ingredients</h3>
+          <div class="scaler" role="group" aria-label="Scale recipe">
+            @if (recipe.servings) {
+              <button type="button" (click)="changeServings(-1)" [disabled]="servings() <= 1" aria-label="Fewer servings">−</button>
+              <span>{{ servings() }} serving{{ servings() === 1 ? '' : 's' }}</span>
+              <button type="button" (click)="changeServings(1)" aria-label="More servings">+</button>
+            } @else {
+              <button type="button" (click)="changeBatch(-1)" [disabled]="batch() <= 0.5" aria-label="Smaller batch">−</button>
+              <span>{{ batchLabel() }} batch</span>
+              <button type="button" (click)="changeBatch(1)" [disabled]="batch() >= 4" aria-label="Bigger batch">+</button>
+            }
+          </div>
+        </div>
+        @if (factor() !== 1) {
+          <p class="scaled-note muted">Scaled from {{ recipe.servings ? recipe.servings + ' servings' : 'the written amounts' }}.</p>
+        }
         @for (group of recipe.ingredientGroups; track $index) {
           @if (group.name) {
             <h4>{{ group.name }}</h4>
           }
           <ul>
             @for (item of group.items; track $index) {
-              <li [class.optional]="item.optional">{{ item.raw }}</li>
+              <li [class.optional]="item.optional">{{ line(item) }}</li>
             }
           </ul>
         }
@@ -108,7 +125,7 @@
             <h4>{{ section.option.name }} <span class="muted">· {{ section.group.name }}</span></h4>
             <ul>
               @for (item of section.option.ingredients; track $index) {
-                <li [class.optional]="item.optional">{{ item.raw }}</li>
+                <li [class.optional]="item.optional">{{ line(item) }}</li>
               }
             </ul>
           }
@@ -157,6 +174,54 @@
       </section>
     }
 
+    @if (cookLog().length) {
+      <details class="card log" open>
+        <summary>Cook log ({{ cookLog().length }})</summary>
+        <ul>
+          @for (entry of cookLog(); track entry.id) {
+            <li>
+              <span class="log-date">{{ entry.date }}</span>
+              @if (entry.servingsMade) {
+                <span class="muted">{{ entry.servingsMade }} servings</span>
+              }
+              @if (entry.optionIds.length) {
+                <span class="muted">with {{ entryOptions(recipe, entry) }}</span>
+              }
+              @if (entry.rating) {
+                <span class="log-rating">★ {{ entry.rating }}</span>
+              }
+              @if (entry.note) {
+                <span class="log-note">{{ entry.note }}</span>
+              }
+              @for (img of entry.images ?? []; track img) {
+                <app-kitchen-image class="log-image" [recipeId]="recipe.id" [file]="img" />
+              }
+              @if (!state.readOnly()) {
+                <span class="log-actions">
+                  <button type="button" class="link-button" (click)="sheet.set(entry)">Edit</button>
+                  <button type="button" class="link-button remove" (click)="deleteEntry(entry)">Delete</button>
+                </span>
+              }
+            </li>
+          }
+        </ul>
+      </details>
+    }
+
+    @if (nutrition().length) {
+      <section class="card nutrition">
+        <h3>Nutrition <span class="muted">· per serving, as given by the source</span></h3>
+        <dl>
+          @for (item of nutrition(); track item.label) {
+            <div>
+              <dt>{{ item.label }}</dt>
+              <dd>{{ item.text }}</dd>
+            </div>
+          }
+        </dl>
+      </section>
+    }
+
     @if (recipe.household.notes || recipe.description || recipe.source || recipe.tags.length) {
       <details class="card more">
         <summary>Notes &amp; source</summary>
@@ -189,6 +254,16 @@
       </details>
     }
   </article>
+
+  @if (sheet(); as open) {
+    <app-made-it-sheet
+      [recipe]="recipe"
+      [servings]="servingsMade()"
+      [optionIds]="selectedOptionIds()"
+      [entry]="open === 'new' ? undefined : open"
+      (closed)="sheet.set(null)"
+    />
+  }
 } @else {
   <div class="card">
     <p>That recipe isn't in this folder.</p>

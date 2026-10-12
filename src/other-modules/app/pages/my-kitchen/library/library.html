@@ -98,6 +98,55 @@
     </details>
   }
 
+  @if (showSuggestions()) {
+    <section class="card suggestions" aria-labelledby="suggest-title">
+      <h2 id="suggest-title">What should we make?</h2>
+      <div class="suggest-groups">
+        @if (suggestions().overdue.length) {
+          <div class="suggest-group">
+            <span class="label">Due again</span>
+            @for (s of suggestions().overdue; track s.recipe.id) {
+              <a class="suggest-item" [routerLink]="['r', s.recipe.id]">
+                <span>{{ s.recipe.title }}</span>
+                <span class="muted">{{ s.daysSince }} days ago</span>
+              </a>
+            }
+          </div>
+        }
+        @if (suggestions().unlogged.length) {
+          <div class="suggest-group">
+            <span class="label">Regulars not logged yet</span>
+            @for (r of suggestions().unlogged; track r.id) {
+              <a class="suggest-item" [routerLink]="['r', r.id]">
+                <span>{{ r.title }}</span>
+                <span class="muted">{{ frequencyLabel(r) }}</span>
+              </a>
+            }
+          </div>
+        }
+        @if (suggestions().wantToTry.length) {
+          <div class="suggest-group">
+            <span class="label">Want to try</span>
+            @for (r of suggestions().wantToTry; track r.id) {
+              <a class="suggest-item" [routerLink]="['r', r.id]">
+                <span>{{ r.title }}</span>
+              </a>
+            }
+          </div>
+        }
+      </div>
+    </section>
+  }
+
+  @if (showRateReminder()) {
+    <div class="rate-reminder">
+      <span class="muted">Rate these:</span>
+      @for (r of suggestions().unrated; track r.id) {
+        <a class="chip" [routerLink]="['r', r.id]">{{ r.title }}</a>
+      }
+    </div>
+  }
+
   @if (state.recipes().length === 0) {
     <div class="card empty">
       <h2>No recipes yet</h2>

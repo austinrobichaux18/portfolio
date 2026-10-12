@@ -110,6 +110,30 @@ describe('RecipeEditor', () => {
     expect(editor['form']().optionGroups[1].options.map((o) => o.isDefault)).toEqual([false, true]);
   });
 
+  it('shows recipe checks while typing', async () => {
+    const { harness } = await setupKitchen([]);
+    const editor = await harness.navigateByUrl('/new', RecipeEditor);
+
+    editor.update({ title: 'Eggs', ingredientsText: '2 eggs', stepsText: 'Melt the butter and fry the eggs.' });
+    harness.detectChanges();
+
+    expect(harness.routeNativeElement!.querySelector('.checks')?.textContent).toContain(
+      "Steps mention butter but the ingredients don't list it.",
+    );
+  });
+
+  it('marks an imported recipe as adapted once we change its ingredients', async () => {
+    const recipe = sampleRamen();
+    recipe.origin = 'imported';
+    const { harness, store } = await setupKitchen([recipe]);
+    const editor = await harness.navigateByUrl('/r/ramen/edit', RecipeEditor);
+
+    editor.update({ ingredientsText: editor['form']().ingredientsText + '\n1 tsp chili oil' });
+    await editor.save();
+
+    expect((await store.loadLibrary()).recipes[0].origin).toBe('adapted');
+  });
+
   it('offers to restore edits autosaved from an earlier visit', async () => {
     localStorage.setItem(
       'other-modules-my-kitchen:draft:Test:new',

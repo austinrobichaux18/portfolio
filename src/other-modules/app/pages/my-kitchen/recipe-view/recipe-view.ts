@@ -3,10 +3,16 @@ import { toSignal } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { map } from 'rxjs';
 import { frequencyInfo, trustInfo } from '../../../core/data/recipe-statuses';
+import { CookLogEntry } from '../../../core/models/CookLogEntry';
 import { Recipe, RecipeOption, RecipeOptionGroup } from '../../../core/models/Recipe';
+import { RecipeIngredient } from '../../../core/models/RecipeIngredient';
 import { KitchenImage } from '../kitchen-image/kitchen-image';
+import { deleteCookEntry, optionNames } from '../lib/cook-log';
+import { formatQuantity } from '../lib/format';
 import { daysBetween, lastMadeDate } from '../lib/library-filter';
 import { localDateString } from '../lib/recipe-id';
+import { scaleIngredient } from '../lib/recipe-scaler';
+import { MadeItSheet } from '../made-it-sheet/made-it-sheet';
 import { KitchenStateService } from '../store/kitchen-state.service';
 
 interface SelectedOptionSection {
@@ -14,9 +20,12 @@ interface SelectedOptionSection {
   option: RecipeOption;
 }
 
+/** Batch multipliers offered when a recipe has no servings count. */
+const BATCH_STEPS = [0.5, 1, 1.5, 2, 3, 4];
+
 @Component({
   selector: 'app-kitchen-recipe-view',
-  imports: [RouterLink, KitchenImage],
+  imports: [RouterLink, KitchenImage, MadeItSheet],
   templateUrl: './recipe-view.html',
   styleUrl: './recipe-view.scss',
 })
@@ -33,6 +42,16 @@ export class RecipeView {
 
   /** Selected option ids per option group, starting from the recipe's defaults. */
   protected readonly selected = signal<Record<string, string[]>>({});
+  /** Target servings (recipes with a servings count) or batch multiplier (recipes without). */
+  protected readonly servings = signal(1);
+  protected readonly batch = signal(1);
+
+  protected readonly factor = computed(() => {
+    const recipe = this.recipe();
+    return recipe?.servings ? this.servings() / recipe.servings : this.batch();
+  });
+
+  protected readonly selectedOptionIds = computed(() => Object.values(this.selected()).flat());
 
   protected readonly selectedSections = computed<SelectedOptionSection[]>(() => {
     const recipe = this.recipe();
@@ -77,9 +96,32 @@ export class RecipeView {
     return days <= 0 ? 'today' : days === 1 ? 'yesterday' : `${days} days ago (${date})`;
   });
 
+  /** Newest first for display. */
+  protected readonly cookLog = computed(() => [...(this.recipe()?.household.cookLog ?? [])].reverse());
+
+  protected readonly nutrition = computed(() => {
+    const n = this.recipe()?.sourceNutrition;
+    if (!n) return [];
+    return [
+      ['Calories', n.calories, ''],
+      ['Protein', n.proteinG, 'g'],
+      ['Carbs', n.carbsG, 'g'],
+      ['Fat', n.fatG, 'g'],
+      ['Saturated fat', n.saturatedFatG, 'g'],
+      ['Sugar', n.sugarG, 'g'],
+      ['Fiber', n.fiberG, 'g'],
+      ['Sodium', n.sodiumMg, 'mg'],
+      ['Cholesterol', n.cholesterolMg, 'mg'],
+    ]
+      .filter(([, value]) => value !== undefined)
+      .map(([label, value, unit]) => ({ label: label as string, text: `${value}${unit}` }));
+  });
+
   protected readonly ratingValues = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
   protected readonly saving = signal(false);
   protected readonly errorMessage = signal('');
+  /** 'new' = logging a cook; an entry = editing it; null = closed. */
+  protected readonly sheet = signal<'new' | CookLogEntry | null>(null);
 
   private initializedFor = '';
 
@@ -88,9 +130,9 @@ export class RecipeView {
       const recipe = this.recipe();
       if (!recipe || this.initializedFor === recipe.id) return;
       this.initializedFor = recipe.id;
-      this.selected.set(
-        Object.fromEntries(recipe.optionGroups.map((g) => [g.id, [...g.defaultOptionIds]])),
-      );
+      this.selected.set(Object.fromEntries(recipe.optionGroups.map((g) => [g.id, [...g.defaultOptionIds]])));
+      this.servings.set(recipe.servings ?? 1);
+      this.batch.set(1);
     });
   }
 
@@ -113,6 +155,37 @@ export class RecipeView {
     });
   }
 
+  changeServings(delta: number): void {
+    this.servings.update((s) => Math.max(1, s + delta));
+  }
+
+  changeBatch(delta: number): void {
+    const index = BATCH_STEPS.indexOf(this.batch());
+    const next = BATCH_STEPS[Math.min(BATCH_STEPS.length - 1, Math.max(0, index + delta))];
+    this.batch.set(next);
+  }
+
+  batchLabel(): string {
+    return `×${formatQuantity(this.batch())}`;
+  }
+
+  line(item: RecipeIngredient): string {
+    return scaleIngredient(item, this.factor());
+  }
+
+  cookQueryParams(): Record<string, string> {
+    const params: Record<string, string> = {};
+    if (Math.abs(this.factor() - 1) > 1e-9) params['x'] = String(Math.round(this.factor() * 10000) / 10000);
+    const options = this.selectedOptionIds();
+    if (options.length) params['opts'] = options.join(',');
+    return params;
+  }
+
+  servingsMade(): number | undefined {
+    const recipe = this.recipe();
+    return recipe?.servings ? this.servings() : undefined;
+  }
+
   frequencyLabel(recipe: Recipe): string {
     return frequencyInfo(recipe.household.frequency).label;
   }
@@ -125,6 +198,10 @@ export class RecipeView {
     return tag.replace(':', ': ');
   }
 
+  entryOptions(recipe: Recipe, entry: CookLogEntry): string {
+    return optionNames(recipe, entry.optionIds).join(', ');
+  }
+
   async setRating(value: number): Promise<void> {
     const recipe = this.recipe();
     if (!recipe || this.state.readOnly() || this.saving()) return;
@@ -133,6 +210,13 @@ export class RecipeView {
     if (household.rating === value) delete household.rating;
     else household.rating = value;
     await this.save({ ...recipe, household });
+  }
+
+  async deleteEntry(entry: CookLogEntry): Promise<void> {
+    const recipe = this.recipe();
+    if (!recipe || this.state.readOnly()) return;
+    if (!confirm(`Delete the cook from ${entry.date}?`)) return;
+    await this.save(deleteCookEntry(recipe, entry.id));
   }
 
   async deleteRecipe(): Promise<void> {

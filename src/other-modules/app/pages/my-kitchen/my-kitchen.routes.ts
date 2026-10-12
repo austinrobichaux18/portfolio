@@ -24,6 +24,10 @@ export const routes: Routes = [
         loadComponent: () => import('./recipe-view/recipe-view').then((m) => m.RecipeView),
       },
       {
+        path: 'r/:id/cook',
+        loadComponent: () => import('./cook-mode/cook-mode').then((m) => m.CookMode),
+      },
+      {
         path: 'r/:id/edit',
         loadComponent: () => import('./recipe-editor/recipe-editor').then((m) => m.RecipeEditor),
         canDeactivate: [unsavedChangesGuard],

@@ -54,6 +54,75 @@ describe('RecipeView', () => {
     expect(router.url).toBe('/');
   });
 
+  it('scales ingredients with the servings stepper', async () => {
+    const recipe = sampleRamen();
+    recipe.servings = 2;
+    const { harness } = await setupKitchen([recipe]);
+    const view = await harness.navigateByUrl('/r/ramen', RecipeView);
+
+    view.changeServings(2); // 2 → 4 servings
+    harness.detectChanges();
+
+    const content = text(harness.routeNativeElement!);
+    expect(content).toContain('4 packs ramen noodles');
+    expect(content).toContain('2 eggs');
+    expect(content).toContain('Scaled from 2 servings');
+  });
+
+  it('logs a cook in two clicks with servings and options prefilled', async () => {
+    const recipe = sampleRamen();
+    recipe.servings = 2;
+    const { harness, store } = await setupKitchen([recipe]);
+    await harness.navigateByUrl('/r/ramen', RecipeView);
+    const el = harness.routeNativeElement!;
+
+    (Array.from(el.querySelectorAll('button')).find((b) => b.textContent?.includes('Made it')) as HTMLButtonElement).click();
+    harness.detectChanges();
+    (el.querySelector('app-made-it-sheet .primary') as HTMLButtonElement).click();
+    await harness.fixture.whenStable();
+
+    const [saved] = (await store.loadLibrary()).recipes;
+    expect(saved.household.cookLog).toEqual([
+      expect.objectContaining({ servingsMade: 2, optionIds: ['soft-egg', 'chashu'] }),
+    ]);
+    expect(el.querySelector('app-made-it-sheet')).toBeNull();
+    expect(text(el)).toContain('Cook log (1)');
+  });
+
+  it('asks whether to keep an untested recipe on its first cook', async () => {
+    const recipe = sampleRamen();
+    recipe.household.trust = 'untested';
+    recipe.household.frequency = 'want-to-try';
+    const { harness, store } = await setupKitchen([recipe]);
+    const view = await harness.navigateByUrl('/r/ramen', RecipeView);
+    view['sheet'].set('new');
+    harness.detectChanges();
+    const el = harness.routeNativeElement!;
+
+    expect(text(el)).toContain('First time making it — keep it?');
+    (el.querySelector('app-made-it-sheet .primary') as HTMLButtonElement).click();
+    await harness.fixture.whenStable();
+
+    const [saved] = (await store.loadLibrary()).recipes;
+    expect(saved.household).toMatchObject({ trust: 'tested', frequency: 'occasional' });
+  });
+
+  it('shows nutrition provided by the source', async () => {
+    const recipe = sampleRamen();
+    recipe.sourceNutrition = { calories: 520, proteinG: 28 };
+    const { harness } = await setupKitchen([recipe]);
+    await harness.navigateByUrl('/r/ramen', RecipeView);
+
+    const rows = Array.from(harness.routeNativeElement!.querySelectorAll('.nutrition dl > div')).map((d) => [
+      d.querySelector('dt')?.textContent,
+      d.querySelector('dd')?.textContent,
+    ]);
+    expect(rows).toEqual([
+      ['Calories', '520'],
+      ['Protein', '28g'],
+    ]);
+  });
+
   it('says so when the recipe does not exist', async () => {
     const { harness } = await setupKitchen([]);
     await harness.navigateByUrl('/r/nope', RecipeView);

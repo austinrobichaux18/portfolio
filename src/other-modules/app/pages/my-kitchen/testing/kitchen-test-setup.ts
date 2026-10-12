@@ -4,6 +4,7 @@ import { RouterTestingHarness } from '@angular/router/testing';
 import { Recipe } from '../../../core/models/Recipe';
 import { parseIngredientLine } from '../lib/ingredient-parser';
 import { newRecipe } from '../lib/recipe-loader';
+import { CookMode } from '../cook-mode/cook-mode';
 import { Library } from '../library/library';
 import { RecipeEditor } from '../recipe-editor/recipe-editor';
 import { RecipeView } from '../recipe-view/recipe-view';
@@ -20,6 +21,7 @@ export async function setupKitchen(recipes: Recipe[] = []) {
         { path: '', component: Library },
         { path: 'new', component: RecipeEditor, canDeactivate: [unsavedChangesGuard] },
         { path: 'r/:id', component: RecipeView },
+        { path: 'r/:id/cook', component: CookMode },
         { path: 'r/:id/edit', component: RecipeEditor, canDeactivate: [unsavedChangesGuard] },
       ]),
     ],

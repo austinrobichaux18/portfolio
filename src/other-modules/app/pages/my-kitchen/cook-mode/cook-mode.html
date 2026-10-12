@@ -1,0 +1,92 @@
+@if (recipe(); as recipe) {
+  <div class="cook">
+    <header class="top">
+      <h2>{{ recipe.title }}</h2>
+      <span class="muted progress">
+        @if (!done()) {
+          Step {{ index() + 1 }} of {{ steps().length }}
+        } @else {
+          All done
+        }
+        @if (wakeLockActive()) {
+          · screen stays on
+        }
+      </span>
+      <a class="secondary" routerLink="..">Exit</a>
+    </header>
+
+    <div class="layout">
+      <aside class="card checklist" aria-label="Ingredients">
+        <h3>Ingredients</h3>
+        <ul>
+          @for (item of ingredients(); track item.key; let i = $index) {
+            @if (item.section && item.section !== ingredients()[i - 1]?.section) {
+              <li class="section">{{ item.section }}</li>
+            }
+            <li>
+              <label [class.checked]="checked().has(item.key)" [class.optional]="item.optional">
+                <input type="checkbox" [checked]="checked().has(item.key)" (change)="toggleIngredient(item.key)" />
+                {{ item.text }}
+              </label>
+            </li>
+          }
+        </ul>
+      </aside>
+
+      <main class="card stage">
+        @if (current(); as step) {
+          @if (step.section) {
+            <p class="section-label">{{ step.section }}</p>
+          }
+          @if (step.note) {
+            <p class="step-note">{{ step.note }}</p>
+          }
+          <p class="step-text">{{ step.text }}</p>
+        } @else if (steps().length === 0) {
+          <p class="step-text muted">This recipe has no steps yet.</p>
+        } @else {
+          <div class="finished">
+            <p class="step-text">Done! 🎉</p>
+            @if (!state.readOnly()) {
+              <button type="button" class="primary big" (click)="showSheet.set(true)">✓ Made it</button>
+            }
+          </div>
+        }
+
+        <nav class="controls">
+          <button type="button" class="secondary big" [disabled]="index() === 0" (click)="previous()">← Back</button>
+          <div class="dots" aria-hidden="true">
+            @for (s of steps(); track $index) {
+              <button
+                type="button"
+                class="dot"
+                [class.active]="$index === index()"
+                [class.past]="$index < index()"
+                (click)="goTo($index)"
+                tabindex="-1"
+              ></button>
+            }
+          </div>
+          <button type="button" class="primary big" [disabled]="done()" (click)="next()">
+            {{ index() === steps().length - 1 ? 'Finish' : 'Next →' }}
+          </button>
+        </nav>
+        <p class="keys muted">← → or Space to move · Esc to exit</p>
+      </main>
+    </div>
+  </div>
+
+  @if (showSheet()) {
+    <app-made-it-sheet
+      [recipe]="recipe"
+      [servings]="servingsMade()"
+      [optionIds]="optionIds"
+      (closed)="onSheetClosed($event)"
+    />
+  }
+} @else {
+  <div class="card">
+    <p>That recipe isn't in this folder.</p>
+    <a routerLink="../../..">← All recipes</a>
+  </div>
+}

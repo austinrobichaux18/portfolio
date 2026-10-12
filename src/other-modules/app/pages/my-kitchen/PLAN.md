@@ -93,7 +93,7 @@ Targets the UI is built and tested against. "Action" = click, keypress, or paste
 | Options | Option groups inside a recipe: `pickOne` (swap, e.g. protein) or `pickAny` (add-ins, e.g. toppings). Each option has its own ingredients and steps, shown as its own section. **Rule:** options are small add-ons/swaps picked at cook time; a `parentId` fork is for a materially different dish (changes more than ~⅓ of the steps). |
 | Trust | `untested` (never cooked) → `tested` (cooked, kept) → `ours` (family-approved, adjustments folded in). Untested recipes show a badge and sort below tested ones by default. **Defaults:** imports start `untested` / Want to try. A typed-in recipe asks "Have we made this before?" (default yes) → `tested`, frequency picked right there, optional rough "last made". Entering 100 known family recipes must not bury them all as untested. |
 | Routing | Child routes with a shared `KitchenStateService` (open folder + loaded recipes): `my-kitchen` (library), `my-kitchen/new`, `my-kitchen/r/:id`, `my-kitchen/r/:id/edit`, `my-kitchen/r/:id/cook`. Back button and deep links work, components stay small. Deliberate break from the other modules' single-component `viewState` pattern, because this module has 5+ screens. |
-| Go-live | Route registered in v1a so it's usable on the live site right away, but **not listed** on the Other Modules home page or `/projects` until v1d (demo mode + case study). This bends the CLAUDE.md "add to modules.ts/projects.ts" checklist on purpose; finish it in v1d. |
+| Go-live | Route registered in v1a. Listed on the Other Modules home page and `/projects` after v1b (2026-10-12, moved up from v1d so it's easy to reach). Demo mode in v1d still matters: visitors without a folder or on Firefox/Safari only see the folder screen until then. |
 | Text round-trip | Editing text must never wipe per-line settings. On re-parse, each line is matched to its previous version by `raw` text and keeps its settings (`ingredientId`, overrides). Flags are visible in the text itself: `(optional)`, `[no-scale]`. Text stays the source of truth; model → text → model is lossless (tested). |
 | Missing options | Cook log entries may reference deleted options; show "(removed option)", never error, and the loader doesn't treat it as invalid. |
 | Recipe checks | On import and save, show warnings (never blocks): missing ingredients or steps, ingredient lines that didn't parse (shown next to their raw text), ingredients never mentioned in any step, steps mentioning something not listed, times that don't add up, steps over ~400 characters ("probably includes tips"). |
@@ -330,7 +330,7 @@ Each phase is usable on its own.
       use it; CI never touches the File System Access API)
 - [x] `KitchenStateService`: open folder, loaded recipes, load errors; shared by the child routes
 - [x] Routes: `my-kitchen` child routes (see "Routing"); registered in `other-modules.routes.ts`
-      but **not** listed in `modules.ts` / `projects.ts` until v1d
+      (listed in `modules.ts` / `projects.ts` after v1b)
 - [x] `image-resize.ts`: ~1600px WebP + ~400px thumbnail via canvas; revoke object URLs when done
 - [x] Folder screen: unsupported-browser message, empty state for picking/creating the folder,
       "couldn't load" panel for bad files
@@ -349,20 +349,20 @@ Each phase is usable on its own.
 
 ### v1b — Cooking
 
-- [ ] `recipe-scaler.ts` + spec:
-  - [ ] Rescale quantities (base + selected options), round to sensible kitchen fractions
-  - [ ] Countable units round sensibly ("1.5 eggs" → 2, or show "1–2 eggs")
-  - [ ] Respect `scales: false`; leave `toTaste` items alone
-- [ ] `recipe-checks.ts` + spec: the warnings listed under "Recipe checks"; shown in editor and import review
-- [ ] `suggestions.ts` + spec: overdue Staples/Regulars by frequency vs. last made, "Want to try"
+- [x] `recipe-scaler.ts` + spec:
+  - [x] Rescale quantities (base + selected options), round to sensible kitchen fractions
+  - [x] Countable units round sensibly ("1.5 eggs" → 2, or show "1–2 eggs")
+  - [x] Respect `scales: false`; leave `toTaste` items alone
+- [x] `recipe-checks.ts` + spec: the warnings listed under "Recipe checks"; shown in editor and import review
+- [x] `suggestions.ts` + spec: overdue Staples/Regulars by frequency vs. last made, "Want to try"
       picks, and a separate "Haven't logged yet" group for recipes with no cook log
-- [ ] Cook mode: large text, one step at a time (base steps + a section per selected option),
+- [x] Cook mode: large text, one step at a time (base steps + a section per selected option),
       ingredient checkboxes, screen stays awake (Wake Lock API), arrow keys / space to move
-- [ ] Made-it sheet: prefilled date/servings/options, optional rating/note/photo, first-cook trust
+- [x] Made-it sheet: prefilled date/servings/options, optional rating/note/photo, first-cook trust
       prompt, 2-click happy path
-- [ ] Cook log list on the recipe view: edit/delete entries; "last made N days ago"
-- [ ] Library: "What should we make?" row and "rate these" reminder for unrated cooks
-- [ ] Site-provided nutrition shown on the recipe view (no calculation of our own)
+- [x] Cook log list on the recipe view: edit/delete entries; "last made N days ago"
+- [x] Library: "What should we make?" row and "rate these" reminder for unrated cooks
+- [x] Site-provided nutrition shown on the recipe view (no calculation of our own)
 
 ### v1c — Import
 
@@ -404,9 +404,8 @@ Frontend:
 - [ ] `core/data/sample-recipes.ts`: 4–6 self-written sample recipes, at least one with options
 - [ ] Demo mode: "Try the demo" button; read-only library/view/cook mode over sample recipes
       (editing, import and Made-it disabled, clearly labeled as a demo)
-- [ ] Finish registration (per CLAUDE.md checklist; the route already exists from v1a):
-      `core/data/modules.ts` entry with `lastUpdated`, case-study entry in
-      `src/app/core/data/projects.ts`
+- [x] Registration (per CLAUDE.md checklist): `core/data/modules.ts` entry and `/projects`
+      case study — done early, after v1b. Update the case study once demo mode exists.
 
 ### v2 — Light pantry
 

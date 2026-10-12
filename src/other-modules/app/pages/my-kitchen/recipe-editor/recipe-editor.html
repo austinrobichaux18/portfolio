@@ -381,6 +381,17 @@
       </div>
     </details>
 
+    @if (checks().length) {
+      <section class="card checks" aria-live="polite">
+        <span class="label">Worth a look</span>
+        <ul>
+          @for (check of checks(); track check.message) {
+            <li [class.warning]="check.level === 'warning'">{{ check.message }}</li>
+          }
+        </ul>
+      </section>
+    }
+
     <div class="save-bar">
       <button type="submit" class="primary" [disabled]="saving() || addingPhotos()">
         {{ saving() ? 'Saving…' : 'Save recipe' }}

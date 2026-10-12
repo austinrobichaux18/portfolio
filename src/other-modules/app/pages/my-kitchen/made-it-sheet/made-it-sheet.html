@@ -1,0 +1,98 @@
+<div class="backdrop" (click)="cancel()"></div>
+<div class="sheet" role="dialog" aria-modal="true" aria-labelledby="made-it-title">
+  <h3 id="made-it-title">{{ isEdit() ? 'Edit cook' : 'Made it!' }} <span class="muted">· {{ recipe().title }}</span></h3>
+
+  <div class="row">
+    <div>
+      <label for="made-date">Date</label>
+      <input id="made-date" type="date" [max]="today" [value]="date()" (input)="date.set($any($event.target).value)" />
+    </div>
+    <div>
+      <label for="made-servings">Servings made</label>
+      <input
+        id="made-servings"
+        type="number"
+        min="0"
+        step="0.5"
+        [value]="servingsText()"
+        (input)="servingsText.set($any($event.target).value)"
+      />
+    </div>
+  </div>
+
+  @if (optionLabels().length) {
+    <p class="options muted">With: {{ optionLabels().join(', ') }}</p>
+  }
+
+  <div>
+    <span class="label">{{ isEdit() ? 'Rating this time' : 'Our rating' }} <span class="muted">(optional)</span></span>
+    <div class="rating-row" role="group" aria-label="Rating out of 10">
+      @for (n of ratingValues; track n) {
+        <button
+          type="button"
+          [class.filled]="(rating() ?? 0) >= n"
+          [attr.aria-pressed]="rating() === n"
+          [attr.aria-label]="n + ' out of 10'"
+          (click)="toggleRating(n)"
+        >
+          {{ n }}
+        </button>
+      }
+    </div>
+  </div>
+
+  @if (isFirstCook()) {
+    <div class="first-cook">
+      <span class="label">First time making it — keep it?</span>
+      <div class="chips">
+        <button type="button" class="chip" [class.active]="keep()" (click)="keepChoice.set(true)">Keep it</button>
+        <button type="button" class="chip" [class.active]="!keep()" (click)="keepChoice.set(false)">Not for us</button>
+      </div>
+      @if (keep()) {
+        <label for="made-frequency">How often do we want it?</label>
+        <select id="made-frequency" [value]="frequency()" (change)="frequency.set($any($event.target).value)">
+          @for (f of keepFrequencies; track f.id) {
+            <option [value]="f.id">{{ f.label }} — {{ f.description }}</option>
+          }
+        </select>
+        <p class="hint muted">Changed something? Edit the recipe afterwards to fold it in.</p>
+      } @else {
+        <p class="hint muted">It'll be marked Retired and stop showing up in suggestions.</p>
+      }
+    </div>
+  }
+
+  <div>
+    <label for="made-note">Note <span class="muted">(optional)</span></label>
+    <textarea
+      id="made-note"
+      rows="2"
+      placeholder="A bit dry — cut 5 minutes next time"
+      [value]="note()"
+      (input)="note.set($any($event.target).value)"
+    ></textarea>
+  </div>
+
+  <div class="photo">
+    @if (photoPreview(); as preview) {
+      <img [src]="preview" alt="" />
+      <button type="button" class="link-button" (click)="clearPhoto()">Remove photo</button>
+    } @else {
+      <label class="add-photo">
+        <input type="file" accept="image/*" (change)="onPhotoChosen($any($event.target))" />
+        + Photo <span class="muted">(optional)</span>
+      </label>
+    }
+  </div>
+
+  @if (errorMessage()) {
+    <span class="error">{{ errorMessage() }}</span>
+  }
+
+  <div class="actions">
+    <button type="button" class="primary" [disabled]="saving()" (click)="save()">
+      {{ saving() ? 'Saving…' : 'Save' }}
+    </button>
+    <button type="button" class="secondary" [disabled]="saving()" (click)="cancel()">Cancel</button>
+  </div>
+</div>

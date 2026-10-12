@@ -23,6 +23,7 @@ export type UnitCode =
   | 'package'
   | 'bag'
   | 'box'
+  | 'block'
   | 'stick'
   | 'bunch'
   | 'head'
