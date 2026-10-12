@@ -7,6 +7,29 @@
     </p>
   </header>
 
+  @if (viewState() === 'list' || viewState() === 'tour') {
+    <div class="tab-bar" role="tablist">
+      <button
+        type="button"
+        role="tab"
+        class="tab"
+        [class.active]="viewState() === 'list'"
+        (click)="switchToLessons()"
+      >
+        Lessons
+      </button>
+      <button
+        type="button"
+        role="tab"
+        class="tab"
+        [class.active]="viewState() === 'tour'"
+        (click)="openTour()"
+      >
+        App Tour
+      </button>
+    </div>
+  }
+
   @if (viewState() === 'list') {
     <div class="lesson-list">
       @for (lesson of lessons; track lesson.id) {
@@ -148,5 +171,86 @@
         }
       </div>
     }
+  }
+
+  @if (viewState() === 'tour') {
+    <div class="tour-intro">
+      <p>
+        A fake Books CRUD app built in both C# (ASP.NET Core) and Python (FastAPI) &mdash; each
+        file demonstrates the lesson concepts in a realistic project context.
+      </p>
+    </div>
+
+    <div class="tour-layout">
+      <aside class="tour-sidebar">
+        <p class="sidebar-label">Files</p>
+        @for (file of tourFiles; track file.id) {
+          <button
+            type="button"
+            class="tour-file-button"
+            [class.active]="selectedTourFileId() === file.id"
+            (click)="selectTourFile(file.id)"
+          >
+            <span class="file-path file-path-csharp">{{ file.csharpPath }}</span>
+            <span class="file-path file-path-python">{{ file.pythonPath }}</span>
+          </button>
+        }
+      </aside>
+
+      <div class="tour-main">
+        @if (selectedTourFile(); as file) {
+          <div class="tour-file-header">
+            <div class="tour-path-pair">
+              <span class="tour-path tour-path-csharp">{{ file.csharpPath }}</span>
+              <span class="tour-path-sep" aria-hidden="true">↔</span>
+              <span class="tour-path tour-path-python">{{ file.pythonPath }}</span>
+            </div>
+            <p class="tour-description">{{ file.description }}</p>
+          </div>
+
+          @if (file.contrivedNote) {
+            <div class="contrived-note">
+              <span class="contrived-note-icon" aria-hidden="true">⚠</span>
+              <p>{{ file.contrivedNote }}</p>
+            </div>
+          }
+
+          <div class="code-pair tour-code-pair">
+            <div class="code-block">
+              <span class="lang-label lang-csharp">C# — {{ file.csharpPath }}</span>
+              <pre><code>{{ file.csharp }}</code></pre>
+            </div>
+            <div class="code-block">
+              <span class="lang-label lang-python">Python — {{ file.pythonPath }}</span>
+              <pre><code>{{ file.python }}</code></pre>
+            </div>
+          </div>
+
+          @if (file.notes.length) {
+            <ul class="notes-list tour-notes">
+              @for (note of file.notes; track note) {
+                <li>{{ note }}</li>
+              }
+            </ul>
+          }
+
+          @if (file.lessonIds.length) {
+            <div class="lesson-chips">
+              <span class="chips-label">Lessons covered:</span>
+              @for (id of file.lessonIds; track id) {
+                <button
+                  type="button"
+                  class="lesson-chip"
+                  (click)="openLesson(id)"
+                  title="Open {{ getLessonTitle(id) }} lesson"
+                >
+                  {{ getLessonTitle(id) }}
+                </button>
+              }
+            </div>
+          }
+        }
+      </div>
+    </div>
   }
 </section>

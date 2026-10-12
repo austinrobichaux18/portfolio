@@ -1,8 +1,10 @@
 import { Component, HostListener, computed, signal } from '@angular/core';
 import { PYTHON_LESSONS } from '../../core/data/python-lessons';
+import { PYTHON_TOUR_FILES } from '../../core/data/python-tour-files';
 import { PythonLesson } from '../../core/models/PythonLesson';
+import { AppTourFile } from '../../core/models/AppTourFile';
 
-type ViewState = 'list' | 'lesson' | 'quiz';
+type ViewState = 'list' | 'lesson' | 'quiz' | 'tour';
 
 @Component({
   selector: 'app-python-for-csharp',
@@ -12,9 +14,11 @@ type ViewState = 'list' | 'lesson' | 'quiz';
 })
 export class PythonForCsharp {
   readonly lessons = PYTHON_LESSONS;
+  readonly tourFiles = PYTHON_TOUR_FILES;
 
   viewState = signal<ViewState>('list');
   selectedLessonId = signal<string | null>(null);
+  selectedTourFileId = signal<string | null>(null);
 
   quizAnswers = signal<(number | null)[]>([]);
   quizSubmitted = signal(false);
@@ -22,6 +26,11 @@ export class PythonForCsharp {
   selectedLesson = computed<PythonLesson | null>(() => {
     const id = this.selectedLessonId();
     return id ? (this.lessons.find((l) => l.id === id) ?? null) : null;
+  });
+
+  selectedTourFile = computed<AppTourFile | null>(() => {
+    const id = this.selectedTourFileId();
+    return id ? (this.tourFiles.find((f) => f.id === id) ?? null) : null;
   });
 
   allAnswered = computed(() => this.quizAnswers().every((a) => a !== null));
@@ -35,6 +44,26 @@ export class PythonForCsharp {
       0,
     );
   });
+
+  getLessonTitle(id: string): string {
+    return this.lessons.find((l) => l.id === id)?.title ?? id;
+  }
+
+  switchToLessons(): void {
+    this.viewState.set('list');
+    this.selectedLessonId.set(null);
+  }
+
+  openTour(): void {
+    if (!this.selectedTourFileId()) {
+      this.selectedTourFileId.set(this.tourFiles[0]?.id ?? null);
+    }
+    this.viewState.set('tour');
+  }
+
+  selectTourFile(id: string): void {
+    this.selectedTourFileId.set(id);
+  }
 
   openLesson(id: string): void {
     this.selectedLessonId.set(id);
@@ -71,7 +100,6 @@ export class PythonForCsharp {
     this.selectedLessonId.set(null);
   }
 
-  /** Space advances from lesson list to first lesson (convenience shortcut). */
   @HostListener('document:keydown', ['$event'])
   onKeyDown(event: KeyboardEvent): void {
     if (this.viewState() === 'quiz' && this.quizSubmitted() && event.key === 'Enter') {
