@@ -90,6 +90,7 @@ class BookFilter:
       '`frozen=True` on `BookFilter` makes it immutable, equivalent to a C# `record` with init-only properties.',
       'Default field values (`rating: float = 0.0`) work like C# default parameter values.',
       'Python uses `snake_case` for properties; C# uses `PascalCase`.',
+      'No `string.Empty` in Python: C# uses `= string.Empty` because strings are reference types that default to `null`. In Python, strings are never `null` — a `str` field with no default is simply a *required* constructor argument. If you want an optional empty default, write `title: str = ""`. The `None` equivalent only appears when you opt in with `Optional[str]`.',
     ],
   },
   {
