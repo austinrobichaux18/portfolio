@@ -980,6 +980,80 @@ export const projects: Project[] = [
             github: 'https://github.com/austinrobichaux18/portfolio/tree/master/src/other-modules/app/pages/python-for-csharp'
         }
 
+    },
+
+    {
+
+        id: 'my-kitchen',
+
+        title: 'My Kitchen',
+
+        description:
+            'A local-first family recipe manager: text-first recipe entry with live ingredient parsing, option groups within a dish, servings scaling, cook mode, and a cook log that drives "what should we make?" suggestions.',
+
+        tags: [
+            'Angular',
+            'TypeScript',
+            'Signals',
+            'File System Access API'
+        ],
+
+        result:
+            'A self-contained tool in this site\'s "Other Modules" section.',
+
+        link: '/projects/my-kitchen',
+
+        overview: [
+            'A recipe library for the dishes a family actually cooks, stored as one folder per recipe (recipe.json plus photos) in a local folder the user picks — nothing is uploaded.',
+            'Recipes are typed or pasted as plain text and parsed live into structured ingredients (quantity, range, unit, package size, prep, flags), support option groups like toppings or protein swaps, scale by servings, and log each cook with options, rating and notes.'
+        ],
+
+        myRole:
+            'Planned the module against explicit grading criteria (usefulness, ease of use, trust, future pantry/cost/nutrition features), designed the data model, and built the parser, storage layer and UI end-to-end.',
+
+        technicalChallenges: [
+            {
+                title: 'Ingredient Parsing That Never Loses Data',
+                description:
+                    'A tolerant parser turns lines like "1 (14 oz) can diced tomatoes, drained" or "2–3 cloves garlic" into canonical units, ranges and package sizes, but always keeps the raw line. Re-parsing edited text matches each line back to its previous version, so manual fixes and future pantry links survive edits — verified by round-trip tests.'
+            },
+            {
+                title: 'Options Within a Dish',
+                description:
+                    'Pick-one and pick-any option groups (each with their own ingredients and steps) flow through the recipe view, servings scaler, cook mode and cook log, so "ramen with egg" and "ramen with tofu" are one recipe instead of drifting copies.'
+            },
+            {
+                title: 'Storage Behind an Interface',
+                description:
+                    'All reads and writes go through a KitchenStore interface: a File System Access implementation for real use (atomic writes, deletes moved to a _trash folder) and an in-memory one for tests, so a cloud backend can replace the folder later without touching the pages.'
+            }
+        ],
+
+        architecture: [
+            'Child routes sharing a route-scoped state service (signals)',
+            'Pure, unit-tested lib layer: parser, scaler, loader/validator, suggestions, recipe checks',
+            'KitchenStore interface with folder and in-memory implementations',
+            'Client-side image resizing to WebP with thumbnails'
+        ],
+
+        deepDive: [
+            {
+                title: 'Kitchen-Aware Scaling',
+                description:
+                    'Scaled amounts round to measurable fractions (⅓ cup, 3 ¾ tbsp, 375 g), whole items never go fractional ("1.5 eggs" becomes "1–2 eggs"), and to-taste or [no-scale] lines are left exactly as written.'
+            },
+            {
+                title: 'Trust and Suggestions',
+                description:
+                    'Recipes carry a trust status (untested → tested → ours) and a target frequency; the cook log feeds "due again" suggestions, a first-cook "keep it?" prompt, and live recipe checks that flag steps mentioning unlisted ingredients.'
+            }
+        ],
+
+        links: {
+            demo: 'https://austinrobichaux.com/other-modules/my-kitchen',
+            github: 'https://github.com/austinrobichaux18/portfolio/tree/master/src/other-modules/app/pages/my-kitchen'
+        }
+
     }
 
 ];

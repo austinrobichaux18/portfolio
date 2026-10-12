@@ -55,6 +55,15 @@ export const modules: Module[] = [
     group: 'Local Folder',
   },
   {
+    id: 'my-kitchen',
+    title: 'My Kitchen',
+    description:
+      'Keep the recipes your family actually cooks in a local folder — type or paste them, pick options like toppings, scale servings, cook step by step, and log what you made.',
+    route: 'my-kitchen',
+    lastUpdated: '2026-10-12',
+    group: 'Local Folder',
+  },
+  {
     id: 'investment-calculator',
     title: 'Investment Calculator',
     description:
