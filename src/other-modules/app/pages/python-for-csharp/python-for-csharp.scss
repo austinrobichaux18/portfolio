@@ -11,6 +11,28 @@
   }
 }
 
+.tab-explainer {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 16px;
+}
+
+.tab-explainer-item {
+  font-size: 0.82rem;
+  color: #8f9bad;
+
+  strong {
+    color: #d6dde6;
+    font-weight: 600;
+  }
+}
+
+.tab-explainer-sep {
+  color: rgba(255, 255, 255, 0.2);
+  font-size: 0.9rem;
+}
+
 // ── Lesson list ──────────────────────────────────────────────────────────────
 
 .lesson-list {
