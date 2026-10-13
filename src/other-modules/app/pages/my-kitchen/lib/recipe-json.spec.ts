@@ -67,6 +67,42 @@ describe('parseRecipeJson', () => {
     expect(recipe).toMatchObject({ title: 'Toast', ingredientsText: '1 slice bread', stepsText: 'Toast it.' });
   });
 
+  it('repairs JSON copied from a rendered ChatGPT reply (brackets escaped / turned into \\( \\))', () => {
+    // Verbatim paste that used to fail with "couldn't be read".
+    const pasted = String.raw`{ "title": "Potato Salad Sandwiches with Ritz Crackers", "servings": 2, "prepMinutes": 5, "cookMinutes": 0, "restMinutes": 0, "totalMinutes": 5, "yield": "2 sandwiches with crackers", "tags": \("cuisine:american", "meal:lunch", "effort:quick"\), "ingredients": \({ "items": \[ "4 slices bread, 70 calories per slice", "1 cup prepared potato salad", "1 serving Ritz crackers"\) } ], "steps": \({ "items": \[ "Spread potato salad evenly over 2 slices of bread.", "Top with the remaining 2 slices of bread.", "Serve with Ritz crackers."\) } ], "nutritionPerServing": { "calories": 530, "proteinG": 9, "carbsG": 67, "fatG": 25, "saturatedFatG": 6, "sugarG": 7, "fiberG": 3, "sodiumMg": 900, "cholesterolMg": 35 } }`;
+    const recipe = ok(pasted);
+
+    expect(recipe).toMatchObject({
+      title: 'Potato Salad Sandwiches with Ritz Crackers',
+      servings: 2,
+      prepMinutes: 5,
+      totalMinutes: 5,
+      yieldText: '2 sandwiches with crackers',
+      tags: ['cuisine:american', 'meal:lunch', 'effort:quick'],
+      ingredientsText: '4 slices bread, 70 calories per slice\n1 cup prepared potato salad\n1 serving Ritz crackers',
+      stepsText:
+        'Spread potato salad evenly over 2 slices of bread.\n\nTop with the remaining 2 slices of bread.\n\nServe with Ritz crackers.',
+      nutrition: {
+        calories: 530,
+        proteinG: 9,
+        carbsG: 67,
+        fatG: 25,
+        saturatedFatG: 6,
+        sugarG: 7,
+        fiberG: 3,
+        sodiumMg: 900,
+        cholesterolMg: 35,
+      },
+    });
+    expect(recipe.cookMinutes).toBeUndefined();
+    expect(recipe.restMinutes).toBeUndefined();
+  });
+
+  it('leaves parentheses inside strings alone when repairing', () => {
+    const recipe = ok(String.raw`{ "title": "Chili (mild)", "ingredients": \( "1 (14 oz) can beans" \) }`);
+    expect(recipe).toMatchObject({ title: 'Chili (mild)', ingredientsText: '1 (14 oz) can beans' });
+  });
+
   it('accepts lenient shapes: string arrays, numbers as strings, numbered steps', () => {
     const recipe = ok(
       JSON.stringify({

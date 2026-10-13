@@ -37,10 +37,8 @@ export function parseRecipeJson(text: string): RecipeJsonResult | null {
   const candidate = extractJsonObject(text);
   if (candidate === null) return null;
 
-  let data: unknown;
-  try {
-    data = JSON.parse(candidate);
-  } catch {
+  const data = parseLenient(candidate);
+  if (data === undefined) {
     return { ok: false, error: "That looks like JSON but couldn't be read — check that the whole reply was copied." };
   }
   if (!isObject(data)) return { ok: false, error: 'Expected a JSON object with a recipe in it.' };
@@ -82,6 +80,42 @@ function extractJsonObject(text: string): string | null {
   // Only treat it as JSON when the object is most of the paste (not a stray brace in prose).
   const object = unfenced.slice(start, end + 1);
   return /^\s*\{\s*"/.test(object) ? object : null;
+}
+
+/** JSON.parse, retrying once with repairMarkdownMangling. Undefined when neither parses. */
+function parseLenient(text: string): unknown {
+  for (const attempt of [text, repairMarkdownMangling(text)]) {
+    try {
+      return JSON.parse(attempt);
+    } catch {
+      // try the next attempt
+    }
+  }
+  return undefined;
+}
+
+/**
+ * Undoes what copying a chat reply from its rendered Markdown view can do to JSON: brackets
+ * escaped as "\[" and arrays rewritten as "\( … \)" (math delimiters). Outside strings, JSON never
+ * uses parentheses, so they're safely turned back into brackets; text inside strings is untouched
+ * apart from the escaping backslashes (which would be invalid JSON escapes anyway).
+ */
+function repairMarkdownMangling(text: string): string {
+  let out = '';
+  let inString = false;
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i];
+    if (c === '\\' && /[()[\]{}]/.test(text[i + 1] ?? '')) continue;
+    if (inString) {
+      out += c;
+      if (c === '\\') out += text[++i] ?? '';
+      else if (c === '"') inString = false;
+      continue;
+    }
+    if (c === '"') inString = true;
+    out += c === '(' ? '[' : c === ')' ? ']' : c;
+  }
+  return out;
 }
 
 /** [{ group, items: [...] }] or ["line", ...] → editor text with "## Group" headings. */
