@@ -1,0 +1,180 @@
+import { Nutrition } from '../../../core/models/Nutrition';
+import { PastedRecipe } from './paste-splitter';
+import { OptionGroupForm } from './recipe-form';
+
+/** A recipe read from the AI JSON format (see core/data/ai-recipe-prompt.ts). */
+export interface ImportedRecipe extends PastedRecipe {
+  restMinutes?: number;
+  yieldText?: string;
+  description?: string;
+  tags: string[];
+  optionGroups: OptionGroupForm[];
+}
+
+export type RecipeJsonResult = { ok: true; recipe: ImportedRecipe } | { ok: false; error: string };
+
+type Json = Record<string, unknown>;
+
+const NUTRITION_KEYS = [
+  'calories',
+  'proteinG',
+  'carbsG',
+  'fatG',
+  'saturatedFatG',
+  'sugarG',
+  'fiberG',
+  'sodiumMg',
+  'cholesterolMg',
+] as const;
+
+/**
+ * Reads pasted text as the AI JSON format. Returns null when the text isn't JSON at all (so the
+ * caller falls back to the plain-text splitter), or an error when it looks like JSON but can't be
+ * used. Tolerates ```json fences and chatter around the object, and lenient shapes (plain string
+ * arrays instead of groups, numbers as strings).
+ */
+export function parseRecipeJson(text: string): RecipeJsonResult | null {
+  const candidate = extractJsonObject(text);
+  if (candidate === null) return null;
+
+  let data: unknown;
+  try {
+    data = JSON.parse(candidate);
+  } catch {
+    return { ok: false, error: "That looks like JSON but couldn't be read — check that the whole reply was copied." };
+  }
+  if (!isObject(data)) return { ok: false, error: 'Expected a JSON object with a recipe in it.' };
+
+  const ingredientsText = groupsToText(data['ingredients'], '\n', '\n');
+  const stepsText = groupsToText(data['steps'], '\n\n', '\n\n', cleanStep);
+  if (!str(data['title']) && !ingredientsText && !stepsText) {
+    return { ok: false, error: 'The JSON has no title, ingredients or steps.' };
+  }
+
+  const recipe: ImportedRecipe = {
+    ingredientsText,
+    stepsText,
+    notesText: str(data['notes']) ?? '',
+    tags: arr(data['tags']).flatMap((t) => (typeof t === 'string' && t.trim() ? [t] : [])),
+    optionGroups: toOptionGroups(data['options']),
+  };
+  const title = str(data['title']);
+  if (title) recipe.title = title;
+  const description = str(data['description']);
+  if (description) recipe.description = description;
+  const yieldText = str(data['yield']) ?? str(data['yieldText']);
+  if (yieldText) recipe.yieldText = yieldText;
+  for (const key of ['servings', 'prepMinutes', 'cookMinutes', 'restMinutes', 'totalMinutes'] as const) {
+    const value = num(data[key]);
+    if (value !== undefined) recipe[key] = value;
+  }
+  const nutrition = toNutrition(data['nutritionPerServing'] ?? data['nutrition']);
+  if (nutrition) recipe.nutrition = nutrition;
+  return { ok: true, recipe };
+}
+
+/** The JSON object in the text, ignoring ```json fences and any words before or after it. */
+function extractJsonObject(text: string): string | null {
+  const unfenced = text.replace(/```(?:json)?/gi, '').trim();
+  const start = unfenced.indexOf('{');
+  const end = unfenced.lastIndexOf('}');
+  if (start === -1 || end <= start) return null;
+  // Only treat it as JSON when the object is most of the paste (not a stray brace in prose).
+  const object = unfenced.slice(start, end + 1);
+  return /^\s*\{\s*"/.test(object) ? object : null;
+}
+
+/** [{ group, items: [...] }] or ["line", ...] → editor text with "## Group" headings. */
+function groupsToText(
+  value: unknown,
+  itemSeparator: string,
+  groupSeparator: string,
+  clean: (line: string) => string = (l) => l.trim(),
+): string {
+  const lines = arr(value);
+  if (lines.every((l) => typeof l === 'string')) {
+    return lines.map((l) => clean(l as string)).filter(Boolean).join(itemSeparator);
+  }
+  const blocks: string[] = [];
+  for (const group of lines) {
+    if (typeof group === 'string') {
+      if (clean(group)) blocks.push(clean(group));
+      continue;
+    }
+    if (!isObject(group)) continue;
+    const items = arr(group['items']).flatMap((l) => (typeof l === 'string' && clean(l) ? [clean(l)] : []));
+    if (!items.length) continue;
+    const name = str(group['group']) ?? str(group['name']);
+    // A bare "##" starts an unnamed group after a named one (otherwise it would merge into it).
+    const heading = name ? `## ${name}` : blocks.length ? '##' : null;
+    blocks.push([...(heading ? [heading] : []), ...items].join(itemSeparator));
+  }
+  return blocks.join(groupSeparator);
+}
+
+function toOptionGroups(value: unknown): OptionGroupForm[] {
+  return arr(value).flatMap((group) => {
+    if (!isObject(group) || !str(group['name'])) return [];
+    const kind = /^one$|^pickone$/i.test(String(group['pick'] ?? group['kind'] ?? '')) ? 'pickOne' : 'pickAny';
+    const options = arr(group['choices'] ?? group['options']).flatMap((choice) => {
+      if (!isObject(choice) || !str(choice['name'])) return [];
+      return [
+        {
+          name: str(choice['name'])!,
+          ingredientsText: groupsToText(choice['ingredients'], '\n', '\n'),
+          stepsText: groupsToText(choice['steps'], '\n\n', '\n\n', cleanStep),
+          note: str(choice['note']) ?? '',
+          isDefault: choice['usual'] === true || choice['default'] === true,
+        },
+      ];
+    });
+    if (!options.length) return [];
+    // Pick-one groups keep a single usual choice.
+    if (kind === 'pickOne') {
+      let seen = false;
+      for (const option of options) {
+        if (option.isDefault && seen) option.isDefault = false;
+        if (option.isDefault) seen = true;
+      }
+    }
+    return [{ name: str(group['name'])!, kind, options }];
+  });
+}
+
+function toNutrition(value: unknown): Nutrition | undefined {
+  if (!isObject(value)) return undefined;
+  const nutrition: Nutrition = {};
+  for (const key of NUTRITION_KEYS) {
+    const v = num(value[key]);
+    if (v !== undefined) nutrition[key] = v;
+  }
+  const servingSize = str(value['servingSize']);
+  if (servingSize) nutrition.servingSize = servingSize;
+  return Object.keys(nutrition).length ? nutrition : undefined;
+}
+
+/** Steps lose numbering ("1.", "Step 2:") and internal blank lines (which would split them). */
+function cleanStep(line: string): string {
+  return line
+    .replace(/^\s*(?:step\s*)?\d+\s*[.):]\s*/i, '')
+    .replace(/\n\s*\n/g, '\n')
+    .trim();
+}
+
+function isObject(value: unknown): value is Json {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+function arr(value: unknown): unknown[] {
+  return Array.isArray(value) ? value : [];
+}
+
+function str(value: unknown): string | undefined {
+  return typeof value === 'string' && value.trim() ? value.trim() : undefined;
+}
+
+/** Positive numbers, also accepting "540" or "540 kcal" from chatty models. */
+function num(value: unknown): number | undefined {
+  const n = typeof value === 'number' ? value : typeof value === 'string' ? parseFloat(value) : NaN;
+  return Number.isFinite(n) && n > 0 ? n : undefined;
+}

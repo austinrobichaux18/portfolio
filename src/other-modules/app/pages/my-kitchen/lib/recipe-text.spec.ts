@@ -82,6 +82,16 @@ describe('ingredients text', () => {
     expect(parseIngredientsText(text)).toEqual(withoutLinks);
   });
 
+  it('round-trips an unnamed group that comes after a named one', () => {
+    const model: IngredientGroup[] = [
+      { name: 'Broth', items: [parseIngredientLine('4 cups stock')] },
+      { items: [parseIngredientLine('2 cups noodles')] },
+    ];
+    const text = ingredientsToText(model);
+    expect(text).toBe('## Broth\n4 cups stock\n\n##\n2 cups noodles');
+    expect(parseIngredientsText(text)).toEqual(model);
+  });
+
   it('flattens option ingredients', () => {
     expect(parseOptionIngredientsText('## ignored\n1 egg\n1 tsp chili oil')).toHaveLength(2);
   });
@@ -106,6 +116,11 @@ describe('steps text', () => {
   it('keeps step images and timers when the text is unchanged', () => {
     const previous: StepGroup[] = [{ steps: [{ text: 'Simmer.', timerMinutes: 20, image: 'img-a.webp' }] }];
     expect(parseStepsText('Simmer.\n\nServe.', previous)[0].steps[0]).toEqual(previous[0].steps[0]);
+  });
+
+  it('round-trips an unnamed step group after a named one', () => {
+    const model: StepGroup[] = [{ name: 'Broth', steps: [{ text: 'Simmer.' }] }, { steps: [{ text: 'Serve.' }] }];
+    expect(parseStepsText(stepsToText(model))).toEqual(model);
   });
 
   it('round-trips model → text → model', () => {

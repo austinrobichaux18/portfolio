@@ -19,7 +19,7 @@
     </button>
     <select aria-label="Sort" [value]="sort()" (change)="setSort($any($event.target).value)">
       @for (option of sortOptions; track option.id) {
-        <option [value]="option.id">{{ option.label }}</option>
+        <option [value]="option.id" [selected]="option.id === sort()">{{ option.label }}</option>
       }
     </select>
     @if (!state.readOnly()) {
@@ -36,7 +36,7 @@
           <select id="f-frequency" [value]="filter().frequency" (change)="setFrequency($any($event.target).value)">
             <option value="">Any</option>
             @for (f of frequencies; track f.id) {
-              <option [value]="f.id">{{ f.label }}</option>
+              <option [value]="f.id" [selected]="f.id === filter().frequency">{{ f.label }}</option>
             }
           </select>
         </div>
@@ -45,7 +45,7 @@
           <select id="f-trust" [value]="filter().trust" (change)="setTrust($any($event.target).value)">
             <option value="">Any</option>
             @for (t of trustLevels; track t.id) {
-              <option [value]="t.id">{{ t.label }}</option>
+              <option [value]="t.id" [selected]="t.id === filter().trust">{{ t.label }}</option>
             }
           </select>
         </div>
@@ -54,7 +54,7 @@
           <select id="f-rating" [value]="filter().minRating" (change)="setMinRating($any($event.target).value)">
             <option value="0">Any</option>
             @for (n of [5, 6, 7, 8, 9, 10]; track n) {
-              <option [value]="n">{{ n }}</option>
+              <option [value]="n" [selected]="n === filter().minRating">{{ n }}</option>
             }
           </select>
         </div>

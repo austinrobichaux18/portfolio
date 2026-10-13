@@ -1,5 +1,6 @@
 import { Component, computed, effect, HostListener, inject, OnDestroy, signal } from '@angular/core';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { AI_RECIPE_PROMPT } from '../../../core/data/ai-recipe-prompt';
 import { FREQUENCIES, TAG_PREFIXES, TRUST_LEVELS } from '../../../core/data/recipe-statuses';
 import { Recipe, RecipeFrequency, RecipeImage, RecipeTrust } from '../../../core/models/Recipe';
 import { Nutrition } from '../../../core/models/Nutrition';
@@ -10,7 +11,8 @@ import { applyForm, formFromRecipe, normalizeTags, OptionForm, OptionGroupForm, 
 import { localDateString, shortRandomId } from '../lib/recipe-id';
 import { checkRecipe } from '../lib/recipe-checks';
 import { newRecipe } from '../lib/recipe-loader';
-import { splitPastedRecipe } from '../lib/paste-splitter';
+import { PastedRecipe, splitPastedRecipe } from '../lib/paste-splitter';
+import { parseRecipeJson } from '../lib/recipe-json';
 import { parseIngredientsText } from '../lib/recipe-text';
 import { KitchenStateService, PreparedImage } from '../store/kitchen-state.service';
 import { HasUnsavedChanges } from '../unsaved-changes.guard';
@@ -98,6 +100,8 @@ export class RecipeEditor implements HasUnsavedChanges, OnDestroy {
   protected readonly showPaste = signal(this.isNew && this.route.snapshot.queryParamMap.has('paste'));
   protected readonly pasteText = signal('');
   protected readonly showDetails = signal(false);
+  protected readonly aiPrompt = AI_RECIPE_PROMPT;
+  protected readonly promptCopied = signal(false);
   protected readonly tagDraft = signal('');
   protected readonly saving = signal(false);
   protected readonly addingPhotos = signal(false);
@@ -204,7 +208,24 @@ export class RecipeEditor implements HasUnsavedChanges, OnDestroy {
   // --- Quick add ---------------------------------------------------------------------------------
 
   applyPaste(): void {
-    const pasted = splitPastedRecipe(this.pasteText());
+    this.errorMessage.set('');
+    const json = parseRecipeJson(this.pasteText());
+    if (json && !json.ok) {
+      this.errorMessage.set(json.error);
+      return;
+    }
+    const pasted: PastedRecipe = json ? json.recipe : splitPastedRecipe(this.pasteText());
+    if (json?.ok) {
+      const imported = json.recipe;
+      this.form.update((f) => ({
+        ...f,
+        optionGroups: imported.optionGroups.length ? imported.optionGroups : f.optionGroups,
+        tags: imported.tags.length ? normalizeTags([...f.tags, ...imported.tags]) : f.tags,
+        yieldText: imported.yieldText ?? f.yieldText,
+        restMinutes: imported.restMinutes ? String(imported.restMinutes) : f.restMinutes,
+        description: imported.description ?? f.description,
+      }));
+    }
     this.form.update((f) => ({
       ...f,
       title: f.title.trim() ? f.title : (pasted.title ?? ''),
@@ -219,6 +240,17 @@ export class RecipeEditor implements HasUnsavedChanges, OnDestroy {
     if (pasted.nutrition) this.pastedNutrition.set(pasted.nutrition);
     this.showPaste.set(false);
     this.pasteText.set('');
+  }
+
+  async copyAiPrompt(): Promise<void> {
+    try {
+      await navigator.clipboard.writeText(this.aiPrompt);
+      this.promptCopied.set(true);
+      setTimeout(() => this.promptCopied.set(false), 2500);
+    } catch {
+      // Clipboard blocked: the prompt is shown in full so it can be selected by hand.
+      this.promptCopied.set(false);
+    }
   }
 
   // --- Tags --------------------------------------------------------------------------------------

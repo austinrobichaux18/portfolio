@@ -30,21 +30,54 @@
       <section class="card paste">
         <h3>Paste a recipe</h3>
         <p class="muted">
-          Paste the whole thing — title, ingredients, steps. It gets split into the boxes below for
-          you to check. Intros and life stories are left out.
+          Paste the whole thing — title, ingredients, steps — from a recipe site, a doc, or your AI
+          (see below). It gets split into the boxes below for you to check. Intros and life stories
+          are left out.
         </p>
         <textarea
           rows="10"
           aria-label="Pasted recipe"
+          placeholder="Paste recipe text, or the JSON your AI gave you"
           [value]="pasteText()"
           (input)="pasteText.set($any($event.target).value)"
         ></textarea>
+        @if (errorMessage()) {
+          <span class="error">{{ errorMessage() }}</span>
+        }
         <div class="row">
           <button type="button" class="primary" [disabled]="!pasteText().trim()" (click)="applyPaste()">
             Fill in the form
           </button>
           <button type="button" class="secondary" (click)="showPaste.set(false)">Type it instead</button>
         </div>
+
+        <details class="ai-help">
+          <summary>✨ Get an AI to write it for you — with nutrition, tags and options</summary>
+          <div class="ai-help-body">
+            <p>
+              Describe your meal to the AI chat of your choice (ChatGPT, Claude, Gemini…) — something
+              like <em>"my family's ramen: chicken stock, miso, fresh noodles, usually with a soft egg,
+              sometimes tofu instead of chicken, serves 4"</em> — or paste in a recipe you want cleaned
+              up. Give it the prompt below, then paste its reply into the box above.
+            </p>
+            <p class="muted">
+              The AI fills in what's tedious by hand: a per-serving nutrition estimate (calories,
+              protein, carbs, fat, sodium…), tags, times, and options like toppings or protein swaps.
+              Nutrition from an AI is an estimate — check anything that matters for a diet.
+            </p>
+            <ol class="ai-steps">
+              <li>Copy the prompt.</li>
+              <li>Paste it into your AI chat and add your meal description at the end.</li>
+              <li>Copy the AI's whole reply into the box above and press <strong>Fill in the form</strong>.</li>
+            </ol>
+            <div class="row">
+              <button type="button" class="secondary" (click)="copyAiPrompt()">
+                {{ promptCopied() ? '✓ Copied' : 'Copy prompt' }}
+              </button>
+            </div>
+            <pre class="ai-prompt" tabindex="0" aria-label="AI prompt with the JSON format">{{ aiPrompt }}</pre>
+          </div>
+        </details>
       </section>
     } @else if (isNew) {
       <button type="button" class="link-button paste-link" (click)="showPaste.set(true)">
@@ -81,7 +114,7 @@
                 <select id="frequency-new" [value]="form().frequency" (change)="setFrequency($any($event.target).value)">
                   @for (f of frequencies; track f.id) {
                     @if (f.id !== 'want-to-try') {
-                      <option [value]="f.id">{{ f.label }} — {{ f.description }}</option>
+                      <option [value]="f.id" [selected]="f.id === form().frequency">{{ f.label }} — {{ f.description }}</option>
                     }
                   }
                 </select>
@@ -319,7 +352,7 @@
             <label for="frequency">How often</label>
             <select id="frequency" [value]="form().frequency" (change)="setFrequency($any($event.target).value)">
               @for (f of frequencies; track f.id) {
-                <option [value]="f.id">{{ f.label }}</option>
+                <option [value]="f.id" [selected]="f.id === form().frequency">{{ f.label }}</option>
               }
             </select>
           </div>
@@ -327,7 +360,7 @@
             <label for="trust">Status</label>
             <select id="trust" [value]="form().trust" (change)="setTrust($any($event.target).value)">
               @for (t of trustLevels; track t.id) {
-                <option [value]="t.id">{{ t.label }} — {{ t.description }}</option>
+                <option [value]="t.id" [selected]="t.id === form().trust">{{ t.label }} — {{ t.description }}</option>
               }
             </select>
           </div>

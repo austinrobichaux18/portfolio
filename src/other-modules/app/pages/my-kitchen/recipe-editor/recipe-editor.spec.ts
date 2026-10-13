@@ -38,6 +38,19 @@ describe('RecipeEditor', () => {
     expect(saved.household).toMatchObject({ trust: 'untested', frequency: 'want-to-try', cookLog: [] });
   });
 
+  it('shows the real form value in dropdowns built with @for', async () => {
+    const recipe = sampleRamen(); // frequency: staple
+    const { harness } = await setupKitchen([recipe]);
+    await harness.navigateByUrl('/new', RecipeEditor);
+    const newSelect = harness.routeNativeElement!.querySelector('#frequency-new') as HTMLSelectElement;
+    expect(newSelect.value).toBe('regular');
+
+    await harness.navigateByUrl('/r/ramen/edit', RecipeEditor);
+    harness.routeNativeElement!.querySelector('details.details')?.setAttribute('open', '');
+    const editSelect = harness.routeNativeElement!.querySelector('#frequency') as HTMLSelectElement;
+    expect(editSelect.value).toBe('staple');
+  });
+
   it('requires only a title', async () => {
     const { harness, store } = await setupKitchen([]);
     const editor = await harness.navigateByUrl('/new', RecipeEditor);
@@ -71,6 +84,47 @@ describe('RecipeEditor', () => {
       ingredientsText: '1 lb beef',
       stepsText: 'Brown the beef.',
     });
+  });
+
+  it('fills the form from AI JSON, including options, tags and nutrition', async () => {
+    const { harness, store } = await setupKitchen([]);
+    const editor = await harness.navigateByUrl('/new?paste=1', RecipeEditor);
+
+    editor['pasteText'].set(
+      JSON.stringify({
+        title: 'Taco Night',
+        servings: 4,
+        tags: ['meal:dinner'],
+        ingredients: [{ group: 'Meat', items: ['1 lb ground beef'] }],
+        steps: ['Brown the beef.'],
+        options: [{ name: 'Extras', pick: 'any', choices: [{ name: 'Salsa', usual: true, ingredients: ['1/2 cup salsa'] }] }],
+        nutritionPerServing: { calories: 450, proteinG: 28 },
+      }),
+    );
+    editor.applyPaste();
+    await editor.save();
+
+    const [saved] = (await store.loadLibrary()).recipes;
+    expect(saved).toMatchObject({
+      title: 'Taco Night',
+      servings: 4,
+      tags: ['meal:dinner'],
+      sourceNutrition: { calories: 450, proteinG: 28 },
+    });
+    expect(saved.ingredientGroups[0]).toMatchObject({ name: 'Meat', items: [{ name: 'ground beef' }] });
+    expect(saved.optionGroups[0]).toMatchObject({ id: 'extras', kind: 'pickAny', defaultOptionIds: ['salsa'] });
+  });
+
+  it('shows an error for broken AI JSON instead of filling the form', async () => {
+    const { harness } = await setupKitchen([]);
+    const editor = await harness.navigateByUrl('/new?paste=1', RecipeEditor);
+
+    editor['pasteText'].set('{"title": "Oops", }');
+    editor.applyPaste();
+
+    expect(editor['errorMessage']()).toContain("couldn't be read");
+    expect(editor['form']().title).toBe('');
+    expect(editor['showPaste']()).toBe(true);
   });
 
   it('keeps per-line settings when editing an existing recipe', async () => {

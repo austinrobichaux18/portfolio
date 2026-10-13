@@ -13,12 +13,22 @@ const HEADING_RE = /^##\s*(.*)$/;
 
 export function ingredientsToText(groups: IngredientGroup[]): string {
   return groups
-    .map((group) => {
+    .map((group, i) => {
       const lines = group.items.map((item) => item.raw);
-      return group.name ? [`## ${group.name}`, ...lines].join('\n') : lines.join('\n');
+      const heading = groupHeading(group.name, i);
+      return heading ? [heading, ...lines].join('\n') : lines.join('\n');
     })
     .filter((block) => block.length > 0)
     .join('\n\n');
+}
+
+/**
+ * "## Name" for named groups. An unnamed group after the first needs a bare "##", or it would be
+ * read back as part of the group above it.
+ */
+function groupHeading(name: string | undefined, index: number): string | null {
+  if (name) return `## ${name}`;
+  return index > 0 ? '##' : null;
 }
 
 export function parseIngredientsText(
@@ -64,9 +74,10 @@ export function optionIngredientsToText(items: RecipeIngredient[]): string {
 
 export function stepsToText(groups: StepGroup[]): string {
   return groups
-    .map((group) => {
+    .map((group, i) => {
       const steps = group.steps.map((step) => step.text);
-      return group.name ? [`## ${group.name}`, ...steps].join('\n\n') : steps.join('\n\n');
+      const heading = groupHeading(group.name, i);
+      return heading ? [heading, ...steps].join('\n\n') : steps.join('\n\n');
     })
     .filter((block) => block.length > 0)
     .join('\n\n');

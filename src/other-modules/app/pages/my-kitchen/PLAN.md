@@ -364,6 +364,15 @@ Each phase is usable on its own.
 - [x] Library: "What should we make?" row and "rate these" reminder for unrated cooks
 - [x] Site-provided nutrition shown on the recipe view (no calculation of our own)
 
+### v1c-lite — AI-assisted entry (shipped 2026-10-13, no backend)
+
+- [x] Quick add accepts a JSON recipe format (`lib/recipe-json.ts`) as well as plain text; tolerant of
+      code fences, chatter around the JSON, string arrays and numbers-as-strings
+- [x] "Get an AI to write it for you" panel with a copyable prompt (`core/data/ai-recipe-prompt.ts`):
+      describe a meal to any AI chat, paste its reply; it fills ingredients, steps, options, tags,
+      times and a per-serving nutrition estimate
+- [x] Spec parses the prompt's own example, so the prompt and parser can't drift apart
+
 ### v1c — Import
 
 Function (`functions/src/import-recipe.ts`), kept thin:

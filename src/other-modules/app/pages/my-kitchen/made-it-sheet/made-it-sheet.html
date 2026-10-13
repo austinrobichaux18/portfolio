@@ -52,7 +52,7 @@
         <label for="made-frequency">How often do we want it?</label>
         <select id="made-frequency" [value]="frequency()" (change)="frequency.set($any($event.target).value)">
           @for (f of keepFrequencies; track f.id) {
-            <option [value]="f.id">{{ f.label }} — {{ f.description }}</option>
+            <option [value]="f.id" [selected]="f.id === frequency()">{{ f.label }} — {{ f.description }}</option>
           }
         </select>
         <p class="hint muted">Changed something? Edit the recipe afterwards to fold it in.</p>
