@@ -13,7 +13,7 @@ describe('cook mode helpers', () => {
 
   it('scales the ingredient checklist and includes selected options only', () => {
     const items = cookIngredients(sampleRamen(), ['tofu'], 2);
-    expect(items.map((i) => i.text)).toEqual(['4 packs ramen noodles', '2 blocks tofu']);
+    expect(items.map((i) => i.text)).toEqual(['4 packages ramen noodles', '2 blocks tofu']);
   });
 });
 

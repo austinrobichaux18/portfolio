@@ -2,6 +2,7 @@ import { Component, computed, effect, HostListener, inject, OnDestroy, signal } 
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { FREQUENCIES, TAG_PREFIXES, TRUST_LEVELS } from '../../../core/data/recipe-statuses';
 import { Recipe, RecipeFrequency, RecipeImage, RecipeTrust } from '../../../core/models/Recipe';
+import { Nutrition } from '../../../core/models/Nutrition';
 import { RecipeIngredient } from '../../../core/models/RecipeIngredient';
 import { KitchenImage } from '../kitchen-image/kitchen-image';
 import { formatAmount } from '../lib/format';
@@ -9,7 +10,8 @@ import { applyForm, formFromRecipe, normalizeTags, OptionForm, OptionGroupForm, 
 import { localDateString, shortRandomId } from '../lib/recipe-id';
 import { checkRecipe } from '../lib/recipe-checks';
 import { newRecipe } from '../lib/recipe-loader';
-import { parseIngredientsText, splitPastedRecipe } from '../lib/recipe-text';
+import { splitPastedRecipe } from '../lib/paste-splitter';
+import { parseIngredientsText } from '../lib/recipe-text';
 import { KitchenStateService, PreparedImage } from '../store/kitchen-state.service';
 import { HasUnsavedChanges } from '../unsaved-changes.guard';
 
@@ -101,6 +103,8 @@ export class RecipeEditor implements HasUnsavedChanges, OnDestroy {
   protected readonly addingPhotos = signal(false);
   protected readonly errorMessage = signal('');
   protected readonly draftToRestore = signal<StoredDraft | null>(null);
+  /** Nutrition read from a pasted recipe; saved as the recipe's source nutrition. */
+  protected readonly pastedNutrition = signal<Nutrition | null>(null);
   protected readonly today = localDateString();
 
   private readonly draftKey = `${DRAFT_KEY_PREFIX}${this.state.store()?.label ?? ''}:${this.id ?? 'new'}`;
@@ -207,7 +211,12 @@ export class RecipeEditor implements HasUnsavedChanges, OnDestroy {
       ingredientsText: pasted.ingredientsText || f.ingredientsText,
       stepsText: pasted.stepsText || f.stepsText,
       notes: pasted.notesText ? [f.notes, pasted.notesText].filter(Boolean).join('\n') : f.notes,
+      servings: pasted.servings ? String(pasted.servings) : f.servings,
+      prepMinutes: pasted.prepMinutes ? String(pasted.prepMinutes) : f.prepMinutes,
+      cookMinutes: pasted.cookMinutes ? String(pasted.cookMinutes) : f.cookMinutes,
+      totalMinutes: pasted.totalMinutes ? String(pasted.totalMinutes) : f.totalMinutes,
     }));
+    if (pasted.nutrition) this.pastedNutrition.set(pasted.nutrition);
     this.showPaste.set(false);
     this.pasteText.set('');
   }
@@ -403,6 +412,8 @@ export class RecipeEditor implements HasUnsavedChanges, OnDestroy {
 
       const recipe = applyForm(formToApply, base);
       recipe.images = this.images().map((i) => i.image);
+      const nutrition = this.pastedNutrition();
+      if (nutrition) recipe.sourceNutrition = nutrition;
       // Our own changes to an imported recipe's ingredients or steps make it our adaptation.
       if (base.origin === 'imported') {
         const original = formFromRecipe(base);

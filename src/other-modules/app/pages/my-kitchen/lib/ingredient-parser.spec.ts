@@ -214,6 +214,59 @@ describe('parseIngredientLine', () => {
     });
   });
 
+  describe('real-site patterns', () => {
+    it('removes "(to taste)" cleanly instead of leaving empty parentheses', () => {
+      expect(parseIngredientLine('1 tsp kosher salt (to taste)')).toMatchObject({
+        quantity: 1,
+        unit: 'tsp',
+        name: 'kosher salt',
+        toTaste: true,
+      });
+    });
+
+    it('treats "to season" and "Salt/Pepper" as to taste', () => {
+      expect(parseIngredientLine('kosher salt and freshly-ground black pepper, to season')).toMatchObject({
+        toTaste: true,
+        name: 'kosher salt and freshly-ground black pepper',
+      });
+      expect(parseIngredientLine('Salt/Pepper').toTaste).toBe(true);
+    });
+
+    it('moves a note right after the amount into prep', () => {
+      expect(parseIngredientLine('3 blocks (one package) udon noodles')).toMatchObject({
+        quantity: 3,
+        unit: 'block',
+        name: 'udon noodles',
+        prep: 'one package',
+      });
+    });
+
+    it('drops footnote marks', () => {
+      expect(parseIngredientLine('2 chicken breasts (boneless, skin-on)*')).toMatchObject({
+        name: 'chicken breasts',
+        prep: 'boneless, skin-on',
+      });
+    });
+
+    it('keeps "EACH:" lists together', () => {
+      expect(parseIngredientLine('¾ teaspoon EACH: onion powder, garlic powder')).toMatchObject({
+        quantity: 0.75,
+        unit: 'tsp',
+        name: 'onion powder, garlic powder',
+        prep: 'each',
+      });
+    });
+
+    it.each([
+      ['1 inch fresh ginger, sliced', 'inch', 'fresh ginger'],
+      ['6 leaves bok choy, chopped', 'leaf', 'bok choy'],
+      ['2 (3 oz.) packets instant noodles', 'package', 'instant noodles'],
+      ['1 sheet nori', 'sheet', 'nori'],
+    ])('reads the unit in %s', (line, unit, name) => {
+      expect(parseIngredientLine(line)).toMatchObject({ unit, name });
+    });
+  });
+
   describe('never throws', () => {
     it.each(['', '   ', '()', '1/0 cup', '???', '1', '2 cups', '(14 oz)'])(
       'handles %j without throwing and keeps raw',

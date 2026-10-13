@@ -64,7 +64,7 @@ describe('RecipeView', () => {
     harness.detectChanges();
 
     const content = text(harness.routeNativeElement!);
-    expect(content).toContain('4 packs ramen noodles');
+    expect(content).toContain('4 packages ramen noodles');
     expect(content).toContain('2 eggs');
     expect(content).toContain('Scaled from 2 servings');
   });

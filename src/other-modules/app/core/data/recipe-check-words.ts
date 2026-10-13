@@ -31,6 +31,13 @@ export const COMMON_STEP_INGREDIENTS = [
   'tomato',
 ];
 
+/** A step word counts as listed if any of these appear in the ingredients ("broth" ↔ "stock"). */
+export const STEP_WORD_SYNONYMS: Record<string, string[]> = {
+  broth: ['broth', 'stock', 'bouillon', 'dashi'],
+  stock: ['stock', 'broth', 'bouillon', 'dashi'],
+  onion: ['onion', 'shallot', 'scallion'],
+};
+
 /** Words in an ingredient name that describe it rather than name it; ignored when matching to steps. */
 export const INGREDIENT_DESCRIPTOR_WORDS = new Set([
   'large',

@@ -30,6 +30,9 @@ export const UNITS: UnitInfo[] = [
   { code: 'head', family: 'count', singular: 'head', plural: 'heads' },
   { code: 'stalk', family: 'count', singular: 'stalk', plural: 'stalks' },
   { code: 'sprig', family: 'count', singular: 'sprig', plural: 'sprigs' },
+  { code: 'leaf', family: 'count', singular: 'leaf', plural: 'leaves' },
+  { code: 'sheet', family: 'count', singular: 'sheet', plural: 'sheets' },
+  { code: 'inch', family: 'count', singular: 'inch', plural: 'inches' },
   { code: 'piece', family: 'count', singular: 'piece', plural: 'pieces' },
 ];
 
@@ -130,6 +133,16 @@ export const UNIT_ALIASES: Record<string, UnitCode> = {
   stalks: 'stalk',
   sprig: 'sprig',
   sprigs: 'sprig',
+  leaf: 'leaf',
+  leaves: 'leaf',
+  sheet: 'sheet',
+  sheets: 'sheet',
+  inch: 'inch',
+  inches: 'inch',
+  pack: 'package',
+  packs: 'package',
+  packet: 'package',
+  packets: 'package',
   piece: 'piece',
   pieces: 'piece',
 };

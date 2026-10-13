@@ -29,6 +29,9 @@ export type UnitCode =
   | 'head'
   | 'stalk'
   | 'sprig'
+  | 'leaf'
+  | 'sheet'
+  | 'inch'
   | 'piece';
 
 export type UnitFamily = 'volume' | 'weight' | 'count' | 'imprecise';

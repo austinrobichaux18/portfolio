@@ -29,13 +29,17 @@ const MULTI_WORD_ALIASES = Object.keys(UNIT_ALIASES)
   .filter((alias) => alias.includes(' '))
   .sort((a, b) => b.length - a.length);
 
-const SALT_AND_PEPPER_RE = /^(?:kosher |sea |fine )?salt\s+(?:and|&)\s+(?:freshly ground |ground )?(?:black )?pepper$/i;
+const SALT_AND_PEPPER_RE =
+  /^(?:kosher |sea |fine )?salt\s*(?:and|&|\/)\s*(?:freshly[- ]ground |fresh |ground )?(?:black )?pepper$/i;
 
 /** Parses one ingredient line. Never throws: anything it can't understand stays in `raw` and `name`. */
 export function parseIngredientLine(line: string): RecipeIngredient {
   const raw = line.trim();
   const result: RecipeIngredient = { raw };
-  let text = normalizeFractions(raw).replace(/^[-*•▢□✓]\s*/, '');
+  // Bullets/checkboxes copied from recipe sites, and trailing footnote marks ("skin-on)*", "¹").
+  let text = normalizeFractions(raw)
+    .replace(/^[-*•▢□✓]\s*/, '')
+    .replace(/\s*[*†‡¹²³⁴⁵]+$/, '');
 
   if (/\[no-scale\]/i.test(text)) {
     result.scales = false;
@@ -50,9 +54,11 @@ export function parseIngredientLine(line: string): RecipeIngredient {
       .replace(/^optional\s*:\s*/i, '');
   }
 
-  if (/\bto taste\b/i.test(text)) {
+  if (/\bto (?:taste|season)\b/i.test(text)) {
     result.toTaste = true;
-    text = text.replace(/,?\s*\bto taste\b/gi, '');
+    text = text
+      .replace(/\s*\(\s*to (?:taste|season)\s*\)/gi, '')
+      .replace(/,?\s*\bto (?:taste|season)\b/gi, '');
   }
 
   text = text.replace(/\s+/g, ' ').trim();
@@ -90,9 +96,20 @@ export function parseIngredientLine(line: string): RecipeIngredient {
 
   text = text.replace(/^of\s+/i, '').trim();
 
-  const { name, prep } = splitNameAndPrep(text);
+  // "3 blocks (one package) Ty Ling noodles": a note right after the amount isn't part of the name.
+  let leadingNote = '';
+  const note = /^\(([^()]+)\)\s*/.exec(text);
+  if (note && result.quantity !== undefined) {
+    leadingNote = note[1].trim();
+    text = text.slice(note[0].length);
+  }
+
+  // "¾ tsp EACH: onion powder, mustard powder" — one amount for several things; keep them together.
+  const each = /^each\s*:\s*/i.exec(text);
+  const { name, prep } = each ? { name: text.slice(each[0].length).trim(), prep: 'each' } : splitNameAndPrep(text);
   if (name) result.name = name;
-  if (prep) result.prep = prep;
+  const allPrep = [leadingNote, prep].filter(Boolean).join(', ');
+  if (allPrep) result.prep = allPrep;
 
   if (result.name && SALT_AND_PEPPER_RE.test(result.name)) result.toTaste = true;
 

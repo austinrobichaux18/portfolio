@@ -1,4 +1,8 @@
-import { COMMON_STEP_INGREDIENTS, INGREDIENT_DESCRIPTOR_WORDS } from '../../../core/data/recipe-check-words';
+import {
+  COMMON_STEP_INGREDIENTS,
+  INGREDIENT_DESCRIPTOR_WORDS,
+  STEP_WORD_SYNONYMS,
+} from '../../../core/data/recipe-check-words';
 import { Recipe } from '../../../core/models/Recipe';
 
 export interface RecipeCheck {
@@ -44,9 +48,8 @@ export function checkRecipe(recipe: Recipe): RecipeCheck[] {
     ]
       .join('\n')
       .toLowerCase();
-    const missing = COMMON_STEP_INGREDIENTS.filter(
-      (word) => wordPattern(word).test(stepText) && !ingredientText.includes(word),
-    );
+    const isListed = (word: string) => (STEP_WORD_SYNONYMS[word] ?? [word]).some((w) => ingredientText.includes(w));
+    const missing = COMMON_STEP_INGREDIENTS.filter((word) => wordPattern(word).test(stepText) && !isListed(word));
     if (missing.length) {
       checks.push({
         level: 'warning',

@@ -6,7 +6,6 @@ import {
   parseIngredientsText,
   parseOptionIngredientsText,
   parseStepsText,
-  splitPastedRecipe,
   stepsToText,
 } from './recipe-text';
 
@@ -115,48 +114,5 @@ describe('steps text', () => {
       { name: 'Toppings', steps: [{ text: 'Soft-boil the eggs.', image: 'img-x.webp' }] },
     ];
     expect(parseStepsText(stepsToText(model), model)).toEqual(model);
-  });
-});
-
-describe('splitPastedRecipe', () => {
-  it('splits on headings and drops the intro', () => {
-    const pasted = `Easy Weeknight Ramen
-This recipe reminds me of a trip I took in 2009, when...
-Ingredients
-2 packs ramen noodles
-For the broth:
-4 cups chicken stock
-Instructions
-1. Boil the stock.
-2) Add noodles and cook 3 minutes.
-Step 3: Serve.
-Notes
-Leftover broth freezes well.`;
-
-    expect(splitPastedRecipe(pasted)).toEqual({
-      title: 'Easy Weeknight Ramen',
-      ingredientsText: '2 packs ramen noodles\n## For the broth\n4 cups chicken stock',
-      stepsText: 'Boil the stock.\n\nAdd noodles and cook 3 minutes.\n\nServe.',
-      notesText: 'Leftover broth freezes well.',
-    });
-  });
-
-  it('accepts heading variants with colons', () => {
-    const result = splitPastedRecipe('Tacos\nIngredients:\n1 lb beef\nDirections:\nBrown the beef.');
-    expect(result.ingredientsText).toBe('1 lb beef');
-    expect(result.stepsText).toBe('Brown the beef.');
-  });
-
-  it('guesses when there are no headings', () => {
-    const result = splitPastedRecipe('Pancakes\n1 cup flour\n1 egg\nWhisk everything together.\nCook on a hot griddle.');
-    expect(result.title).toBe('Pancakes');
-    expect(result.ingredientsText).toBe('1 cup flour\n1 egg');
-    expect(result.stepsText).toBe('Whisk everything together.\n\nCook on a hot griddle.');
-  });
-
-  it('does not strip a leading number that is part of the step', () => {
-    expect(splitPastedRecipe('Steps\n10-15 minutes before serving, warm the plates.').stepsText).toBe(
-      '10-15 minutes before serving, warm the plates.',
-    );
   });
 });
