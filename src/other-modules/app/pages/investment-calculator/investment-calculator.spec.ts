@@ -1,6 +1,7 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import { InvestmentCalculator } from './investment-calculator';
+import { formatNumericInputValue } from './numeric-value';
 import { STATE_TAX_RATES } from '../../core/data/state-tax-rates';
 
 const AVERAGE_STATE_TAX_RATE_PERCENT =
@@ -249,25 +250,25 @@ describe('InvestmentCalculator', () => {
     expect(component.result().totalContributions).toBeCloseTo(3_000, 2);
   });
 
-  it('adds thousands separators to a number textbox once it loses focus', () => {
-    const input = document.createElement('input');
-    input.value = '1000000';
-    component.formatNumberInputOnBlur({ target: input } as unknown as Event);
-    expect(input.value).toBe('1,000,000');
+  it('formats numbers for a textbox with thousands separators, preserving decimals', () => {
+    expect(formatNumericInputValue(1_000_000)).toBe('1,000,000');
+    expect(formatNumericInputValue(1234.5)).toBe('1,234.5');
+    expect(formatNumericInputValue(null)).toBe('');
+    expect(formatNumericInputValue('')).toBe('');
   });
 
-  it('strips existing commas before reformatting on blur, preserving decimals', () => {
-    const input = document.createElement('input');
-    input.value = '1,234.5';
-    component.formatNumberInputOnBlur({ target: input } as unknown as Event);
-    expect(input.value).toBe('1,234.5');
-  });
+  it('does not overwrite a number textbox while it has focus, then re-syncs on blur', () => {
+    fixture.detectChanges();
+    const input = fixture.nativeElement.querySelector('#starting-amount') as HTMLInputElement;
+    input.focus();
+    input.value = '1,5000';
+    input.dispatchEvent(new Event('input'));
+    fixture.detectChanges();
+    expect(component.startingAmount()).toBe(15_000);
+    expect(input.value).toBe('1,5000');
 
-  it('leaves an empty or invalid number textbox alone on blur', () => {
-    const input = document.createElement('input');
-    input.value = '';
-    component.formatNumberInputOnBlur({ target: input } as unknown as Event);
-    expect(input.value).toBe('');
+    input.blur();
+    expect(input.value).toBe('15,000');
   });
 
   it('parses a comma-formatted value back into a plain number', () => {
@@ -595,5 +596,92 @@ describe('InvestmentCalculator', () => {
       .filter((year) => component.coversCostOfLiving(year, rows[year - 1].endingBalance));
     expect(coveredYears.length).toBeGreaterThan(1);
     expect(component.firstCostOfLivingCoveredYear()).toBe(coveredYears[0]);
+  });
+
+  it('keeps a held goal amount fixed and re-solves the horizon when other inputs change', () => {
+    component.setGoalAmount('3,000,000');
+    expect(component.heldGoal()).toBe('amount');
+    const yearsBefore = component.years();
+
+    component.setContributionAmount('2000');
+    expect(component.goalAmountDisplay()).toBe(3_000_000);
+    expect(component.years()).toBeLessThan(yearsBefore);
+    expect(component.result().endingBalance).toBeGreaterThanOrEqual(3_000_000);
+  });
+
+  it('keeps a held goal withdrawal fixed when the withdrawal rate changes', () => {
+    component.setGoalWithdrawal('40000');
+    component.setWithdrawalRatePercent('4');
+    expect(component.goalWithdrawalDisplay()).toBe(40_000);
+    expect(component.result().endingBalance).toBeGreaterThanOrEqual(1_000_000);
+  });
+
+  it('keeps a held retirement age fixed when current age changes', () => {
+    component.setCurrentAge('30');
+    component.setRetirementAge('65');
+    component.setCurrentAge('40');
+    expect(component.years()).toBe(25);
+    expect(component.goalRetirementAge()).toBe(65);
+  });
+
+  it('moves the hold back to the time horizon when years/months are edited', () => {
+    component.setGoalAmount('1,000,000');
+    component.setYears('10');
+    expect(component.heldGoal()).toBe('horizon');
+    component.setContributionAmount('2000');
+    expect(component.years()).toBe(10);
+  });
+
+  it('locks in the current value when a hold toggle is switched on, and releases to the horizon', () => {
+    const balance = Math.floor(component.result().endingBalance);
+    component.setHeldGoal('amount', true);
+    component.setStartingAmount('50000');
+    expect(component.goalAmountDisplay()).toBe(balance);
+    expect(component.result().endingBalance).toBeGreaterThanOrEqual(balance);
+
+    const yearsWhileHeld = component.years();
+    component.setHeldGoal('amount', false);
+    expect(component.heldGoal()).toBe('horizon');
+    expect(component.years()).toBe(yearsWhileHeld);
+
+    // The horizon always holds by default, so it can't be switched off on its own.
+    component.setHeldGoal('horizon', false);
+    expect(component.heldGoal()).toBe('horizon');
+  });
+
+  it("solves a goal amount in today's dollars when that toggle is on", () => {
+    component.setGoalAmountInTodaysDollars(true);
+    component.setGoalAmount('1,000,000');
+    expect(component.result().endingBalanceReal).toBeGreaterThanOrEqual(1_000_000);
+    const realMonths = component.years() * 12 + component.months();
+
+    component.setGoalAmountInTodaysDollars(false);
+    const nominalMonths = component.years() * 12 + component.months();
+    expect(realMonths).toBeGreaterThan(nominalMonths);
+    expect(component.goalAmountDisplay()).toBe(1_000_000);
+  });
+
+  it("shows the goal withdrawal in today's dollars when that toggle is on", () => {
+    component.setGoalWithdrawalInTodaysDollars(true);
+    expect(component.goalWithdrawalDisplay()).toBe(
+      Math.round(component.withdrawalAmount(component.result().endingBalanceReal)),
+    );
+  });
+
+  it("still finds a today's-dollars goal when returns trail inflation", () => {
+    component.setAnnualInterestRatePercent('2');
+    component.setInflationRatePercent('3');
+    component.setGoalAmountInTodaysDollars(true);
+    component.setGoalAmount('10000');
+    expect(component.goalUnreachable()).toBe(false);
+    expect(component.result().endingBalanceReal).toBeGreaterThanOrEqual(10_000);
+  });
+
+  it("shows the final-year withdrawal in today's dollars", () => {
+    component.setCurrentAge('');
+    expect(component.finalYearWithdrawalReal()).toBeCloseTo(
+      component.withdrawalAmount(component.result().endingBalanceReal),
+    );
+    expect(component.finalYearWithdrawalReal()).toBeLessThan(component.finalYearWithdrawal());
   });
 });

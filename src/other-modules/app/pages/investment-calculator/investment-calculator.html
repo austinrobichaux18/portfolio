@@ -141,11 +141,9 @@
               #startingAmountInput
               id="starting-amount"
               type="text"
-              data-numeric
               inputmode="decimal"
-              [value]="startingAmount()"
+              [appNumericValue]="startingAmount()"
               (input)="setStartingAmount(startingAmountInput.value)"
-              (blur)="formatNumberInputOnBlur($event)"
             />
           </div>
         </div>
@@ -186,11 +184,9 @@
               #contributionAmountInput
               id="contribution-amount"
               type="text"
-              data-numeric
               inputmode="decimal"
-              [value]="contributionAmount()"
+              [appNumericValue]="contributionAmount()"
               (input)="setContributionAmount(contributionAmountInput.value)"
-              (blur)="formatNumberInputOnBlur($event)"
             />
           </div>
         </div>
@@ -228,12 +224,10 @@
                 <input
                   #checkingBalanceInput
                   type="text"
-                  data-numeric
                   inputmode="decimal"
                   aria-label="Current checking balance"
-                  [value]="currentCheckingBalance()"
+                  [appNumericValue]="currentCheckingBalance()"
                   (input)="setCurrentCheckingBalance(checkingBalanceInput.value)"
-                  (blur)="formatNumberInputOnBlur($event)"
                 />
               </div>
               <span class="saved-balance-label">in checking</span>
@@ -245,12 +239,10 @@
                 <input
                   #savingsBalanceInput
                   type="text"
-                  data-numeric
                   inputmode="decimal"
                   aria-label="Current HYSA/savings balance"
-                  [value]="currentSavingsBalance()"
+                  [appNumericValue]="currentSavingsBalance()"
                   (input)="setCurrentSavingsBalance(savingsBalanceInput.value)"
-                  (blur)="formatNumberInputOnBlur($event)"
                 />
               </div>
               <span class="saved-balance-label">in a HYSA</span>
@@ -298,11 +290,9 @@
               #interestRateInput
               id="interest-rate"
               type="text"
-              data-numeric
               inputmode="decimal"
-              [value]="annualInterestRatePercent()"
+              [appNumericValue]="annualInterestRatePercent()"
               (input)="setAnnualInterestRatePercent(interestRateInput.value)"
-              (blur)="formatNumberInputOnBlur($event)"
             />
             <span>%</span>
           </div>
@@ -344,29 +334,30 @@
               #inflationRateInput
               id="inflation-rate"
               type="text"
-              data-numeric
               inputmode="decimal"
-              [value]="inflationRatePercent()"
+              [appNumericValue]="inflationRatePercent()"
               (input)="setInflationRatePercent(inflationRateInput.value)"
-              (blur)="formatNumberInputOnBlur($event)"
             />
             <span>%</span>
           </div>
         </div>
 
         <div class="form-row">
-          <label for="years">Time Horizon</label>
+          <div class="label-with-info">
+            <label for="years">Time Horizon</label>
+            <ng-container
+              *ngTemplateOutlet="holdToggle; context: { $implicit: 'horizon', label: 'Time Horizon' }"
+            />
+          </div>
           <div class="half-input-row">
             <div class="input-suffix">
               <input
                 #yearsInput
                 id="years"
                 type="text"
-                data-numeric
                 inputmode="numeric"
-                [value]="years()"
-                (input)="setYears(yearsInput.value); syncClampedInput(yearsInput, years())"
-                (blur)="formatIntegerInputOnBlur($event)"
+                [appNumericValue]="years()"
+                (input)="setYears(yearsInput.value)"
               />
               <span>years</span>
             </div>
@@ -375,68 +366,118 @@
                 #monthsInput
                 id="months"
                 type="text"
-                data-numeric
                 inputmode="numeric"
-                [value]="months()"
-                (input)="setMonths(monthsInput.value); syncClampedInput(monthsInput, months())"
-                (blur)="formatIntegerInputOnBlur($event)"
+                [appNumericValue]="months()"
+                (input)="setMonths(monthsInput.value)"
               />
               <span>months</span>
             </div>
           </div>
-          <label for="retirement-age">Goal Retirement Age</label>
+          <div class="label-with-info">
+            <label for="retirement-age">Goal Retirement Age</label>
+            <ng-container
+              *ngTemplateOutlet="holdToggle; context: { $implicit: 'age', label: 'Goal Retirement Age' }"
+            />
+          </div>
           <input
             #retirementAgeInput
             id="retirement-age"
             type="text"
-            data-numeric
             inputmode="numeric"
             placeholder="e.g. 65"
             [disabled]="currentAge() === null"
-            [value]="retirementAgeDraft() ?? (goalRetirementAge() ?? '')"
+            [appNumericValue]="retirementAgeDisplay()"
             (input)="setRetirementAge(retirementAgeInput.value)"
-            (blur)="formatIntegerInputOnBlur($event); clearRetirementAgeDraft()"
           />
           @if (currentAge() === null) {
             <p class="field-note">Enter your current age below to use this.</p>
           }
-          <label for="goal-amount">Goal Retirement Amount</label>
+          <div class="label-with-info">
+            <label for="goal-amount">Goal Retirement Amount</label>
+            <div class="goal-toggles">
+              <label class="toggle-switch">
+                <input
+                  #goalAmountRealInput
+                  type="checkbox"
+                  aria-label="Goal Retirement Amount in today's dollars (inflation-adjusted)"
+                  [checked]="goalAmountInTodaysDollars()"
+                  (change)="setGoalAmountInTodaysDollars(goalAmountRealInput.checked)"
+                />
+                <span class="toggle-track"><span class="toggle-thumb"></span></span>
+                <span class="toggle-text">Today's $</span>
+              </label>
+              <ng-container
+                *ngTemplateOutlet="holdToggle; context: { $implicit: 'amount', label: 'Goal Retirement Amount' }"
+              />
+            </div>
+          </div>
           <div class="input-prefix">
             <span>$</span>
             <input
               #goalAmountInput
               id="goal-amount"
               type="text"
-              data-numeric
               inputmode="decimal"
-              [value]="goalAmountDraft() ?? formatWholeNumber(result().endingBalance)"
+              [appNumericValue]="goalAmountDisplay()"
               (input)="setGoalAmount(goalAmountInput.value)"
-              (blur)="clearGoalDrafts(); formatNumberInputOnBlur($event)"
             />
           </div>
-          <label for="goal-withdrawal">Goal Withdraw (per year)</label>
+          <div class="label-with-info">
+            <label for="goal-withdrawal">Goal Withdraw (per year)</label>
+            <div class="goal-toggles">
+              <label class="toggle-switch">
+                <input
+                  #goalWithdrawalRealInput
+                  type="checkbox"
+                  aria-label="Goal Withdraw in today's dollars (inflation-adjusted)"
+                  [checked]="goalWithdrawalInTodaysDollars()"
+                  (change)="setGoalWithdrawalInTodaysDollars(goalWithdrawalRealInput.checked)"
+                />
+                <span class="toggle-track"><span class="toggle-thumb"></span></span>
+                <span class="toggle-text">Today's $</span>
+              </label>
+              <ng-container
+                *ngTemplateOutlet="holdToggle; context: { $implicit: 'withdrawal', label: 'Goal Withdraw' }"
+              />
+            </div>
+          </div>
           <div class="input-prefix">
             <span>$</span>
             <input
               #goalWithdrawalInput
               id="goal-withdrawal"
               type="text"
-              data-numeric
               inputmode="decimal"
-              [value]="goalWithdrawalDraft() ?? formatWholeNumber(goalWithdrawal())"
+              [appNumericValue]="goalWithdrawalDisplay()"
               (input)="setGoalWithdrawal(goalWithdrawalInput.value)"
-              (blur)="clearGoalDrafts(); formatNumberInputOnBlur($event)"
             />
           </div>
           <p class="field-note">
-            These four fields set each other. The withdrawal uses your Withdrawal Rate below and
-            excludes Social Security.
+            These four fields set each other. The one on hold (by default, the last one you edited)
+            stays fixed when you change other inputs, and the rest adjust around it. The withdrawal
+            uses your Withdrawal Rate below and excludes Social Security. Turn on "Today's $" to
+            set a goal in today's purchasing power, adjusted by your Inflation Rate.
           </p>
           @if (goalUnreachable()) {
             <p class="field-note budget-warning">
               That goal isn't reachable within {{ maxHorizonYears }} years with the current inputs.
             </p>
           }
+
+          <ng-template #holdToggle let-field let-label="label">
+            <label class="toggle-switch">
+              <input
+                #holdInput
+                type="checkbox"
+                [attr.aria-label]="'Hold ' + label"
+                [checked]="heldGoal() === field"
+                [disabled]="field === 'age' && currentAge() === null"
+                (change)="setHeldGoal(field, holdInput.checked); holdInput.checked = heldGoal() === field"
+              />
+              <span class="toggle-track"><span class="toggle-thumb"></span></span>
+              <span class="toggle-text">Hold</span>
+            </label>
+          </ng-template>
         </div>
 
         <div class="form-row">
@@ -445,12 +486,10 @@
             #currentAgeInput
             id="current-age"
             type="text"
-            data-numeric
             inputmode="numeric"
             placeholder="e.g. 30"
-            [value]="currentAge() ?? ''"
+            [appNumericValue]="currentAge() ?? ''"
             (input)="setCurrentAge(currentAgeInput.value)"
-            (blur)="formatNumberInputOnBlur($event)"
           />
         </div>
 
@@ -482,11 +521,9 @@
               #costOfLivingInputTop
               id="cost-of-living-top"
               type="text"
-              data-numeric
               inputmode="decimal"
-              [value]="costOfLivingDisplayAmount()"
+              [appNumericValue]="costOfLivingDisplayAmount()"
               (input)="setCostOfLivingAmount(costOfLivingInputTop.value)"
-              (blur)="formatNumberInputOnBlur($event)"
             />
           </div>
         </div>
@@ -507,11 +544,9 @@
               #withdrawalRateInput
               id="withdrawal-rate"
               type="text"
-              data-numeric
               inputmode="decimal"
-              [value]="withdrawalRatePercent()"
+              [appNumericValue]="withdrawalRatePercent()"
               (input)="setWithdrawalRatePercent(withdrawalRateInput.value)"
-              (blur)="formatNumberInputOnBlur($event)"
             />
             <span>%</span>
           </div>
@@ -529,11 +564,9 @@
               #monthlyMortgageInput
               id="monthly-mortgage"
               type="text"
-              data-numeric
               inputmode="decimal"
-              [value]="monthlyMortgagePayment()"
+              [appNumericValue]="monthlyMortgagePayment()"
               (input)="setMonthlyMortgagePayment(monthlyMortgageInput.value)"
-              (blur)="formatNumberInputOnBlur($event)"
             />
           </div>
           @if (monthlyMortgagePayment() > 0) {
@@ -570,12 +603,10 @@
                 #boostAmountInput
                 [id]="'boost-amount-' + boost.id"
                 type="text"
-                data-numeric
                 inputmode="decimal"
-                [value]="boost.additionalMonthlyAmount || ''"
+                [appNumericValue]="boost.additionalMonthlyAmount || ''"
                 placeholder="0"
                 (input)="setBoostAmount(boost.id, boostAmountInput.value)"
-                (blur)="formatNumberInputOnBlur($event)"
               />
             </div>
 
@@ -585,12 +616,10 @@
                 #boostAgeInput
                 [id]="'boost-age-' + boost.id"
                 type="text"
-                data-numeric
                 inputmode="numeric"
                 placeholder="e.g. 50"
-                [value]="boost.atAge ?? ''"
+                [appNumericValue]="boost.atAge ?? ''"
                 (input)="setBoostAtAge(boost.id, boostAgeInput.value)"
-                (blur)="formatIntegerInputOnBlur($event)"
               />
             } @else {
               <label [for]="'boost-year-' + boost.id">Starting at Year</label>
@@ -598,12 +627,10 @@
                 #boostYearInput
                 [id]="'boost-year-' + boost.id"
                 type="text"
-                data-numeric
                 inputmode="numeric"
                 placeholder="e.g. 20"
-                [value]="boost.atYear ?? ''"
+                [appNumericValue]="boost.atYear ?? ''"
                 (input)="setBoostAtYear(boost.id, boostYearInput.value)"
-                (blur)="formatIntegerInputOnBlur($event)"
               />
             }
 
@@ -722,11 +749,9 @@
                   #yearlyAmountInput
                   [id]="'income-' + entry.id"
                   type="text"
-                  data-numeric
                   inputmode="decimal"
-                  [value]="entry.yearlyAmount"
+                  [appNumericValue]="entry.yearlyAmount"
                   (input)="setIncomeEntryYearlyAmount(entry.id, yearlyAmountInput.value)"
-                  (blur)="formatNumberInputOnBlur($event)"
                 />
               </div>
             } @else if (entry.mode === 'monthly') {
@@ -736,11 +761,9 @@
                   #monthlyAmountInput
                   [id]="'income-' + entry.id"
                   type="text"
-                  data-numeric
                   inputmode="decimal"
-                  [value]="entry.monthlyAmount"
+                  [appNumericValue]="entry.monthlyAmount"
                   (input)="setIncomeEntryMonthlyAmount(entry.id, monthlyAmountInput.value)"
-                  (blur)="formatNumberInputOnBlur($event)"
                 />
               </div>
             } @else {
@@ -750,11 +773,9 @@
                   #hourlyRateInput
                   [id]="'income-' + entry.id"
                   type="text"
-                  data-numeric
                   inputmode="decimal"
-                  [value]="entry.hourlyRate"
+                  [appNumericValue]="entry.hourlyRate"
                   (input)="setIncomeEntryHourlyRate(entry.id, hourlyRateInput.value)"
-                  (blur)="formatNumberInputOnBlur($event)"
                 />
                 <span class="suffix">/hr</span>
               </div>
@@ -763,11 +784,9 @@
                   <input
                     #hoursPerWeekInput
                     type="text"
-                    data-numeric
                     inputmode="decimal"
-                    [value]="entry.hoursPerWeek"
+                    [appNumericValue]="entry.hoursPerWeek"
                     (input)="setIncomeEntryHoursPerWeek(entry.id, hoursPerWeekInput.value)"
-                    (blur)="formatNumberInputOnBlur($event)"
                   />
                   <span>hrs/wk</span>
                 </div>
@@ -775,11 +794,9 @@
                   <input
                     #weeksPerYearInput
                     type="text"
-                    data-numeric
                     inputmode="decimal"
-                    [value]="entry.weeksPerYear"
+                    [appNumericValue]="entry.weeksPerYear"
                     (input)="setIncomeEntryWeeksPerYear(entry.id, weeksPerYearInput.value)"
-                    (blur)="formatNumberInputOnBlur($event)"
                   />
                   <span>wks/yr</span>
                 </div>
@@ -837,11 +854,9 @@
               #stateTaxRateInput
               id="state-tax-rate"
               type="text"
-              data-numeric
               inputmode="decimal"
-              [value]="stateTaxRatePercent()"
+              [appNumericValue]="stateTaxRatePercent()"
               (input)="setStateTaxRatePercent(stateTaxRateInput.value)"
-              (blur)="formatNumberInputOnBlur($event)"
             />
             <span>%</span>
           </div>
@@ -910,11 +925,9 @@
               #withholdingsInput
               id="withholdings"
               type="text"
-              data-numeric
               inputmode="decimal"
-              [value]="withholdingsAmount()"
+              [appNumericValue]="withholdingsAmount()"
               (input)="setWithholdingsAmount(withholdingsInput.value)"
-              (blur)="formatNumberInputOnBlur($event)"
             />
           </div>
         </div>
@@ -984,11 +997,9 @@
               #costOfLivingInput
               id="cost-of-living"
               type="text"
-              data-numeric
               inputmode="decimal"
-              [value]="costOfLivingDisplayAmount()"
+              [appNumericValue]="costOfLivingDisplayAmount()"
               (input)="setCostOfLivingAmount(costOfLivingInput.value)"
-              (blur)="formatNumberInputOnBlur($event)"
             />
           </div>
         </div>
@@ -1119,15 +1130,23 @@
           </span>
           <span class="stat-value">{{ formatCurrency(finalYearWithdrawal()) }}</span>
         </div>
-        @if (inflationRatePercent() > 0) {
+      </div>
+      @if (inflationRatePercent() > 0) {
+        <div class="stat-grid stat-grid-row">
           <div class="stat-chip">
             <span class="stat-label"
               >Ending Balance (Today's $, {{ inflationRatePercent() }}% inflation)</span
             >
             <span class="stat-value">{{ formatCurrency(result().endingBalanceReal) }}</span>
           </div>
-        }
-      </div>
+          <div class="stat-chip">
+            <span class="stat-label"
+              >Withdraw Each Year (Today's $, {{ inflationRatePercent() }}% inflation)</span
+            >
+            <span class="stat-value">{{ formatCurrency(finalYearWithdrawalReal()) }}</span>
+          </div>
+        </div>
+      }
 
       @if (pieChart(); as pie) {
         <div class="pie-section">

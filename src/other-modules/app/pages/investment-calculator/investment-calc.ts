@@ -32,16 +32,32 @@ function toRealValue(nominalValue: number, inflationRatePercent: number, years: 
 
 /**
  * Smallest whole number of months for the ending balance to reach `targetBalance`, or null if it
- * can't within `maxMonths`. Binary-searches over calculateInvestment, relying on the balance only
- * ever growing with time (contributions and rates are non-negative).
+ * can't within `maxMonths`. With `inTodaysDollars`, the inflation-adjusted balance is compared
+ * instead. Binary-searches over calculateInvestment, relying on the balance only ever growing with
+ * time (contributions and rates are non-negative). That holds for the real balance too unless
+ * returns trail inflation, in which case it can peak and fall, so that case scans month by month.
  */
 export function monthsToReachBalance(
   inputs: Omit<InvestmentInputs, 'years' | 'months'>,
   targetBalance: number,
   maxMonths: number,
+  inTodaysDollars = false,
 ): number | null {
-  const balanceAt = (totalMonths: number) =>
-    calculateInvestment({ ...inputs, years: 0, months: totalMonths }).endingBalance;
+  const balanceAt = (totalMonths: number) => {
+    const result = calculateInvestment({ ...inputs, years: 0, months: totalMonths });
+    return inTodaysDollars ? result.endingBalanceReal : result.endingBalance;
+  };
+
+  const yearlyGrowth = Math.pow(
+    monthlyGrowthFactor(inputs.annualInterestRatePercent, inputs.compoundFrequency),
+    12,
+  );
+  if (inTodaysDollars && yearlyGrowth < 1 + (inputs.inflationRatePercent ?? 0) / 100) {
+    for (let month = 0; month <= maxMonths; month++) {
+      if (balanceAt(month) >= targetBalance) return month;
+    }
+    return null;
+  }
 
   if (balanceAt(maxMonths) < targetBalance) return null;
   let low = 0;

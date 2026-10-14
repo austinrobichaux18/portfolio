@@ -1,5 +1,5 @@
-import { Component, HostListener, afterNextRender, computed, signal } from '@angular/core';
-import { DatePipe } from '@angular/common';
+import { Component, HostListener, computed, signal } from '@angular/core';
+import { DatePipe, NgTemplateOutlet } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import {
   CompoundFrequency,
@@ -19,6 +19,7 @@ import { HOUSEHOLD_PRESETS } from '../../core/data/household-presets';
 import { MAX_HORIZON_YEARS, calculateInvestment, monthsToReachBalance } from './investment-calc';
 import { calculateHouseholdBudget, incomeEntryAnnualAmount } from './household-budget-calc';
 import { loadHistory, saveHistory } from './investment-storage';
+import { NumericValue } from './numeric-value';
 
 const MAX_INCOME_ENTRIES = 10;
 
@@ -194,41 +195,17 @@ function formatCurrency(value: number): string {
   });
 }
 
-/** Reformats a number textbox with thousands separators once the user finishes typing (on blur). */
-function formatNumberInputOnBlur(event: Event): void {
-  const input = event.target as HTMLInputElement;
-  const normalized = input.value.replace(/,/g, '').trim();
-  if (normalized === '') return;
-  const value = Number(normalized);
-  if (!Number.isFinite(value)) return;
-  input.value = value.toLocaleString('en-US', { maximumFractionDigits: 2 });
-}
-
-/** Same as formatNumberInputOnBlur, but for whole-number fields (years, months) — no decimal places. */
-function formatIntegerInputOnBlur(event: Event): void {
-  const input = event.target as HTMLInputElement;
-  const normalized = input.value.replace(/,/g, '').trim();
-  if (normalized === '') return;
-  const value = Number(normalized);
-  if (!Number.isFinite(value)) return;
-  input.value = Math.round(value).toLocaleString('en-US');
-}
+/** Which of the four linked horizon/goal fields stays fixed while other inputs change. */
+export type HeldGoal = 'horizon' | 'age' | 'amount' | 'withdrawal';
 
 @Component({
   selector: 'app-investment-calculator',
-  imports: [DatePipe, RouterLink],
+  imports: [DatePipe, NgTemplateOutlet, RouterLink, NumericValue],
   templateUrl: './investment-calculator.html',
   styleUrl: './investment-calculator.scss',
 })
 export class InvestmentCalculator {
   readonly formatCurrency = formatCurrency;
-
-  readonly formatNumberInputOnBlur = formatNumberInputOnBlur;
-
-  readonly formatIntegerInputOnBlur = formatIntegerInputOnBlur;
-
-  readonly formatWholeNumber = (value: number) =>
-    Math.round(value).toLocaleString('en-US');
 
   readonly ssAverageAnnualBenefit = SS_AVERAGE_ANNUAL_BENEFIT;
 
@@ -240,10 +217,6 @@ export class InvestmentCalculator {
       discretionaryIncome: incomeAfterTaxes - q.annualExpenditures,
     };
   });
-
-  constructor() {
-    afterNextRender(() => this.formatAllNumericInputsSoon());
-  }
 
   startingAmount = signal(0);
 
@@ -257,9 +230,72 @@ export class InvestmentCalculator {
 
   compoundFrequency = signal<CompoundFrequency>('annually');
 
-  years = signal(37);
+  /** The horizon as last typed into years/months — used directly while the horizon is held. */
+  private manualHorizonMonths = signal(37 * 12);
 
-  months = signal(0);
+  heldGoal = signal<HeldGoal>('horizon');
+
+  /** The target kept fixed for the age/amount/withdrawal fields while that field is held. */
+  private heldRetirementAge = signal(0);
+
+  private heldGoalAmount = signal(0);
+
+  private heldGoalWithdrawal = signal(0);
+
+  /** When on, the goal amount/withdrawal fields are in today's dollars (inflation-adjusted). */
+  goalAmountInTodaysDollars = signal(false);
+
+  goalWithdrawalInTodaysDollars = signal(false);
+
+  /**
+   * Total months for the held field's target, or null when it can't be reached within
+   * MAX_HORIZON_YEARS (or doesn't apply, e.g. age held with no current age).
+   */
+  private solvedHorizonMonths = computed<number | null>(() => {
+    const maxMonths = MAX_HORIZON_YEARS * 12;
+    switch (this.heldGoal()) {
+      case 'horizon':
+        return this.manualHorizonMonths();
+      case 'age': {
+        const age = this.currentAge();
+        if (age === null) return null;
+        return Math.min(maxMonths, Math.max(0, (this.heldRetirementAge() - age) * 12));
+      }
+      case 'amount':
+        return monthsToReachBalance(
+          this.projectionInputs(),
+          this.heldGoalAmount(),
+          maxMonths,
+          this.goalAmountInTodaysDollars(),
+        );
+      case 'withdrawal': {
+        const rate = this.withdrawalRatePercent() / 100;
+        if (rate <= 0) return null;
+        return monthsToReachBalance(
+          this.projectionInputs(),
+          this.heldGoalWithdrawal() / rate,
+          maxMonths,
+          this.goalWithdrawalInTodaysDollars(),
+        );
+      }
+    }
+  });
+
+  /** Falls back to the last manually entered horizon when the held goal can't be solved. */
+  private horizonMonths = computed(
+    () => this.solvedHorizonMonths() ?? this.manualHorizonMonths(),
+  );
+
+  years = computed(() => Math.floor(this.horizonMonths() / 12));
+
+  months = computed(() => this.horizonMonths() % 12);
+
+  /** Set when the held goal amount/withdrawal can't be reached within MAX_HORIZON_YEARS. */
+  goalUnreachable = computed(
+    () =>
+      (this.heldGoal() === 'amount' || this.heldGoal() === 'withdrawal') &&
+      this.solvedHorizonMonths() === null,
+  );
 
   /** Historical long-run U.S. inflation is roughly 3%; used to show balances in today's dollars. */
   inflationRatePercent = signal(3);
@@ -551,27 +587,55 @@ export class InvestmentCalculator {
 
   setYears(raw: string): void {
     this.setHorizonMonths(toNonNegativeInt(raw) * 12 + this.months());
-    this.goalUnreachable.set(false);
   }
 
   setMonths(raw: string): void {
     this.setHorizonMonths(this.years() * 12 + Math.min(11, toNonNegativeInt(raw)));
-    this.goalUnreachable.set(false);
   }
 
-  /** Sets years/months from a total month count, capped at MAX_HORIZON_YEARS. */
+  /** Sets the horizon from a total month count (capped at MAX_HORIZON_YEARS) and holds it. */
   private setHorizonMonths(totalMonths: number): void {
-    const capped = Math.min(MAX_HORIZON_YEARS * 12, Math.max(0, totalMonths));
-    this.years.set(Math.floor(capped / 12));
-    this.months.set(capped % 12);
+    this.manualHorizonMonths.set(Math.min(MAX_HORIZON_YEARS * 12, Math.max(0, totalMonths)));
+    this.heldGoal.set('horizon');
   }
 
   /**
-   * Rewrites a years/months textbox when its typed value got clamped, since the bound signal may
-   * not change (e.g. already at the cap) and Angular would otherwise leave the oversized text.
+   * Moves the hold to another field. The current horizon is saved as the manual one first, so it
+   * stays put if the newly held goal turns out to be unreachable or is later released.
    */
-  syncClampedInput(input: HTMLInputElement, value: number): void {
-    if (toNonNegativeInt(input.value) !== value) input.value = String(value);
+  private holdField(field: HeldGoal): void {
+    if (this.heldGoal() === field) return;
+    this.manualHorizonMonths.set(this.horizonMonths());
+    this.heldGoal.set(field);
+  }
+
+  /**
+   * Hold toggle for one of the four linked fields. Turning one on locks in its current value;
+   * turning the held one off hands the hold back to the time horizon (which always has it by
+   * default, so it can't be switched off itself).
+   */
+  setHeldGoal(field: HeldGoal, checked: boolean): void {
+    if (!checked) {
+      if (this.heldGoal() === field) this.holdField('horizon');
+      return;
+    }
+    switch (field) {
+      case 'age': {
+        const age = this.goalRetirementAge();
+        if (age === null) return;
+        this.heldRetirementAge.set(age);
+        break;
+      }
+      case 'amount':
+        this.heldGoalAmount.set(Math.floor(this.goalAmountBalance()));
+        break;
+      case 'withdrawal':
+        this.heldGoalWithdrawal.set(
+          Math.floor(this.withdrawalAmount(this.goalWithdrawalBalance())),
+        );
+        break;
+    }
+    this.holdField(field);
   }
 
   /** Current age plus the time horizon, rounded to a whole age for the Retirement Age box. */
@@ -581,69 +645,74 @@ export class InvestmentCalculator {
     return Math.round(age + this.years() + this.months() / 12);
   });
 
-  /**
-   * Holds the retirement-age field's in-progress text while the user is typing, so the input
-   * displays what they typed rather than snapping to goalRetirementAge()'s round-tripped value
-   * (which can momentarily differ, e.g. a partial digit that's below the current age clamps to
-   * 0 years). Cleared on blur so the field re-syncs with the authoritative computed value.
-   */
-  retirementAgeDraft = signal<string | null>(null);
-
-  /** Editing the goal retirement age re-derives years/months from the gap to current age. */
+  /** Editing the goal retirement age holds it and re-derives the horizon from current age. */
   setRetirementAge(raw: string): void {
-    this.retirementAgeDraft.set(raw);
-    this.goalUnreachable.set(false);
-    const age = this.currentAge();
-    if (age === null) return;
-    this.setHorizonMonths((toNonNegativeInt(raw) - age) * 12);
-  }
-
-  clearRetirementAgeDraft(): void {
-    this.retirementAgeDraft.set(null);
+    if (this.currentAge() === null) return;
+    this.heldRetirementAge.set(toNonNegativeInt(raw));
+    this.holdField('age');
   }
 
   /** Portfolio-only withdrawal at the end of the horizon (excludes Social Security). */
   goalWithdrawal = computed(() => this.withdrawalAmount(this.result().endingBalance));
 
-  /** In-progress text for the goal amount/withdrawal fields — same purpose as retirementAgeDraft. */
-  goalAmountDraft = signal<string | null>(null);
+  /** Ending balance in whichever dollars (nominal or today's) each goal field is set to use. */
+  private goalAmountBalance = computed(() =>
+    this.goalAmountInTodaysDollars()
+      ? this.result().endingBalanceReal
+      : this.result().endingBalance,
+  );
 
-  goalWithdrawalDraft = signal<string | null>(null);
+  private goalWithdrawalBalance = computed(() =>
+    this.goalWithdrawalInTodaysDollars()
+      ? this.result().endingBalanceReal
+      : this.result().endingBalance,
+  );
 
-  /** Set when the last goal amount/withdrawal entered can't be reached within MAX_HORIZON_YEARS. */
-  goalUnreachable = signal(false);
+  /** Each goal field shows its fixed target while held, otherwise the value derived from the horizon. */
+  retirementAgeDisplay = computed(() =>
+    this.heldGoal() === 'age' ? this.heldRetirementAge() : (this.goalRetirementAge() ?? ''),
+  );
 
-  /** Editing the goal retirement amount re-derives years/months as the time needed to reach it. */
+  goalAmountDisplay = computed(() =>
+    this.heldGoal() === 'amount'
+      ? this.heldGoalAmount()
+      : Math.round(this.goalAmountBalance()),
+  );
+
+  goalWithdrawalDisplay = computed(() =>
+    this.heldGoal() === 'withdrawal'
+      ? this.heldGoalWithdrawal()
+      : Math.round(this.withdrawalAmount(this.goalWithdrawalBalance())),
+  );
+
+  /** Editing the goal retirement amount holds it; the horizon becomes the time needed to reach it. */
   setGoalAmount(raw: string): void {
-    this.goalAmountDraft.set(raw);
-    this.solveHorizonForBalance(toNonNegativeNumber(raw));
+    this.heldGoalAmount.set(toNonNegativeNumber(raw));
+    this.holdField('amount');
   }
 
-  /** Editing the goal withdrawal backs out the balance it needs at the current withdrawal rate. */
+  /**
+   * Switches a goal field between nominal and today's dollars. A held target keeps its number
+   * and is re-solved under the new meaning (e.g. $3M nominal becomes $3M in today's money).
+   */
+  setGoalAmountInTodaysDollars(value: boolean): void {
+    this.goalAmountInTodaysDollars.set(value);
+  }
+
+  setGoalWithdrawalInTodaysDollars(value: boolean): void {
+    this.goalWithdrawalInTodaysDollars.set(value);
+  }
+
+  /** Editing the goal withdrawal holds it; the needed balance is backed out at the withdrawal rate. */
   setGoalWithdrawal(raw: string): void {
-    this.goalWithdrawalDraft.set(raw);
-    const rate = this.withdrawalRatePercent() / 100;
-    if (rate <= 0) {
-      this.goalUnreachable.set(true);
-      return;
-    }
-    this.solveHorizonForBalance(toNonNegativeNumber(raw) / rate);
+    this.heldGoalWithdrawal.set(toNonNegativeNumber(raw));
+    this.holdField('withdrawal');
   }
 
-  clearGoalDrafts(): void {
-    this.goalAmountDraft.set(null);
-    this.goalWithdrawalDraft.set(null);
-  }
-
-  private solveHorizonForBalance(targetBalance: number): void {
-    const totalMonths = monthsToReachBalance(
-      this.projectionInputs(),
-      targetBalance,
-      MAX_HORIZON_YEARS * 12,
-    );
-    this.goalUnreachable.set(totalMonths === null);
-    if (totalMonths === null) return;
-    this.setHorizonMonths(totalMonths);
+  /** Reverts the horizon to a fixed years/months value with the horizon held (reset, history load). */
+  private restoreHorizon(years: number, months: number): void {
+    this.manualHorizonMonths.set(years * 12 + months);
+    this.heldGoal.set('horizon');
   }
 
   setInflationRatePercent(raw: string): void {
@@ -712,6 +781,17 @@ export class InvestmentCalculator {
     if (rows.length === 0) return 0;
     const lastRow = rows[rows.length - 1];
     return this.totalWithdrawal(lastRow.year, lastRow.endingBalance);
+  });
+
+  /**
+   * finalYearWithdrawal() in today's dollars — the withdrawal rate applied to the inflation-adjusted
+   * ending balance. Social Security is added as-is, since its benefit is already in today's dollars.
+   */
+  finalYearWithdrawalReal = computed<number>(() => {
+    const rows = this.result().yearRows;
+    if (rows.length === 0) return 0;
+    const lastRow = rows[rows.length - 1];
+    return this.totalWithdrawal(lastRow.year, lastRow.endingBalanceReal);
   });
 
   /** Maps each year that first crosses a milestone balance to the milestone(s) it crossed. */
@@ -803,7 +883,6 @@ export class InvestmentCalculator {
     this.incomeEntries.set(preset.incomes.map((amount) => createIncomeEntry(amount)));
     this.monthlyCostOfLiving.set(preset.monthlyCostOfLiving);
     this.lastAppliedPresetId.set(preset.id);
-    this.formatAllNumericInputsSoon();
   }
 
   setStateSortOrder(raw: string): void {
@@ -817,7 +896,6 @@ export class InvestmentCalculator {
       this.stateTaxRatePercent.set(state.rate);
       this.monthlyCostOfLiving.set(state.avgMonthlyCostOfLiving);
     }
-    this.formatAllNumericInputsSoon();
   }
 
   setStateTaxRatePercent(raw: string): void {
@@ -943,27 +1021,12 @@ export class InvestmentCalculator {
     }
   }
 
-  /**
-   * Reformats every number textbox with thousands separators once Angular has pushed a
-   * programmatic (non-typed) value into the DOM — e.g. after a preset/state prefill, loading a
-   * history entry, or a reset. Deferred so it runs after the current change-detection pass has
-   * already written the raw values into the inputs.
-   */
-  private formatAllNumericInputsSoon(): void {
-    if (typeof document === 'undefined') return;
-    setTimeout(() => {
-      document.querySelectorAll<HTMLInputElement>('input[data-numeric]').forEach((el) => {
-        this.formatNumberInputOnBlur({ target: el } as unknown as Event);
-      });
-    });
-  }
 
   /** Fills the main contribution field with the estimated monthly leftover from the budget widget. */
   useDiscretionaryIncomeAsContribution(): void {
     const monthly = Math.max(0, Math.round(this.householdBudget().discretionaryMonthly));
     this.contributionAmount.set(monthly);
     this.contributionFrequency.set('monthly');
-    this.formatAllNumericInputsSoon();
 
     const contributionInput =
       typeof document !== 'undefined' ? document.getElementById('contribution-amount') : null;
@@ -977,14 +1040,12 @@ export class InvestmentCalculator {
     this.contributionTiming.set('end');
     this.annualInterestRatePercent.set(10);
     this.compoundFrequency.set('annually');
-    this.years.set(37);
-    this.months.set(0);
+    this.restoreHorizon(37, 0);
+    this.goalAmountInTodaysDollars.set(false);
+    this.goalWithdrawalInTodaysDollars.set(false);
     this.inflationRatePercent.set(3);
     this.withdrawalRatePercent.set(3.5);
     this.currentAge.set(30);
-    this.retirementAgeDraft.set(null);
-    this.clearGoalDrafts();
-    this.goalUnreachable.set(false);
 
     this.incomeEntries.set([createIncomeEntry(DEFAULT_YEARLY_INCOME)]);
     this.selectedStateCode.set('');
@@ -1000,7 +1061,6 @@ export class InvestmentCalculator {
     this.monthlyMortgagePayment.set(0);
     this.contributionBoosts.set([]);
 
-    this.formatAllNumericInputsSoon();
   }
 
   /** True once the budget widget has anything other than its default single income entry. */
@@ -1075,14 +1135,10 @@ export class InvestmentCalculator {
     this.contributionTiming.set(run.inputs.contributionTiming);
     this.annualInterestRatePercent.set(run.inputs.annualInterestRatePercent);
     this.compoundFrequency.set(run.inputs.compoundFrequency);
-    this.years.set(run.inputs.years);
-    this.months.set(run.inputs.months);
+    this.restoreHorizon(run.inputs.years, run.inputs.months);
     this.inflationRatePercent.set(run.inputs.inflationRatePercent ?? 3);
     this.withdrawalRatePercent.set(run.withdrawalRatePercent);
     this.currentAge.set(run.currentAge);
-    this.retirementAgeDraft.set(null);
-    this.clearGoalDrafts();
-    this.goalUnreachable.set(false);
 
     const budget = run.householdBudget;
     if (budget) {
@@ -1096,7 +1152,6 @@ export class InvestmentCalculator {
       this.currentSavingsBalance.set(budget.currentSavingsBalance);
       this.ignoreAlreadySaved.set(budget.ignoreAlreadySaved ?? false);
     }
-    this.formatAllNumericInputsSoon();
   }
 
   deleteFromHistory(timestamp: string): void {

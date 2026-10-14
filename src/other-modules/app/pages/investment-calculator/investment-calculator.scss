@@ -932,6 +932,11 @@ select {
   gap: 14px;
 }
 
+/** A follow-on row of stat chips that starts on its own line (e.g. the today's-dollars pair). */
+.stat-grid-row {
+  margin-top: 14px;
+}
+
 .stat-chip {
   display: flex;
   flex-direction: column;
@@ -1266,4 +1271,13 @@ select {
   font-size: 0.6rem;
   line-height: 1;
   cursor: default;
+}
+
+/** "Today's $" + "Hold" toggles side by side next to a goal field's label. */
+.goal-toggles {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 12px;
 }

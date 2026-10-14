@@ -527,7 +527,7 @@ export const projects: Project[] = [
             {
                 title: 'Goal-Seeking Time Horizon',
                 description:
-                    'Time horizon, retirement age, goal balance, and goal yearly withdrawal are four views of one value — editing any of them re-derives the rest. Balance and withdrawal goals are inverted by binary-searching the month count over the simulation, which works because the balance only grows with time.'
+                    'Time horizon, retirement age, goal balance, and goal yearly withdrawal are four views of one value — editing any of them re-derives the rest. Whichever was edited last is held fixed: the horizon is a computed signal solved from the held target, so changing income, rates, or contributions re-solves it without retyping the goal. Balance and withdrawal goals are inverted by binary-searching the month count over the simulation, which works because the balance only grows with time.'
             },
             {
                 title: 'Progressive Tax Bracket Calculator',
