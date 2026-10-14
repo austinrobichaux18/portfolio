@@ -365,7 +365,7 @@
                 data-numeric
                 inputmode="numeric"
                 [value]="years()"
-                (input)="setYears(yearsInput.value)"
+                (input)="setYears(yearsInput.value); syncClampedInput(yearsInput, years())"
                 (blur)="formatIntegerInputOnBlur($event)"
               />
               <span>years</span>
@@ -378,7 +378,7 @@
                 data-numeric
                 inputmode="numeric"
                 [value]="months()"
-                (input)="setMonths(monthsInput.value)"
+                (input)="setMonths(monthsInput.value); syncClampedInput(monthsInput, months())"
                 (blur)="formatIntegerInputOnBlur($event)"
               />
               <span>months</span>
@@ -399,6 +399,43 @@
           />
           @if (currentAge() === null) {
             <p class="field-note">Enter your current age below to use this.</p>
+          }
+          <label for="goal-amount">Goal Retirement Amount</label>
+          <div class="input-prefix">
+            <span>$</span>
+            <input
+              #goalAmountInput
+              id="goal-amount"
+              type="text"
+              data-numeric
+              inputmode="decimal"
+              [value]="goalAmountDraft() ?? formatWholeNumber(result().endingBalance)"
+              (input)="setGoalAmount(goalAmountInput.value)"
+              (blur)="clearGoalDrafts(); formatNumberInputOnBlur($event)"
+            />
+          </div>
+          <label for="goal-withdrawal">Goal Withdraw (per year)</label>
+          <div class="input-prefix">
+            <span>$</span>
+            <input
+              #goalWithdrawalInput
+              id="goal-withdrawal"
+              type="text"
+              data-numeric
+              inputmode="decimal"
+              [value]="goalWithdrawalDraft() ?? formatWholeNumber(goalWithdrawal())"
+              (input)="setGoalWithdrawal(goalWithdrawalInput.value)"
+              (blur)="clearGoalDrafts(); formatNumberInputOnBlur($event)"
+            />
+          </div>
+          <p class="field-note">
+            These four fields set each other. The withdrawal uses your Withdrawal Rate below and
+            excludes Social Security.
+          </p>
+          @if (goalUnreachable()) {
+            <p class="field-note budget-warning">
+              That goal isn't reachable within {{ maxHorizonYears }} years with the current inputs.
+            </p>
           }
         </div>
 

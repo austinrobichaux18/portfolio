@@ -525,6 +525,11 @@ export const projects: Project[] = [
                     'Every yearly balance is separately discounted back to today\'s purchasing power using an inflation-rate input, so long-horizon projections aren\'t misleadingly large in future dollars.'
             },
             {
+                title: 'Goal-Seeking Time Horizon',
+                description:
+                    'Time horizon, retirement age, goal balance, and goal yearly withdrawal are four views of one value — editing any of them re-derives the rest. Balance and withdrawal goals are inverted by binary-searching the month count over the simulation, which works because the balance only grows with time.'
+            },
+            {
                 title: 'Progressive Tax Bracket Calculator',
                 description:
                     'Implements the actual 2025 IRS federal brackets and standard deduction for single vs. married filing jointly, plus FICA (Social Security capped at the wage base, uncapped Medicare) and a per-state effective tax rate, to estimate real take-home pay from gross income.'

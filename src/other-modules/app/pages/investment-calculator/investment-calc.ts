@@ -30,8 +30,38 @@ function toRealValue(nominalValue: number, inflationRatePercent: number, years: 
   return nominalValue / Math.pow(1 + inflationRatePercent / 100, years);
 }
 
+/**
+ * Smallest whole number of months for the ending balance to reach `targetBalance`, or null if it
+ * can't within `maxMonths`. Binary-searches over calculateInvestment, relying on the balance only
+ * ever growing with time (contributions and rates are non-negative).
+ */
+export function monthsToReachBalance(
+  inputs: Omit<InvestmentInputs, 'years' | 'months'>,
+  targetBalance: number,
+  maxMonths: number,
+): number | null {
+  const balanceAt = (totalMonths: number) =>
+    calculateInvestment({ ...inputs, years: 0, months: totalMonths }).endingBalance;
+
+  if (balanceAt(maxMonths) < targetBalance) return null;
+  let low = 0;
+  let high = maxMonths;
+  while (low < high) {
+    const mid = Math.floor((low + high) / 2);
+    if (balanceAt(mid) >= targetBalance) high = mid;
+    else low = mid + 1;
+  }
+  return low;
+}
+
+/** Longest horizon the calculator will simulate, so a huge entered number can't hang the page. */
+export const MAX_HORIZON_YEARS = 200;
+
 export function calculateInvestment(inputs: InvestmentInputs): InvestmentResult {
-  const totalMonths = Math.max(0, Math.round(inputs.years * 12 + inputs.months));
+  const totalMonths = Math.min(
+    MAX_HORIZON_YEARS * 12,
+    Math.max(0, Math.round(inputs.years * 12 + inputs.months)),
+  );
   const growth = monthlyGrowthFactor(inputs.annualInterestRatePercent, inputs.compoundFrequency);
   const inflationRatePercent = inputs.inflationRatePercent ?? 0;
 

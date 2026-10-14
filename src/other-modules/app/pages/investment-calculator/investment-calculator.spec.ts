@@ -542,6 +542,50 @@ describe('InvestmentCalculator', () => {
     expect(component.years()).toBe(10);
   });
 
+  it('re-derives the horizon as the time needed to reach a goal retirement amount', () => {
+    component.setGoalAmount('1,000,000');
+    const reached = component.result().endingBalance;
+    expect(reached).toBeGreaterThanOrEqual(1_000_000);
+
+    // One month less falls short, so the horizon is the shortest that reaches the goal.
+    const totalMonths = component.years() * 12 + component.months();
+    component.setYears(String(Math.floor((totalMonths - 1) / 12)));
+    component.setMonths(String((totalMonths - 1) % 12));
+    expect(component.result().endingBalance).toBeLessThan(1_000_000);
+  });
+
+  it('backs out the needed balance from a goal withdrawal at the withdrawal rate', () => {
+    component.setWithdrawalRatePercent('4');
+    component.setGoalWithdrawal('40000');
+    expect(component.result().endingBalance).toBeGreaterThanOrEqual(1_000_000);
+    expect(component.goalWithdrawal()).toBeGreaterThanOrEqual(40_000);
+  });
+
+  it('flags a goal that cannot be reached and leaves the horizon alone', () => {
+    component.setYears('20');
+    component.setContributionAmount('0');
+    component.setStartingAmount('0');
+    component.setGoalAmount('500000');
+    expect(component.goalUnreachable()).toBe(true);
+    expect(component.years()).toBe(20);
+
+    component.setYears('25');
+    expect(component.goalUnreachable()).toBe(false);
+  });
+
+  it('caps the time horizon at 200 years however it is entered', () => {
+    component.setYears('99999999');
+    expect(component.years()).toBe(200);
+    component.setMonths('6');
+    expect(component.months()).toBe(0);
+    expect(component.result().yearRows.length).toBe(200);
+
+    component.setCurrentAge('30');
+    component.setRetirementAge('5000');
+    expect(component.years()).toBe(200);
+    expect(component.months()).toBe(0);
+  });
+
   it('only flags the first year that covers the entered cost of living', () => {
     component.setCurrentAge('30');
     component.setMonthlyCostOfLiving('1000');

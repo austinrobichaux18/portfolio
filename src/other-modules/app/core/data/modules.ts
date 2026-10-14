@@ -69,7 +69,7 @@ export const modules: Module[] = [
     description:
       'Project ending balance, contributions, and interest from a starting amount and regular contributions, plus a household budget widget and sourced FIRE/retirement advice.',
     route: 'investment-calculator',
-    lastUpdated: '2026-10-03',
+    lastUpdated: '2026-10-14',
     group: 'Finance',
   },
   {

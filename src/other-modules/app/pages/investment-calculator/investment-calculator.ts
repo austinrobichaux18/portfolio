@@ -16,7 +16,7 @@ import {
 } from '../../core/models/HouseholdBudget';
 import { STATE_TAX_RATES } from '../../core/data/state-tax-rates';
 import { HOUSEHOLD_PRESETS } from '../../core/data/household-presets';
-import { calculateInvestment } from './investment-calc';
+import { MAX_HORIZON_YEARS, calculateInvestment, monthsToReachBalance } from './investment-calc';
 import { calculateHouseholdBudget, incomeEntryAnnualAmount } from './household-budget-calc';
 import { loadHistory, saveHistory } from './investment-storage';
 
@@ -42,7 +42,7 @@ const PIE_SIZE = 180;
 const PIE_RADIUS = 80;
 const PIE_CENTER = PIE_SIZE / 2;
 
-const MILESTONES = [1_000_000, 2_000_000, 3_000_000, 4_000_000, 5_000_000, 10_000_000];
+const MILESTONES =[1_000_000, 2_000_000, 3_000_000, 4_000_000, 5_000_000, 10_000_000];
 
 /** Social Security full retirement age for most people today, and its rough average annual benefit. */
 const SS_FULL_RETIREMENT_AGE = 67;
@@ -227,6 +227,9 @@ export class InvestmentCalculator {
 
   readonly formatIntegerInputOnBlur = formatIntegerInputOnBlur;
 
+  readonly formatWholeNumber = (value: number) =>
+    Math.round(value).toLocaleString('en-US');
+
   readonly ssAverageAnnualBenefit = SS_AVERAGE_ANNUAL_BENEFIT;
 
   readonly incomeVsSpendingByQuintile = INCOME_VS_SPENDING_BY_QUINTILE.map((q) => {
@@ -394,19 +397,24 @@ export class InvestmentCalculator {
       .filter((b): b is { startYear: number; additionalMonthly: number } => b !== null);
   });
 
+  /** Every calculation input except the time horizon, shared by result() and the goal solvers. */
+  private projectionInputs = computed(() => ({
+    startingAmount: this.startingAmount(),
+    contributionAmount: this.contributionAmount(),
+    contributionFrequency: this.contributionFrequency(),
+    contributionTiming: this.contributionTiming(),
+    annualInterestRatePercent: this.annualInterestRatePercent(),
+    compoundFrequency: this.compoundFrequency(),
+    contributionDelayMonths: this.contributionDelayMonths(),
+    inflationRatePercent: this.inflationRatePercent(),
+    contributionBoosts: this.calcContributionBoosts(),
+  }));
+
   result = computed(() =>
     calculateInvestment({
-      startingAmount: this.startingAmount(),
-      contributionAmount: this.contributionAmount(),
-      contributionFrequency: this.contributionFrequency(),
-      contributionTiming: this.contributionTiming(),
-      annualInterestRatePercent: this.annualInterestRatePercent(),
-      compoundFrequency: this.compoundFrequency(),
+      ...this.projectionInputs(),
       years: this.years(),
       months: this.months(),
-      contributionDelayMonths: this.contributionDelayMonths(),
-      inflationRatePercent: this.inflationRatePercent(),
-      contributionBoosts: this.calcContributionBoosts(),
     }),
   );
 
@@ -539,12 +547,31 @@ export class InvestmentCalculator {
     this.compoundFrequency.set(raw as CompoundFrequency);
   }
 
+  readonly maxHorizonYears = MAX_HORIZON_YEARS;
+
   setYears(raw: string): void {
-    this.years.set(toNonNegativeInt(raw));
+    this.setHorizonMonths(toNonNegativeInt(raw) * 12 + this.months());
+    this.goalUnreachable.set(false);
   }
 
   setMonths(raw: string): void {
-    this.months.set(Math.min(11, toNonNegativeInt(raw)));
+    this.setHorizonMonths(this.years() * 12 + Math.min(11, toNonNegativeInt(raw)));
+    this.goalUnreachable.set(false);
+  }
+
+  /** Sets years/months from a total month count, capped at MAX_HORIZON_YEARS. */
+  private setHorizonMonths(totalMonths: number): void {
+    const capped = Math.min(MAX_HORIZON_YEARS * 12, Math.max(0, totalMonths));
+    this.years.set(Math.floor(capped / 12));
+    this.months.set(capped % 12);
+  }
+
+  /**
+   * Rewrites a years/months textbox when its typed value got clamped, since the bound signal may
+   * not change (e.g. already at the cap) and Angular would otherwise leave the oversized text.
+   */
+  syncClampedInput(input: HTMLInputElement, value: number): void {
+    if (toNonNegativeInt(input.value) !== value) input.value = String(value);
   }
 
   /** Current age plus the time horizon, rounded to a whole age for the Retirement Age box. */
@@ -565,15 +592,58 @@ export class InvestmentCalculator {
   /** Editing the goal retirement age re-derives years/months from the gap to current age. */
   setRetirementAge(raw: string): void {
     this.retirementAgeDraft.set(raw);
+    this.goalUnreachable.set(false);
     const age = this.currentAge();
     if (age === null) return;
-    const totalMonths = Math.max(0, (toNonNegativeInt(raw) - age) * 12);
-    this.years.set(Math.floor(totalMonths / 12));
-    this.months.set(totalMonths % 12);
+    this.setHorizonMonths((toNonNegativeInt(raw) - age) * 12);
   }
 
   clearRetirementAgeDraft(): void {
     this.retirementAgeDraft.set(null);
+  }
+
+  /** Portfolio-only withdrawal at the end of the horizon (excludes Social Security). */
+  goalWithdrawal = computed(() => this.withdrawalAmount(this.result().endingBalance));
+
+  /** In-progress text for the goal amount/withdrawal fields — same purpose as retirementAgeDraft. */
+  goalAmountDraft = signal<string | null>(null);
+
+  goalWithdrawalDraft = signal<string | null>(null);
+
+  /** Set when the last goal amount/withdrawal entered can't be reached within MAX_HORIZON_YEARS. */
+  goalUnreachable = signal(false);
+
+  /** Editing the goal retirement amount re-derives years/months as the time needed to reach it. */
+  setGoalAmount(raw: string): void {
+    this.goalAmountDraft.set(raw);
+    this.solveHorizonForBalance(toNonNegativeNumber(raw));
+  }
+
+  /** Editing the goal withdrawal backs out the balance it needs at the current withdrawal rate. */
+  setGoalWithdrawal(raw: string): void {
+    this.goalWithdrawalDraft.set(raw);
+    const rate = this.withdrawalRatePercent() / 100;
+    if (rate <= 0) {
+      this.goalUnreachable.set(true);
+      return;
+    }
+    this.solveHorizonForBalance(toNonNegativeNumber(raw) / rate);
+  }
+
+  clearGoalDrafts(): void {
+    this.goalAmountDraft.set(null);
+    this.goalWithdrawalDraft.set(null);
+  }
+
+  private solveHorizonForBalance(targetBalance: number): void {
+    const totalMonths = monthsToReachBalance(
+      this.projectionInputs(),
+      targetBalance,
+      MAX_HORIZON_YEARS * 12,
+    );
+    this.goalUnreachable.set(totalMonths === null);
+    if (totalMonths === null) return;
+    this.setHorizonMonths(totalMonths);
   }
 
   setInflationRatePercent(raw: string): void {
@@ -913,6 +983,8 @@ export class InvestmentCalculator {
     this.withdrawalRatePercent.set(3.5);
     this.currentAge.set(30);
     this.retirementAgeDraft.set(null);
+    this.clearGoalDrafts();
+    this.goalUnreachable.set(false);
 
     this.incomeEntries.set([createIncomeEntry(DEFAULT_YEARLY_INCOME)]);
     this.selectedStateCode.set('');
@@ -1009,6 +1081,8 @@ export class InvestmentCalculator {
     this.withdrawalRatePercent.set(run.withdrawalRatePercent);
     this.currentAge.set(run.currentAge);
     this.retirementAgeDraft.set(null);
+    this.clearGoalDrafts();
+    this.goalUnreachable.set(false);
 
     const budget = run.householdBudget;
     if (budget) {
