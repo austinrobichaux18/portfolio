@@ -794,26 +794,6 @@ export class InvestmentCalculator {
     return this.totalWithdrawal(lastRow.year, lastRow.endingBalanceReal);
   });
 
-  /** Hover tooltips for the i / w / inf shorthand in the year-by-year column names. */
-  interestAbbrTitle = computed(
-    () =>
-      `i = interest: your ${this.annualInterestRatePercent()}% annual return, compounded ` +
-      `${this.compoundFrequency()}`,
-  );
-
-  withdrawAbbrTitle = computed(
-    () =>
-      `w = withdrawal rate: ${this.withdrawalRatePercent()}% of that year's balance taken out per ` +
-      `year, plus average Social Security from age ${SS_FULL_RETIREMENT_AGE} ` +
-      '(when your current age is entered)',
-  );
-
-  inflationAbbrTitle = computed(
-    () =>
-      `inf = inflation-adjusted: shown in today's dollars, discounted at ` +
-      `${this.inflationRatePercent()}% inflation per year`,
-  );
-
   /** Maps each year that first crosses a milestone balance to the milestone(s) it crossed. */
   milestoneYears = computed<Map<number, number[]>>(() => {
     const rows = this.result().yearRows;

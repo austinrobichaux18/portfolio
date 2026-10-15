@@ -1291,17 +1291,11 @@
                 <span>Age</span>
               }
               <span>Contribution</span>
-              <span>Interest ({{ annualInterestRatePercent() }}% <abbr [title]="interestAbbrTitle()">i</abbr>)</span>
+              <span>Interest ({{ annualInterestRatePercent() }}%)</span>
               <span>Balance</span>
-              <span>Withdraw ({{ withdrawalRatePercent() }}% <abbr [title]="withdrawAbbrTitle()">w</abbr>)</span>
-              <span>
-                Balance ({{ inflationRatePercent() }}% <abbr [title]="inflationAbbrTitle()">inf</abbr>)
-              </span>
-              <span>
-                Withdraw ({{ withdrawalRatePercent() }}% <abbr [title]="withdrawAbbrTitle()">w</abbr>)({{
-                  inflationRatePercent()
-                }}% <abbr [title]="inflationAbbrTitle()">inf</abbr>)
-              </span>
+              <span>Withdraw ({{ withdrawalRatePercent() }}%)</span>
+              <span>Balance (Today's $)</span>
+              <span>Withdraw (Today's $)</span>
             </div>
             @for (row of result().yearRows; track row.year) {
               <div class="breakdown-row" [class.breakdown-row-with-age]="currentAge() !== null">
