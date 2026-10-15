@@ -1112,6 +1112,8 @@
           </span>
           <span class="stat-value">{{ formatCurrency(result().totalInterest) }}</span>
         </div>
+      </div>
+      <div class="stat-grid">
         <div class="stat-chip stat-chip-highlight">
           <span class="stat-label">
             Ending Balance
@@ -1132,7 +1134,7 @@
         </div>
       </div>
       @if (inflationRatePercent() > 0) {
-        <div class="stat-grid stat-grid-row">
+        <div class="stat-grid">
           <div class="stat-chip">
             <span class="stat-label"
               >Ending Balance (Today's $, {{ inflationRatePercent() }}% inflation)</span
@@ -1289,9 +1291,17 @@
                 <span>Age</span>
               }
               <span>Contribution</span>
-              <span>Interest (+{{ annualInterestRatePercent() }}%)</span>
-              <span>Withdrawal ({{ withdrawalRatePercent() }}%)</span>
-              <span>Ending Balance</span>
+              <span>Interest ({{ annualInterestRatePercent() }}% <abbr [title]="interestAbbrTitle()">i</abbr>)</span>
+              <span>Balance</span>
+              <span>Withdraw ({{ withdrawalRatePercent() }}% <abbr [title]="withdrawAbbrTitle()">w</abbr>)</span>
+              <span>
+                Balance ({{ inflationRatePercent() }}% <abbr [title]="inflationAbbrTitle()">inf</abbr>)
+              </span>
+              <span>
+                Withdraw ({{ withdrawalRatePercent() }}% <abbr [title]="withdrawAbbrTitle()">w</abbr>)({{
+                  inflationRatePercent()
+                }}% <abbr [title]="inflationAbbrTitle()">inf</abbr>)
+              </span>
             </div>
             @for (row of result().yearRows; track row.year) {
               <div class="breakdown-row" [class.breakdown-row-with-age]="currentAge() !== null">
@@ -1311,6 +1321,7 @@
                 }
                 <span>{{ formatCurrency(row.depositThisYear) }}</span>
                 <span>{{ formatCurrency(row.interestThisYear) }}</span>
+                <span>{{ formatCurrency(row.endingBalance) }}</span>
                 <span class="withdrawal-cell">
                   {{ formatCurrency(totalWithdrawal(row.year, row.endingBalance)) }}
                   @if (isSsEligibleYear(row.year)) {
@@ -1352,7 +1363,8 @@
                     >
                   }
                 </span>
-                <span>{{ formatCurrency(row.endingBalance) }}</span>
+                <span>{{ formatCurrency(row.endingBalanceReal) }}</span>
+                <span>{{ formatCurrency(totalWithdrawal(row.year, row.endingBalanceReal)) }}</span>
               </div>
             }
           </div>
