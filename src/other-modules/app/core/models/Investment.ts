@@ -74,6 +74,11 @@ export interface InvestmentRun {
   endingBalance: number;
   /** Only present when the "How Much Can You Invest?" widget had something entered. */
   householdBudget?: HouseholdBudgetSnapshot;
+  /**
+   * The full scenario as share-link query params (holds, today's-$ toggle, contribution boosts,
+   * and everything else). Older saves lack it and load from the fields above instead.
+   */
+  scenario?: string;
 }
 
 /** A contribution boost as the calculation engine sees it (years counted from now). */

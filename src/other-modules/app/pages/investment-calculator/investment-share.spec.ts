@@ -208,4 +208,42 @@ describe('investment agent tools', () => {
     });
     expect(c.boostSpecs()).toBe('age:55:50000once:Inheritance');
   });
+
+  it('saves and restores holds, the today\'s-$ toggle, and boosts in a saved scenario', () => {
+    const c = createCalculator();
+    c.setCurrentAge('30');
+    c.setBoostsFromSpecs('age:45-55:6000y:Side job|off:age:60:50000once:Bonus');
+    c.setGoalsInTodaysDollars(true);
+    c.setGoalAmount('1,500,000');
+    const before = buildShareParams(c).toString();
+    c.saveCurrentToHistory();
+    const run = c.history()[0];
+    expect(c.summaryFor(run)).toContain('2 boosts · goal amount held (today\'s $)');
+
+    c.reset();
+    expect(c.contributionBoosts()).toEqual([]);
+    c.loadFromHistory(run);
+
+    expect(buildShareParams(c).toString()).toBe(before);
+    expect(c.heldGoal()).toBe('amount');
+    expect(c.goalsInTodaysDollars()).toBe(true);
+    expect(c.contributionBoosts().map((b) => b.disabled ?? false)).toEqual([false, true]);
+  });
+
+  it('clears boosts the saved scenario did not have when loading it', () => {
+    const c = createCalculator();
+    c.saveCurrentToHistory();
+    c.setBoostsFromSpecs('age:45:500:Raise');
+    c.loadFromHistory(c.history()[0]);
+    expect(c.contributionBoosts()).toEqual([]);
+  });
+
+  it('still loads older saved scenarios that predate the full scenario field', () => {
+    const c = createCalculator();
+    c.saveCurrentToHistory();
+    const { scenario: _scenario, ...legacyRun } = c.history()[0];
+    c.setStartingAmount('5000');
+    c.loadFromHistory({ ...legacyRun, inputs: { ...legacyRun.inputs, startingAmount: 1234 } });
+    expect(c.startingAmount()).toBe(1234);
+  });
 });

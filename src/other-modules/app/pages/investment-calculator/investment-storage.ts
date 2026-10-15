@@ -66,7 +66,8 @@ function isValidRun(item: unknown): item is InvestmentRun {
     typeof r['withdrawalRatePercent'] === 'number' &&
     (r['currentAge'] === null || typeof r['currentAge'] === 'number') &&
     typeof r['endingBalance'] === 'number' &&
-    (r['householdBudget'] === undefined || isValidHouseholdBudgetSnapshot(r['householdBudget']))
+    (r['householdBudget'] === undefined || isValidHouseholdBudgetSnapshot(r['householdBudget'])) &&
+    (r['scenario'] === undefined || typeof r['scenario'] === 'string')
   );
 }
 

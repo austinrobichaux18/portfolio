@@ -212,6 +212,13 @@ function formatCurrency(value: number): string {
 /** Which of the four linked horizon/goal fields stays fixed while other inputs change. */
 export type HeldGoal = 'horizon' | 'age' | 'amount' | 'withdrawal';
 
+/** How a held goal reads in a saved scenario's summary line. */
+const HOLD_LABELS: Record<string, string> = {
+  age: 'retirement age',
+  amount: 'goal amount',
+  withdrawal: 'goal withdrawal',
+};
+
 @Component({
   selector: 'app-investment-calculator',
   imports: [DatePipe, NgTemplateOutlet, RouterLink, NumericValue],
@@ -1423,6 +1430,7 @@ export class InvestmentCalculator {
       householdBudget: this.householdBudgetEntered()
         ? this.buildHouseholdBudgetSnapshot()
         : undefined,
+      scenario: buildShareParams(this).toString(),
     };
 
     const updated = [...this.history(), run];
@@ -1431,6 +1439,14 @@ export class InvestmentCalculator {
   }
 
   loadFromHistory(run: InvestmentRun): void {
+    // Newer saves carry the full scenario (holds, today's-$, boosts, ...) in share-link form.
+    // Reset first so anything the save left out (e.g. no boosts) goes back to its default.
+    if (run.scenario !== undefined) {
+      this.reset();
+      applyShareParams(this, new URLSearchParams(run.scenario));
+      return;
+    }
+
     this.startingAmount.set(run.inputs.startingAmount);
     this.contributionAmount.set(run.inputs.contributionAmount);
     this.contributionFrequency.set(run.inputs.contributionFrequency);
@@ -1473,9 +1489,16 @@ export class InvestmentCalculator {
     const contributionFreq = i.contributionFrequency === 'monthly' ? '/mo' : '/yr';
     const horizon = i.months > 0 ? `${i.years}y ${i.months}m` : `${i.years}y`;
     const budgetSuffix = run.householdBudget ? ' · incl. budget' : '';
+    const scenario = new URLSearchParams(run.scenario ?? '');
+    const boostCount = (scenario.get('boosts') ?? '').split('|').filter(Boolean).length;
+    const boostSuffix = boostCount > 0 ? ` · ${boostCount} boost${boostCount === 1 ? '' : 's'}` : '';
+    const hold = scenario.get('hold');
+    const holdSuffix = hold ? ` · ${HOLD_LABELS[hold] ?? hold} held` : '';
+    const todaysSuffix = scenario.get('todaysDollars') === '1' ? " (today's $)" : '';
     return (
       `${formatCurrency(i.startingAmount)} start + ${formatCurrency(i.contributionAmount)}` +
-      `${contributionFreq} @ ${i.annualInterestRatePercent}% for ${horizon}${budgetSuffix}`
+      `${contributionFreq} @ ${i.annualInterestRatePercent}% for ${horizon}${budgetSuffix}` +
+      `${boostSuffix}${holdSuffix}${hold === 'amount' || hold === 'withdrawal' ? todaysSuffix : ''}`
     );
   }
 
