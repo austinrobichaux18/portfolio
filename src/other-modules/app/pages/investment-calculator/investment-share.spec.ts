@@ -137,4 +137,45 @@ describe('investment agent tools', () => {
     });
     expect(c.boostSpecs()).toBe('age:50-60:6000y:Side job');
   });
+
+  it('leaves a switched-off boost out of the projection, and keeps it in the share link', () => {
+    const c = createCalculator();
+    c.setCurrentAge('30');
+    c.setBoostsFromSpecs('age:40:500:Raise');
+    const withBoost = c.result().endingBalance;
+    const id = c.contributionBoosts()[0].id;
+
+    c.setBoostEnabled(id, false);
+    expect(c.result().endingBalance).toBeLessThan(withBoost);
+    expect(c.boostSpecs()).toBe('off:age:40:500:Raise');
+
+    const copy = createCalculator(Object.fromEntries(buildShareParams(c)));
+    expect(copy.contributionBoosts()[0].disabled).toBe(true);
+    copy.setBoostEnabled(copy.contributionBoosts()[0].id, true);
+    expect(copy.result().endingBalance).toBeCloseTo(withBoost);
+  });
+
+  it('links a boost end age and its number of years', () => {
+    const c = createCalculator();
+    c.setCurrentAge('30');
+    c.setBoostsFromSpecs('age:50:500:Side job');
+    const id = c.contributionBoosts()[0].id;
+
+    c.setBoostDurationYears(id, '10');
+    expect(c.contributionBoosts()[0].endAtAge).toBe(60);
+
+    c.setBoostEndAtAge(id, '65');
+    expect(c.boostDurationYears(c.contributionBoosts()[0])).toBe(15);
+
+    c.setBoostDurationYears(id, '');
+    expect(c.contributionBoosts()[0].endAtAge).toBeNull();
+  });
+
+  it('uses years-from-now for the boost duration when no age is entered', () => {
+    const c = createCalculator();
+    c.setCurrentAge('');
+    c.setBoostsFromSpecs('year:5:200:Raise');
+    c.setBoostDurationYears(c.contributionBoosts()[0].id, '3');
+    expect(c.contributionBoosts()[0].endAtYear).toBe(8);
+  });
 });

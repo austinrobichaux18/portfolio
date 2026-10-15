@@ -152,7 +152,8 @@ export const SHARE_PARAMS: readonly ShareParam[] = [
     key: 'boosts',
     description:
       'Future contribution increases, |-separated. Each is age:<age>:<extraMonthly>:<label> or ' +
-      'year:<yearsFromNow>:<extraMonthly>:<label>; add -<end> to stop it; suffix the amount with y for yearly, e.g. age:50-60:6000y:Side job.',
+      'year:<yearsFromNow>:<extraMonthly>:<label>; add -<end> to stop it; suffix the amount with y for yearly, e.g. age:50-60:6000y:Side job. Prefix off: to keep a ' +
+      'boost but not apply it.',
     read: (c) => c.boostSpecs(),
     apply: (c, raw) => c.setBoostsFromSpecs(raw),
   },

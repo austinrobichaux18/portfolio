@@ -462,12 +462,74 @@ h1 {
     width: auto;
     min-width: 360px;
   }
+
+  // Side by side, collapsing squishes the card into a thin strip with the title running down it.
+  .budget-card.budget-card-collapsed {
+    flex: none;
+    width: auto;
+    min-width: 0;
+    padding: 16px 10px;
+    align-self: stretch;
+
+    .mission-control-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
+
+  .reset-btn {
+    padding: 6px 14px;
+    font-size: 0.8rem;
+  }
+}
+
+.budget-card-header {
+      flex-direction: column;
+    }
+
+    .card-title {
+      writing-mode: vertical-rl;
+      font-size: 1rem;
+      white-space: nowrap;
+    }
+  }
 }
 
 .card-title {
   margin: 0;
   color: white;
   font-size: 1.3rem;
+}
+
+.budget-card-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.collapse-btn {
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 8px;
+  background: transparent;
+  color: #8f9bad;
+  font-size: 1rem;
+  line-height: 1;
+  cursor: pointer;
+
+  &:hover {
+    border-color: #49c6ff;
+    color: #49c6ff;
+  }
+}
+
+// Collapsed: only the header (toggle + title) stays visible.
+.budget-card-collapsed > :not(.budget-card-header) {
+  display: none;
 }
 
 .form-row {
@@ -563,7 +625,8 @@ select {
   line-height: 1.6;
 }
 
-.label-with-info .toggle-switch {
+.label-with-info .toggle-switch,
+.boost-toggle {
   display: flex;
   align-items: center;
   gap: 8px;
@@ -654,7 +717,6 @@ select {
   color: #ff6a3d;
 }
 
-.reset-btn,
 .add-boost-btn,
 .add-income-btn {
   align-self: flex-start;
@@ -669,6 +731,15 @@ select {
   margin: 4px 0 2px;
 }
 
+// A boost that's switched off stays editable but dims, so it's clear it isn't counted.
+.boost-entry-off > :not(.boost-entry-header) {
+  opacity: 0.5;
+}
+
+.boost-toggle {
+  margin-left: auto;
+}
+
 .boost-entry {
   background: rgba(167, 139, 250, 0.06);
   border: 1px solid rgba(167, 139, 250, 0.2);
@@ -680,6 +751,7 @@ select {
     display: flex;
     align-items: center;
     justify-content: space-between;
+    gap: 12px;
     margin-bottom: 2px;
   }
 

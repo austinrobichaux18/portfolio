@@ -384,6 +384,13 @@ export class InvestmentCalculator {
     yearly: this.yearlyCostOfLiving(),
   }));
 
+  /** Squishes the "How Much Can You Invest?" card down to a thin strip; starts open. */
+  budgetCollapsed = signal(false);
+
+  toggleBudgetCollapsed(): void {
+    this.budgetCollapsed.update((collapsed) => !collapsed);
+  }
+
   openInfoPopover = signal<InfoPopoverKey | null>(null);
 
   openSsInfoYear = signal<number | null>(null);
@@ -439,6 +446,7 @@ export class InvestmentCalculator {
       .map((b) => {
         const startYear =
           age !== null && b.atAge !== null ? b.atAge - age : b.atYear;
+        if (b.disabled) return null;
         if (startYear === null || startYear <= 0 || b.additionalMonthlyAmount <= 0) return null;
         const end =
           age !== null && b.endAtAge != null ? b.endAtAge - age : (b.endAtYear ?? null);
@@ -1035,6 +1043,40 @@ export class InvestmentCalculator {
       : boost.additionalMonthlyAmount;
   }
 
+  /** The boost's start in the unit the form shows: age when current age is set, else year. */
+  boostStart(boost: ContributionBoost): number | null {
+    return this.currentAge() !== null ? boost.atAge : boost.atYear;
+  }
+
+  /** How many years the boost runs (end minus start), or null without both / if end <= start. */
+  boostDurationYears(boost: ContributionBoost): number | null {
+    const start = this.boostStart(boost);
+    const end = this.currentAge() !== null ? boost.endAtAge : boost.endAtYear;
+    return start !== null && end != null && end > start ? end - start : null;
+  }
+
+  /** Entering a duration sets the end to start + years (the end and duration fields set each other). */
+  setBoostDurationYears(id: string, raw: string): void {
+    const years = toNonNegativeIntOrNull(raw);
+    const byAge = this.currentAge() !== null;
+    this.contributionBoosts.update((list) =>
+      list.map((b) => {
+        if (b.id !== id) return b;
+        const start = this.boostStart(b);
+        if (start === null) return b;
+        const end = years === null ? null : start + years;
+        return byAge ? { ...b, endAtAge: end } : { ...b, endAtYear: end };
+      }),
+    );
+  }
+
+  /** Turns a boost on/off without clearing it, to compare the projection with and without it. */
+  setBoostEnabled(id: string, enabled: boolean): void {
+    this.contributionBoosts.update((list) =>
+      list.map((b) => (b.id === id ? { ...b, disabled: !enabled } : b)),
+    );
+  }
+
   setBoostLabel(id: string, val: string): void {
     this.contributionBoosts.update((list) =>
       list.map((b) => (b.id === id ? { ...b, label: val } : b)),
@@ -1221,6 +1263,7 @@ export class InvestmentCalculator {
   /**
    * Boosts as |-separated share-param specs: age:<start>[-<end>]:<extra>:<label> or
    * year:<start>[-<end>]:<extra>:<label>, where <extra> is monthly, or yearly with a "y" suffix.
+   * A boost that's switched off is prefixed with "off:".
    */
   boostSpecs(): string | null {
     const specs = this.contributionBoosts()
@@ -1233,7 +1276,7 @@ export class InvestmentCalculator {
           b.amountFrequency === 'yearly'
             ? `${this.boostDisplayAmount(b)}y`
             : `${b.additionalMonthlyAmount}`;
-        return `${when}:${amount}:${b.label.replace(/\|/g, '/')}`;
+        return `${b.disabled ? 'off:' : ''}${when}:${amount}:${b.label.replace(/\|/g, '/')}`;
       });
     return specs.length > 0 ? specs.join('|') : null;
   }
@@ -1245,7 +1288,8 @@ export class InvestmentCalculator {
       .map((spec) => spec.trim())
       .filter(Boolean)
       .flatMap((spec): ContributionBoost[] => {
-        const [kind, at = '', amount = '', ...label] = spec.split(':');
+        const disabled = spec.startsWith('off:');
+        const [kind, at = '', amount = '', ...label] = (disabled ? spec.slice(4) : spec).split(':');
         const [startRaw, endRaw = ''] = at.split('-');
         const when = toNonNegativeIntOrNull(startRaw);
         const end = toNonNegativeIntOrNull(endRaw);
@@ -1262,6 +1306,7 @@ export class InvestmentCalculator {
               ? toNonNegativeNumber(amount.slice(0, -1)) / 12
               : toNonNegativeNumber(amount),
             amountFrequency: yearly ? 'yearly' : 'monthly',
+            ...(disabled ? { disabled } : {}),
             label: label.join(':'),
           },
         ];

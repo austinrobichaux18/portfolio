@@ -151,7 +151,17 @@
 
   <div class="calculator-layout">
       <div class="form-card">
-        <h2 class="card-title">Mission Control</h2>
+        <div class="mission-control-header">
+          <h2 class="card-title">Mission Control</h2>
+          <button
+            type="button"
+            class="secondary reset-btn"
+            aria-label="Reset all inputs in both widgets to their defaults"
+            (click)="reset()"
+          >
+            Reset All Inputs
+          </button>
+        </div>
         <div class="form-row">
           <label for="starting-amount">Starting Amount</label>
           <div class="input-prefix">
@@ -578,9 +588,20 @@
         </p>
 
         @for (boost of contributionBoosts(); track boost.id) {
-          <div class="form-row boost-entry">
+          <div class="form-row boost-entry" [class.boost-entry-off]="boost.disabled">
             <div class="boost-entry-header">
               <span class="boost-entry-title">Boost #{{ $index + 1 }}</span>
+              <label class="toggle-switch boost-toggle">
+                <input
+                  #boostEnabledInput
+                  type="checkbox"
+                  [attr.aria-label]="'Apply boost #' + ($index + 1)"
+                  [checked]="!boost.disabled"
+                  (change)="setBoostEnabled(boost.id, boostEnabledInput.checked)"
+                />
+                <span class="toggle-track"><span class="toggle-thumb"></span></span>
+                <span class="toggle-text">{{ boost.disabled ? 'Off' : 'Apply' }}</span>
+              </label>
               <button
                 type="button"
                 class="income-remove-btn"
@@ -641,29 +662,46 @@
               />
             }
 
-            @if (currentAge() !== null) {
-              <label [for]="'boost-end-age-' + boost.id">Ending at Age (optional)</label>
-              <input
-                #boostEndAgeInput
-                [id]="'boost-end-age-' + boost.id"
-                type="text"
-                inputmode="numeric"
-                placeholder="e.g. 60 — blank keeps it going"
-                [appNumericValue]="boost.endAtAge ?? ''"
-                (input)="setBoostEndAtAge(boost.id, boostEndAgeInput.value)"
-              />
-            } @else {
-              <label [for]="'boost-end-year-' + boost.id">Ending at Year (optional)</label>
-              <input
-                #boostEndYearInput
-                [id]="'boost-end-year-' + boost.id"
-                type="text"
-                inputmode="numeric"
-                placeholder="e.g. 30 — blank keeps it going"
-                [appNumericValue]="boost.endAtYear ?? ''"
-                (input)="setBoostEndAtYear(boost.id, boostEndYearInput.value)"
-              />
-            }
+            <label [for]="'boost-end-' + boost.id">
+              Ending at {{ currentAge() !== null ? 'Age' : 'Year' }} (optional) · or # of years
+            </label>
+            <div class="half-input-row">
+              @if (currentAge() !== null) {
+                <input
+                  #boostEndAgeInput
+                  [id]="'boost-end-' + boost.id"
+                  type="text"
+                  inputmode="numeric"
+                  placeholder="e.g. 60"
+                  [appNumericValue]="boost.endAtAge ?? ''"
+                  (input)="setBoostEndAtAge(boost.id, boostEndAgeInput.value)"
+                />
+              } @else {
+                <input
+                  #boostEndYearInput
+                  [id]="'boost-end-' + boost.id"
+                  type="text"
+                  inputmode="numeric"
+                  placeholder="e.g. 30"
+                  [appNumericValue]="boost.endAtYear ?? ''"
+                  (input)="setBoostEndAtYear(boost.id, boostEndYearInput.value)"
+                />
+              }
+              <div class="input-suffix">
+                <input
+                  #boostDurationInput
+                  type="text"
+                  inputmode="numeric"
+                  [attr.aria-label]="'Number of years boost #' + ($index + 1) + ' runs'"
+                  [placeholder]="boostStart(boost) === null ? 'set start first' : 'e.g. 10'"
+                  [disabled]="boostStart(boost) === null"
+                  [appNumericValue]="boostDurationYears(boost) ?? ''"
+                  (input)="setBoostDurationYears(boost.id, boostDurationInput.value)"
+                />
+                <span>years</span>
+              </div>
+            </div>
+            <p class="field-note">Leave both blank to keep the boost going.</p>
 
             <label [for]="'boost-label-' + boost.id">Note (optional)</label>
             <input
@@ -680,19 +718,24 @@
         <button type="button" class="secondary add-boost-btn" (click)="addContributionBoost()">
           + Add Contribution Boost
         </button>
-
-        <button
-          type="button"
-          class="secondary reset-btn"
-          aria-label="Reset all inputs in both widgets to their defaults"
-          (click)="reset()"
-        >
-          Reset All Inputs
-        </button>
       </div>
 
-      <div class="budget-card">
-        <h2 class="card-title">How Much Can You Invest?</h2>
+      <div class="budget-card" [class.budget-card-collapsed]="budgetCollapsed()">
+        <div class="budget-card-header">
+          <button
+            type="button"
+            class="collapse-btn"
+            [attr.aria-expanded]="!budgetCollapsed()"
+            [attr.aria-label]="
+              budgetCollapsed() ? 'Expand How Much Can You Invest' : 'Collapse How Much Can You Invest'
+            "
+            [title]="budgetCollapsed() ? 'Expand' : 'Collapse'"
+            (click)="toggleBudgetCollapsed()"
+          >
+            {{ budgetCollapsed() ? '»' : '«' }}
+          </button>
+          <h2 class="card-title">How Much Can You Invest?</h2>
+        </div>
         <p class="field-note">
           Estimate your monthly leftover income from your paycheck, then send it to the Contribution
           field above.

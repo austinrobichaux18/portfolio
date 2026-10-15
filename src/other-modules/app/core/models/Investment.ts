@@ -19,6 +19,8 @@ export interface ContributionBoost {
   endAtYear?: number | null;
   /** Always stored per month, whichever unit it was entered in. */
   additionalMonthlyAmount: number;
+  /** When true, the boost is kept but left out of the projection (to compare with/without it). */
+  disabled?: boolean;
   /** The unit the amount is shown/entered in; defaults to monthly. */
   amountFrequency?: 'monthly' | 'yearly';
   label: string;
