@@ -181,6 +181,12 @@ function toNonNegativeNumber(raw: string): number {
   return Math.round(value * 100) / 100;
 }
 
+/** Parses a number that may be negative (e.g. a contribution used as a withdrawal), 2 decimals. */
+function toNumber(raw: string): number {
+  const value = Number(raw.replace(/,/g, ''));
+  return Number.isFinite(value) ? Math.round(value * 100) / 100 : 0;
+}
+
 /** Parses a non-negative whole number from a text input (no decimal places). */
 function toNonNegativeInt(raw: string): number {
   const value = Number(raw.replace(/,/g, ''));
@@ -312,8 +318,6 @@ export class InvestmentCalculator {
 
   currentAge = signal<number | null>(30);
 
-  monthlyMortgagePayment = signal(0);
-
   contributionBoosts = signal<ContributionBoost[]>([]);
 
   history = signal<InvestmentRun[]>(loadHistory());
@@ -436,9 +440,19 @@ export class InvestmentCalculator {
         const startYear =
           age !== null && b.atAge !== null ? b.atAge - age : b.atYear;
         if (startYear === null || startYear <= 0 || b.additionalMonthlyAmount <= 0) return null;
-        return { startYear, additionalMonthly: b.additionalMonthlyAmount };
+        const end =
+          age !== null && b.endAtAge != null ? b.endAtAge - age : (b.endAtYear ?? null);
+        // An end at or before the start means the boost never runs.
+        if (end !== null && end <= startYear) return null;
+        return {
+          startYear,
+          ...(end !== null ? { endYear: end } : {}),
+          additionalMonthly: b.additionalMonthlyAmount,
+        };
       })
-      .filter((b): b is { startYear: number; additionalMonthly: number } => b !== null);
+      .filter(
+        (b): b is { startYear: number; endYear?: number; additionalMonthly: number } => b !== null,
+      );
   });
 
   /** Every calculation input except the time horizon, shared by result() and the goal solvers. */
@@ -476,14 +490,15 @@ export class InvestmentCalculator {
 
   pieChart = computed<PieChart | null>(() => {
     const r = this.result();
-    const total = r.endingBalance;
-    if (total <= 0) return null;
-
+    // Negative pieces (net withdrawals, or a loss) can't be drawn as slices, so the pie splits
+    // only the positive sources of money — the ending balance itself when there are none.
     const segments = [
       { label: 'Starting Amount', value: r.startingAmount, color: '#49c6ff' },
       { label: 'Contributions', value: r.totalContributions, color: '#a78bfa' },
       { label: 'Interest', value: r.totalInterest, color: '#4ade80' },
     ].filter((seg) => seg.value > 0);
+    const total = segments.reduce((sum, seg) => sum + seg.value, 0);
+    if (r.endingBalance <= 0 || total <= 0) return null;
 
     let cumulativeAngle = 0;
     const slices: PieSlice[] = segments.map((seg) => {
@@ -511,7 +526,8 @@ export class InvestmentCalculator {
     const { top, right, bottom, left } = CHART_MARGIN;
     const plotWidth = CHART_WIDTH - left - right;
     const plotHeight = CHART_HEIGHT - top - bottom;
-    const maxBalance = rows[rows.length - 1].endingBalance;
+    // Withdrawals can make the balance peak before the last year, so scale to the tallest bar.
+    const maxBalance = Math.max(...rows.map((row) => row.endingBalance));
 
     const slot = plotWidth / rows.length;
     const barWidth = Math.min(48, slot * 0.6);
@@ -519,9 +535,12 @@ export class InvestmentCalculator {
     let cumulativeContributions = this.startingAmount();
     const bars: ChartBar[] = rows.map((row, i) => {
       cumulativeContributions += row.depositThisYear;
-      const contributionsHeight =
-        maxBalance > 0 ? (cumulativeContributions / maxBalance) * plotHeight : 0;
       const totalHeight = maxBalance > 0 ? (row.endingBalance / maxBalance) * plotHeight : 0;
+      // Net money put in, capped to the bar — withdrawals can push it below 0 or above the balance.
+      const contributionsHeight =
+        maxBalance > 0
+          ? Math.min(totalHeight, Math.max(0, (cumulativeContributions / maxBalance) * plotHeight))
+          : 0;
       const interestHeight = Math.max(0, totalHeight - contributionsHeight);
       const interest = row.endingBalance - cumulativeContributions;
 
@@ -559,8 +578,9 @@ export class InvestmentCalculator {
     this.startingAmount.set(toNonNegativeNumber(raw));
   }
 
+  /** Negative amounts are allowed — they withdraw from the balance each period instead. */
   setContributionAmount(raw: string): void {
-    this.contributionAmount.set(toNonNegativeNumber(raw));
+    this.contributionAmount.set(toNumber(raw));
   }
 
   setCurrentCheckingBalance(raw: string): void {
@@ -949,10 +969,6 @@ export class InvestmentCalculator {
     document.getElementById('income-vs-spending-chart')?.scrollIntoView({ behavior: 'smooth' });
   }
 
-  setMonthlyMortgagePayment(raw: string): void {
-    this.monthlyMortgagePayment.set(toNonNegativeNumber(raw));
-  }
-
   addContributionBoost(): void {
     const id = createBoostId();
     this.contributionBoosts.update((list) => [
@@ -979,27 +995,50 @@ export class InvestmentCalculator {
     );
   }
 
+  setBoostEndAtAge(id: string, raw: string): void {
+    const val = toNonNegativeIntOrNull(raw);
+    this.contributionBoosts.update((list) =>
+      list.map((b) => (b.id === id ? { ...b, endAtAge: val } : b)),
+    );
+  }
+
+  setBoostEndAtYear(id: string, raw: string): void {
+    const val = toNonNegativeIntOrNull(raw);
+    this.contributionBoosts.update((list) =>
+      list.map((b) => (b.id === id ? { ...b, endAtYear: val } : b)),
+    );
+  }
+
+  /** Writes the entered amount back as a monthly figure, converting down from yearly if needed. */
   setBoostAmount(id: string, raw: string): void {
     const val = toNonNegativeNumber(raw);
     this.contributionBoosts.update((list) =>
-      list.map((b) => (b.id === id ? { ...b, additionalMonthlyAmount: val } : b)),
+      list.map((b) =>
+        b.id === id
+          ? { ...b, additionalMonthlyAmount: b.amountFrequency === 'yearly' ? val / 12 : val }
+          : b,
+      ),
     );
+  }
+
+  setBoostAmountFrequency(id: string, raw: string): void {
+    const amountFrequency = raw === 'yearly' ? 'yearly' : 'monthly';
+    this.contributionBoosts.update((list) =>
+      list.map((b) => (b.id === id ? { ...b, amountFrequency } : b)),
+    );
+  }
+
+  /** The boost amount in whichever unit (monthly/yearly) it's currently shown in. */
+  boostDisplayAmount(boost: ContributionBoost): number {
+    return boost.amountFrequency === 'yearly'
+      ? Math.round(boost.additionalMonthlyAmount * 12 * 100) / 100
+      : boost.additionalMonthlyAmount;
   }
 
   setBoostLabel(id: string, val: string): void {
     this.contributionBoosts.update((list) =>
       list.map((b) => (b.id === id ? { ...b, label: val } : b)),
     );
-  }
-
-  addMortgageAsBoost(): void {
-    const amount = this.monthlyMortgagePayment();
-    if (amount <= 0) return;
-    const id = createBoostId();
-    this.contributionBoosts.update((list) => [
-      ...list,
-      { id, atAge: null, atYear: null, additionalMonthlyAmount: amount, label: 'Mortgage paid off' },
-    ]);
   }
 
   isInfoPopoverOpen(key: InfoPopoverKey): boolean {
@@ -1179,13 +1218,22 @@ export class InvestmentCalculator {
     if (entries.length > 0) this.incomeEntries.set(entries);
   }
 
-  /** Boosts as |-separated share-param specs: age:<age>:<extra>:<label> or year:<n>:<extra>:<label>. */
+  /**
+   * Boosts as |-separated share-param specs: age:<start>[-<end>]:<extra>:<label> or
+   * year:<start>[-<end>]:<extra>:<label>, where <extra> is monthly, or yearly with a "y" suffix.
+   */
   boostSpecs(): string | null {
     const specs = this.contributionBoosts()
       .filter((b) => b.atAge !== null || b.atYear !== null)
       .map((b) => {
-        const when = b.atAge !== null ? `age:${b.atAge}` : `year:${b.atYear}`;
-        return `${when}:${b.additionalMonthlyAmount}:${b.label.replace(/\|/g, '/')}`;
+        const [kind, start, end] =
+          b.atAge !== null ? ['age', b.atAge, b.endAtAge] : ['year', b.atYear, b.endAtYear];
+        const when = `${kind}:${start}${end != null ? `-${end}` : ''}`;
+        const amount =
+          b.amountFrequency === 'yearly'
+            ? `${this.boostDisplayAmount(b)}y`
+            : `${b.additionalMonthlyAmount}`;
+        return `${when}:${amount}:${b.label.replace(/\|/g, '/')}`;
       });
     return specs.length > 0 ? specs.join('|') : null;
   }
@@ -1198,14 +1246,22 @@ export class InvestmentCalculator {
       .filter(Boolean)
       .flatMap((spec): ContributionBoost[] => {
         const [kind, at = '', amount = '', ...label] = spec.split(':');
-        const when = toNonNegativeIntOrNull(at);
+        const [startRaw, endRaw = ''] = at.split('-');
+        const when = toNonNegativeIntOrNull(startRaw);
+        const end = toNonNegativeIntOrNull(endRaw);
+        const yearly = /y$/i.test(amount);
         if ((kind !== 'age' && kind !== 'year') || when === null) return [];
         return [
           {
             id: createBoostId(),
             atAge: kind === 'age' ? when : null,
             atYear: kind === 'year' ? when : null,
-            additionalMonthlyAmount: toNonNegativeNumber(amount),
+            endAtAge: kind === 'age' ? end : null,
+            endAtYear: kind === 'year' ? end : null,
+            additionalMonthlyAmount: yearly
+              ? toNonNegativeNumber(amount.slice(0, -1)) / 12
+              : toNonNegativeNumber(amount),
+            amountFrequency: yearly ? 'yearly' : 'monthly',
             label: label.join(':'),
           },
         ];
@@ -1237,7 +1293,6 @@ export class InvestmentCalculator {
     this.currentSavingsBalance.set(0);
     this.ignoreAlreadySaved.set(false);
     this.lastAppliedPresetId.set(null);
-    this.monthlyMortgagePayment.set(0);
     this.contributionBoosts.set([]);
 
   }

@@ -34,7 +34,9 @@ export const SHARE_PARAMS: readonly ShareParam[] = [
   },
   {
     key: 'contribution',
-    description: 'Contribution amount in dollars, per contributionFrequency.',
+    description:
+      'Contribution amount in dollars, per contributionFrequency. Negative withdraws that much ' +
+      'each period instead (the balance stops at $0).',
     read: (c) => num(c.contributionAmount()),
     apply: (c, raw) => c.setContributionAmount(raw),
   },
@@ -147,16 +149,10 @@ export const SHARE_PARAMS: readonly ShareParam[] = [
     apply: (c, raw) => c.setIgnoreAlreadySaved(raw === '1' || raw === 'true'),
   },
   {
-    key: 'mortgage',
-    description: 'Monthly mortgage payment (can be added as a future contribution boost).',
-    read: (c) => nonZero(c.monthlyMortgagePayment()),
-    apply: (c, raw) => c.setMonthlyMortgagePayment(raw),
-  },
-  {
     key: 'boosts',
     description:
       'Future contribution increases, |-separated. Each is age:<age>:<extraMonthly>:<label> or ' +
-      'year:<yearsFromNow>:<extraMonthly>:<label>.',
+      'year:<yearsFromNow>:<extraMonthly>:<label>; add -<end> to stop it; suffix the amount with y for yearly, e.g. age:50-60:6000y:Side job.',
     read: (c) => c.boostSpecs(),
     apply: (c, raw) => c.setBoostsFromSpecs(raw),
   },

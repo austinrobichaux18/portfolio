@@ -195,7 +195,8 @@
           </div>
           <p class="field-note">
             {{ formatCurrency(contributionBreakdown().monthly) }}/month ·
-            {{ formatCurrency(contributionBreakdown().yearly) }}/year
+            {{ formatCurrency(contributionBreakdown().yearly) }}/year · enter a negative amount to
+            withdraw instead
           </p>
           <div class="input-prefix">
             <span>$</span>
@@ -203,7 +204,6 @@
               #contributionAmountInput
               id="contribution-amount"
               type="text"
-              inputmode="decimal"
               [appNumericValue]="contributionAmount()"
               (input)="setContributionAmount(contributionAmountInput.value)"
             />
@@ -571,33 +571,9 @@
           </div>
         </div>
 
-        <div class="form-row">
-          <label for="monthly-mortgage">Monthly Mortgage Payment (optional)</label>
-          <p class="field-note">
-            Your current mortgage payment toward principal + interest. Once the house is paid off,
-            this amount becomes free to invest — add it as a future boost below.
-          </p>
-          <div class="input-prefix">
-            <span>$</span>
-            <input
-              #monthlyMortgageInput
-              id="monthly-mortgage"
-              type="text"
-              inputmode="decimal"
-              [appNumericValue]="monthlyMortgagePayment()"
-              (input)="setMonthlyMortgagePayment(monthlyMortgageInput.value)"
-            />
-          </div>
-          @if (monthlyMortgagePayment() > 0) {
-            <button type="button" class="link-btn" (click)="addMortgageAsBoost()">
-              + Add as future contribution boost ↓
-            </button>
-          }
-        </div>
-
         <div class="form-section-header">Future Contribution Boosts</div>
         <p class="field-note">
-          Model a step-up in monthly contributions at a future age — for example, when a mortgage
+          Model a step-up in contributions at a future age — for example, when a mortgage
           is paid off or a child finishes school.
         </p>
 
@@ -615,7 +591,19 @@
               </button>
             </div>
 
-            <label [for]="'boost-amount-' + boost.id">Additional Monthly Amount</label>
+            <div class="label-with-info">
+              <label [for]="'boost-amount-' + boost.id">Additional Amount</label>
+              <select
+                #boostFrequencySelect
+                class="inline-select"
+                aria-label="Boost amount period"
+                [value]="boost.amountFrequency ?? 'monthly'"
+                (change)="setBoostAmountFrequency(boost.id, boostFrequencySelect.value)"
+              >
+                <option value="monthly">Monthly</option>
+                <option value="yearly">Yearly</option>
+              </select>
+            </div>
             <div class="input-prefix">
               <span>$</span>
               <input
@@ -623,7 +611,7 @@
                 [id]="'boost-amount-' + boost.id"
                 type="text"
                 inputmode="decimal"
-                [appNumericValue]="boost.additionalMonthlyAmount || ''"
+                [appNumericValue]="boostDisplayAmount(boost) || ''"
                 placeholder="0"
                 (input)="setBoostAmount(boost.id, boostAmountInput.value)"
               />
@@ -650,6 +638,30 @@
                 placeholder="e.g. 20"
                 [appNumericValue]="boost.atYear ?? ''"
                 (input)="setBoostAtYear(boost.id, boostYearInput.value)"
+              />
+            }
+
+            @if (currentAge() !== null) {
+              <label [for]="'boost-end-age-' + boost.id">Ending at Age (optional)</label>
+              <input
+                #boostEndAgeInput
+                [id]="'boost-end-age-' + boost.id"
+                type="text"
+                inputmode="numeric"
+                placeholder="e.g. 60 — blank keeps it going"
+                [appNumericValue]="boost.endAtAge ?? ''"
+                (input)="setBoostEndAtAge(boost.id, boostEndAgeInput.value)"
+              />
+            } @else {
+              <label [for]="'boost-end-year-' + boost.id">Ending at Year (optional)</label>
+              <input
+                #boostEndYearInput
+                [id]="'boost-end-year-' + boost.id"
+                type="text"
+                inputmode="numeric"
+                placeholder="e.g. 30 — blank keeps it going"
+                [appNumericValue]="boost.endAtYear ?? ''"
+                (input)="setBoostEndAtYear(boost.id, boostEndYearInput.value)"
               />
             }
 

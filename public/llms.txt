@@ -21,7 +21,7 @@ Example: https://austinrobichaux.com/other-modules/investment-calculator?startin
 Numbers are plain (no $ or %; commas are fine). Percentages are whole numbers (8 = 8%).
 
 - startingAmount: starting balance in dollars
-- contribution: contribution amount in dollars, per contributionFrequency
+- contribution: contribution amount in dollars, per contributionFrequency; negative withdraws that much each period (balance stops at $0)
 - contributionFrequency: monthly | annually
 - contributionTiming: end | beginning
 - interestRate: annual return, percent
@@ -38,8 +38,7 @@ Numbers are plain (no $ or %; commas are fine). Percentages are whole numbers (8
 - checking: current checking balance (toward a 3-month buffer)
 - savings: current HYSA/savings balance (toward a 6-month buffer)
 - ignoreSaved: 1 to skip the checking/HYSA buffers
-- mortgage: monthly mortgage payment
-- boosts: future contribution increases, |-separated; each is age:<age>:<extraMonthly>:<label> or year:<yearsFromNow>:<extraMonthly>:<label>
+- boosts: future contribution increases, |-separated; each is age:<age>:<extraMonthly>:<label> or year:<yearsFromNow>:<extraMonthly>:<label>; add -<end> to stop it at that age/year; suffix the amount with y for yearly, e.g. age:50-60:6000y:Side job
 - years, months: time horizon (max 200 years; months 0-11)
 - todaysDollars: 1 to treat goalAmount/goalWithdrawal as today's (inflation-adjusted) dollars
 - retirementAge: target retirement age; holds it fixed and derives the horizon (needs currentAge)

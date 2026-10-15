@@ -34,8 +34,9 @@ function toRealValue(nominalValue: number, inflationRatePercent: number, years: 
  * Smallest whole number of months for the ending balance to reach `targetBalance`, or null if it
  * can't within `maxMonths`. With `inTodaysDollars`, the inflation-adjusted balance is compared
  * instead. Binary-searches over calculateInvestment, relying on the balance only ever growing with
- * time (contributions and rates are non-negative). That holds for the real balance too unless
- * returns trail inflation, in which case it can peak and fall, so that case scans month by month.
+ * time (rates are non-negative, and so are contributions unless set negative to withdraw). That
+ * holds for the real balance too unless returns trail inflation. When the balance can peak and
+ * fall (withdrawals, or real returns below zero), it scans month by month instead.
  */
 export function monthsToReachBalance(
   inputs: Omit<InvestmentInputs, 'years' | 'months'>,
@@ -52,7 +53,9 @@ export function monthsToReachBalance(
     monthlyGrowthFactor(inputs.annualInterestRatePercent, inputs.compoundFrequency),
     12,
   );
-  if (inTodaysDollars && yearlyGrowth < 1 + (inputs.inflationRatePercent ?? 0) / 100) {
+  const realBalanceCanFall =
+    inTodaysDollars && yearlyGrowth < 1 + (inputs.inflationRatePercent ?? 0) / 100;
+  if (inputs.contributionAmount < 0 || realBalanceCanFall) {
     for (let month = 0; month <= maxMonths; month++) {
       if (balanceAt(month) >= targetBalance) return month;
     }
@@ -81,10 +84,7 @@ export function calculateInvestment(inputs: InvestmentInputs): InvestmentResult 
   const growth = monthlyGrowthFactor(inputs.annualInterestRatePercent, inputs.compoundFrequency);
   const inflationRatePercent = inputs.inflationRatePercent ?? 0;
 
-  const sortedBoosts = [...(inputs.contributionBoosts ?? [])].sort(
-    (a, b) => a.startYear - b.startYear,
-  );
-  let nextBoostIndex = 0;
+  const boosts = inputs.contributionBoosts ?? [];
   let activeBoostMonthly = 0;
 
   let balance = inputs.startingAmount;
@@ -98,27 +98,24 @@ export function calculateInvestment(inputs: InvestmentInputs): InvestmentResult 
     const currentYear = Math.ceil(month / 12);
     const isYearEnd = monthInYear === 12 || month === totalMonths;
 
-    // Apply any boosts that kick in at the start of this year.
+    // Boosts switch on/off at the start of a year: active from startYear until endYear (if any).
     if (monthInYear === 1) {
-      while (
-        nextBoostIndex < sortedBoosts.length &&
-        sortedBoosts[nextBoostIndex].startYear <= currentYear
-      ) {
-        activeBoostMonthly += sortedBoosts[nextBoostIndex].additionalMonthly;
-        nextBoostIndex++;
-      }
+      activeBoostMonthly = boosts
+        .filter(
+          (b) => b.startYear <= currentYear && (b.endYear === undefined || currentYear < b.endYear),
+        )
+        .reduce((sum, b) => sum + b.additionalMonthly, 0);
     }
-
-    const effectiveMonthlyContribution = inputs.contributionAmount + activeBoostMonthly;
 
     let contributionNow = 0;
     if (inputs.contributionFrequency === 'monthly') {
-      contributionNow = effectiveMonthlyContribution;
+      contributionNow = inputs.contributionAmount + activeBoostMonthly;
     } else if (
       (inputs.contributionTiming === 'beginning' && monthInYear === 1) ||
       (inputs.contributionTiming === 'end' && isYearEnd)
     ) {
-      contributionNow = effectiveMonthlyContribution;
+      // Boosts are monthly amounts, so a once-a-year contribution gets 12 months' worth.
+      contributionNow = inputs.contributionAmount + activeBoostMonthly * 12;
     }
 
     // While building savings/checking buffers, the contribution is diverted there instead.
@@ -126,19 +123,19 @@ export function calculateInvestment(inputs: InvestmentInputs): InvestmentResult 
       contributionNow = 0;
     }
 
-    if (inputs.contributionTiming === 'beginning') {
-      balance += contributionNow;
-      totalContributions += contributionNow;
-      yearDeposit += contributionNow;
-    }
+    // A negative contribution is a withdrawal, capped at what's left so the balance stops at $0.
+    const deposit = () => {
+      const amount = Math.max(contributionNow, -balance);
+      balance += amount;
+      totalContributions += amount;
+      yearDeposit += amount;
+    };
+
+    if (inputs.contributionTiming === 'beginning') deposit();
 
     balance *= growth;
 
-    if (inputs.contributionTiming === 'end') {
-      balance += contributionNow;
-      totalContributions += contributionNow;
-      yearDeposit += contributionNow;
-    }
+    if (inputs.contributionTiming === 'end') deposit();
 
     if (isYearEnd) {
       const year = Math.ceil(month / 12);

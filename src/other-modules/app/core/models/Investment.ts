@@ -13,7 +13,14 @@ export interface ContributionBoost {
   atAge: number | null;
   /** The year-from-now at which this boost starts (fallback when currentAge is null). */
   atYear: number | null;
+  /** Optional age at which this boost stops (used when currentAge is set). */
+  endAtAge?: number | null;
+  /** Optional year-from-now at which this boost stops (fallback when currentAge is null). */
+  endAtYear?: number | null;
+  /** Always stored per month, whichever unit it was entered in. */
   additionalMonthlyAmount: number;
+  /** The unit the amount is shown/entered in; defaults to monthly. */
+  amountFrequency?: 'monthly' | 'yearly';
   label: string;
 }
 
@@ -31,7 +38,8 @@ export interface InvestmentInputs {
   /** Annual inflation rate used to express balances in today's purchasing power. */
   inflationRatePercent?: number;
   /** Future step-ups in monthly contribution that start at a specific year in the simulation. */
-  contributionBoosts?: Array<{ startYear: number; additionalMonthly: number }>;
+  /** Each boost is active from startYear up to (not including) endYear, when given. */
+  contributionBoosts?: Array<{ startYear: number; endYear?: number; additionalMonthly: number }>;
 }
 
 export interface InvestmentYearRow {

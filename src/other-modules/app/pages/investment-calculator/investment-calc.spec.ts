@@ -1,4 +1,4 @@
-import { calculateInvestment } from './investment-calc';
+import { calculateInvestment, monthsToReachBalance } from './investment-calc';
 import { InvestmentInputs } from '../../core/models/Investment';
 
 const baseInputs: InvestmentInputs = {
@@ -137,5 +137,63 @@ describe('calculateInvestment', () => {
     // No growth, no contributions — the real value of $1,000 a year from now at 10% inflation.
     expect(result.endingBalanceReal).toBeCloseTo(1000 / 1.1, 2);
     expect(result.yearRows[0].endingBalanceReal).toBeCloseTo(1000 / 1.1, 2);
+  });
+
+  it('treats a negative contribution as a withdrawal that stops at $0', () => {
+    const result = calculateInvestment({
+      ...baseInputs,
+      contributionAmount: -300,
+      months: 0,
+      years: 1,
+    });
+    // $1,000 covers three full $300 withdrawals, then only the last $100 is left to take.
+    expect(result.yearRows[0].depositThisYear).toBeCloseTo(-1000);
+    expect(result.endingBalance).toBeCloseTo(0);
+    expect(result.totalContributions).toBeCloseTo(-1000);
+  });
+
+  it('stops a contribution boost at its end year', () => {
+    const result = calculateInvestment({
+      ...baseInputs,
+      startingAmount: 0,
+      contributionBoosts: [{ startYear: 2, endYear: 4, additionalMonthly: 100 }],
+    });
+    expect(result.yearRows.map((r) => r.depositThisYear)).toEqual([0, 1200, 1200, 0, 0]);
+  });
+
+  it('finds a goal when withdrawals make the balance peak and fall', () => {
+    // 10% growth outpaces a small withdrawal at first, but the target is still reachable.
+    const months = monthsToReachBalance(
+      {
+        ...baseInputs,
+        startingAmount: 10_000,
+        annualInterestRatePercent: 10,
+        contributionAmount: -50,
+      },
+      10_200,
+      600,
+    );
+    expect(months).not.toBeNull();
+    const reached = calculateInvestment({
+      ...baseInputs,
+      startingAmount: 10_000,
+      annualInterestRatePercent: 10,
+      contributionAmount: -50,
+      years: 0,
+      months: months!,
+    });
+    expect(reached.endingBalance).toBeGreaterThanOrEqual(10_200);
+  });
+
+  it('adds 12 months of boost to a once-a-year contribution', () => {
+    const result = calculateInvestment({
+      ...baseInputs,
+      startingAmount: 0,
+      contributionAmount: 1000,
+      contributionFrequency: 'annually',
+      years: 2,
+      contributionBoosts: [{ startYear: 2, additionalMonthly: 100 }],
+    });
+    expect(result.yearRows.map((r) => r.depositThisYear)).toEqual([1000, 2200]);
   });
 });

@@ -103,4 +103,38 @@ describe('investment agent tools', () => {
     await run(c, 'reset_investment_calculator');
     expect(c.startingAmount()).toBe(0);
   });
+
+  it('round-trips a contribution boost end age', () => {
+    const c = createCalculator();
+    c.setCurrentAge('30');
+    c.setBoostsFromSpecs('age:50-60:500:Side job');
+    expect(c.contributionBoosts()[0]).toMatchObject({ atAge: 50, endAtAge: 60, label: 'Side job' });
+    expect(c.boostSpecs()).toBe('age:50-60:500:Side job');
+    expect(c.calcContributionBoosts()).toEqual([{ startYear: 20, endYear: 30, additionalMonthly: 500 }]);
+  });
+
+  it('accepts a negative contribution', () => {
+    const c = createCalculator({ contribution: '-200' });
+    expect(c.contributionAmount()).toBe(-200);
+  });
+
+  it('stores a yearly boost amount per month and shows it back in yearly', () => {
+    const c = createCalculator();
+    c.addContributionBoost();
+    const id = c.contributionBoosts()[0].id;
+    c.setBoostAmountFrequency(id, 'yearly');
+    c.setBoostAmount(id, '6000');
+    expect(c.contributionBoosts()[0].additionalMonthlyAmount).toBe(500);
+    expect(c.boostDisplayAmount(c.contributionBoosts()[0])).toBe(6000);
+  });
+
+  it('round-trips a yearly boost amount through the share link', () => {
+    const c = createCalculator();
+    c.setBoostsFromSpecs('age:50-60:6000y:Side job');
+    expect(c.contributionBoosts()[0]).toMatchObject({
+      additionalMonthlyAmount: 500,
+      amountFrequency: 'yearly',
+    });
+    expect(c.boostSpecs()).toBe('age:50-60:6000y:Side job');
+  });
 });
