@@ -650,19 +650,19 @@ describe('InvestmentCalculator', () => {
   });
 
   it("solves a goal amount in today's dollars when that toggle is on", () => {
-    component.setGoalAmountInTodaysDollars(true);
+    component.setGoalsInTodaysDollars(true);
     component.setGoalAmount('1,000,000');
     expect(component.result().endingBalanceReal).toBeGreaterThanOrEqual(1_000_000);
     const realMonths = component.years() * 12 + component.months();
 
-    component.setGoalAmountInTodaysDollars(false);
+    component.setGoalsInTodaysDollars(false);
     const nominalMonths = component.years() * 12 + component.months();
     expect(realMonths).toBeGreaterThan(nominalMonths);
     expect(component.goalAmountDisplay()).toBe(1_000_000);
   });
 
   it("shows the goal withdrawal in today's dollars when that toggle is on", () => {
-    component.setGoalWithdrawalInTodaysDollars(true);
+    component.setGoalsInTodaysDollars(true);
     expect(component.goalWithdrawalDisplay()).toBe(
       Math.round(component.withdrawalAmount(component.result().endingBalanceReal)),
     );
@@ -671,7 +671,7 @@ describe('InvestmentCalculator', () => {
   it("still finds a today's-dollars goal when returns trail inflation", () => {
     component.setAnnualInterestRatePercent('2');
     component.setInflationRatePercent('3');
-    component.setGoalAmountInTodaysDollars(true);
+    component.setGoalsInTodaysDollars(true);
     component.setGoalAmount('10000');
     expect(component.goalUnreachable()).toBe(false);
     expect(component.result().endingBalanceReal).toBeGreaterThanOrEqual(10_000);
@@ -683,5 +683,22 @@ describe('InvestmentCalculator', () => {
       component.withdrawalAmount(component.result().endingBalanceReal),
     );
     expect(component.finalYearWithdrawalReal()).toBeLessThan(component.finalYearWithdrawal());
+  });
+
+  it("flags milestones and cost-of-living coverage separately in today's dollars", () => {
+    component.setCurrentAge("");
+    component.setMonthlyCostOfLiving("1000");
+    component.setYears("60");
+    const rows = component.result().yearRows;
+    const firstReal = rows.find((r) => r.endingBalanceReal >= 1_000_000)!.year;
+    expect(component.isMilestoneYear(firstReal, true)).toBe(true);
+    expect(component.milestoneYearsReal().get(firstReal)).toContain(1_000_000);
+    expect(firstReal).toBeGreaterThan(rows.find((r) => r.endingBalance >= 1_000_000)!.year);
+
+    const coveredReal = component.firstCostOfLivingCoveredYearReal()!;
+    expect(coveredReal).toBeGreaterThanOrEqual(component.firstCostOfLivingCoveredYear()!);
+    expect(component.coversCostOfLiving(coveredReal, rows[coveredReal - 1].endingBalanceReal)).toBe(
+      true,
+    );
   });
 });

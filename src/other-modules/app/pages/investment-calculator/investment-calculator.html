@@ -400,8 +400,8 @@
                   #goalAmountRealInput
                   type="checkbox"
                   aria-label="Goal Retirement Amount in today's dollars (inflation-adjusted)"
-                  [checked]="goalAmountInTodaysDollars()"
-                  (change)="setGoalAmountInTodaysDollars(goalAmountRealInput.checked)"
+                  [checked]="goalsInTodaysDollars()"
+                  (change)="setGoalsInTodaysDollars(goalAmountRealInput.checked)"
                 />
                 <span class="toggle-track"><span class="toggle-thumb"></span></span>
                 <span class="toggle-text">Today's $</span>
@@ -430,8 +430,8 @@
                   #goalWithdrawalRealInput
                   type="checkbox"
                   aria-label="Goal Withdraw in today's dollars (inflation-adjusted)"
-                  [checked]="goalWithdrawalInTodaysDollars()"
-                  (change)="setGoalWithdrawalInTodaysDollars(goalWithdrawalRealInput.checked)"
+                  [checked]="goalsInTodaysDollars()"
+                  (change)="setGoalsInTodaysDollars(goalWithdrawalRealInput.checked)"
                 />
                 <span class="toggle-track"><span class="toggle-thumb"></span></span>
                 <span class="toggle-text">Today's $</span>
@@ -1299,23 +1299,18 @@
             </div>
             @for (row of result().yearRows; track row.year) {
               <div class="breakdown-row" [class.breakdown-row-with-age]="currentAge() !== null">
+                <span>{{ row.year }}</span>
+                @if (currentAge() !== null) {
+                  <span>{{ ageAtYear(row.year) }}</span>
+                }
+                <span>{{ formatCurrency(row.depositThisYear) }}</span>
+                <span>{{ formatCurrency(row.interestThisYear) }}</span>
                 <span class="breakdown-cell">
-                  {{ row.year }}
+                  {{ formatCurrency(row.endingBalance) }}
                   @if (isMilestoneYear(row.year)) {
                     <span class="milestone-badge" [title]="milestoneTitleFor(row.year)">★</span>
                   }
                 </span>
-                @if (currentAge() !== null) {
-                  <span class="breakdown-cell">
-                    {{ ageAtYear(row.year) }}
-                    @if (isMilestoneYear(row.year)) {
-                      <span class="milestone-badge" [title]="milestoneTitleFor(row.year)">★</span>
-                    }
-                  </span>
-                }
-                <span>{{ formatCurrency(row.depositThisYear) }}</span>
-                <span>{{ formatCurrency(row.interestThisYear) }}</span>
-                <span>{{ formatCurrency(row.endingBalance) }}</span>
                 <span class="withdrawal-cell">
                   {{ formatCurrency(totalWithdrawal(row.year, row.endingBalance)) }}
                   @if (isSsEligibleYear(row.year)) {
@@ -1357,8 +1352,22 @@
                     >
                   }
                 </span>
-                <span>{{ formatCurrency(row.endingBalanceReal) }}</span>
-                <span>{{ formatCurrency(totalWithdrawal(row.year, row.endingBalanceReal)) }}</span>
+                <span class="breakdown-cell">
+                  {{ formatCurrency(row.endingBalanceReal) }}
+                  @if (isMilestoneYear(row.year, true)) {
+                    <span class="milestone-badge" [title]="milestoneTitleFor(row.year, true)">★</span>
+                  }
+                </span>
+                <span class="withdrawal-cell">
+                  {{ formatCurrency(totalWithdrawal(row.year, row.endingBalanceReal)) }}
+                  @if (row.year === firstCostOfLivingCoveredYearReal()) {
+                    <span
+                      class="col-covered-badge"
+                      [title]="costOfLivingCoveredTitle(row.year, row.endingBalanceReal, true)"
+                      >✓</span
+                    >
+                  }
+                </span>
               </div>
             }
           </div>

@@ -7,6 +7,7 @@ import {
   ContributionFrequency,
   ContributionTiming,
   InvestmentRun,
+  InvestmentYearRow,
 } from '../../core/models/Investment';
 import {
   HouseholdBudgetSnapshot,
@@ -242,10 +243,11 @@ export class InvestmentCalculator {
 
   private heldGoalWithdrawal = signal(0);
 
-  /** When on, the goal amount/withdrawal fields are in today's dollars (inflation-adjusted). */
-  goalAmountInTodaysDollars = signal(false);
-
-  goalWithdrawalInTodaysDollars = signal(false);
+  /**
+   * When on, the goal amount/withdrawal fields are in today's dollars (inflation-adjusted). Shared
+   * by both fields' toggles so they always agree.
+   */
+  goalsInTodaysDollars = signal(false);
 
   /**
    * Total months for the held field's target, or null when it can't be reached within
@@ -266,7 +268,7 @@ export class InvestmentCalculator {
           this.projectionInputs(),
           this.heldGoalAmount(),
           maxMonths,
-          this.goalAmountInTodaysDollars(),
+          this.goalsInTodaysDollars(),
         );
       case 'withdrawal': {
         const rate = this.withdrawalRatePercent() / 100;
@@ -275,7 +277,7 @@ export class InvestmentCalculator {
           this.projectionInputs(),
           this.heldGoalWithdrawal() / rate,
           maxMonths,
-          this.goalWithdrawalInTodaysDollars(),
+          this.goalsInTodaysDollars(),
         );
       }
     }
@@ -627,11 +629,11 @@ export class InvestmentCalculator {
         break;
       }
       case 'amount':
-        this.heldGoalAmount.set(Math.floor(this.goalAmountBalance()));
+        this.heldGoalAmount.set(Math.floor(this.goalBalance()));
         break;
       case 'withdrawal':
         this.heldGoalWithdrawal.set(
-          Math.floor(this.withdrawalAmount(this.goalWithdrawalBalance())),
+          Math.floor(this.withdrawalAmount(this.goalBalance())),
         );
         break;
     }
@@ -655,15 +657,9 @@ export class InvestmentCalculator {
   /** Portfolio-only withdrawal at the end of the horizon (excludes Social Security). */
   goalWithdrawal = computed(() => this.withdrawalAmount(this.result().endingBalance));
 
-  /** Ending balance in whichever dollars (nominal or today's) each goal field is set to use. */
-  private goalAmountBalance = computed(() =>
-    this.goalAmountInTodaysDollars()
-      ? this.result().endingBalanceReal
-      : this.result().endingBalance,
-  );
-
-  private goalWithdrawalBalance = computed(() =>
-    this.goalWithdrawalInTodaysDollars()
+  /** Ending balance in whichever dollars (nominal or today's) the goal fields are set to use. */
+  private goalBalance = computed(() =>
+    this.goalsInTodaysDollars()
       ? this.result().endingBalanceReal
       : this.result().endingBalance,
   );
@@ -676,13 +672,13 @@ export class InvestmentCalculator {
   goalAmountDisplay = computed(() =>
     this.heldGoal() === 'amount'
       ? this.heldGoalAmount()
-      : Math.round(this.goalAmountBalance()),
+      : Math.round(this.goalBalance()),
   );
 
   goalWithdrawalDisplay = computed(() =>
     this.heldGoal() === 'withdrawal'
       ? this.heldGoalWithdrawal()
-      : Math.round(this.withdrawalAmount(this.goalWithdrawalBalance())),
+      : Math.round(this.withdrawalAmount(this.goalBalance())),
   );
 
   /** Editing the goal retirement amount holds it; the horizon becomes the time needed to reach it. */
@@ -692,15 +688,11 @@ export class InvestmentCalculator {
   }
 
   /**
-   * Switches a goal field between nominal and today's dollars. A held target keeps its number
+   * Switches both goal fields between nominal and today's dollars. A held target keeps its number
    * and is re-solved under the new meaning (e.g. $3M nominal becomes $3M in today's money).
    */
-  setGoalAmountInTodaysDollars(value: boolean): void {
-    this.goalAmountInTodaysDollars.set(value);
-  }
-
-  setGoalWithdrawalInTodaysDollars(value: boolean): void {
-    this.goalWithdrawalInTodaysDollars.set(value);
+  setGoalsInTodaysDollars(value: boolean): void {
+    this.goalsInTodaysDollars.set(value);
   }
 
   /** Editing the goal withdrawal holds it; the needed balance is backed out at the withdrawal rate. */
@@ -761,10 +753,20 @@ export class InvestmentCalculator {
     return row?.year ?? null;
   });
 
-  costOfLivingCoveredTitle(year: number, endingBalance: number): string {
+  /** firstCostOfLivingCoveredYear() for the inflation-adjusted (today's $) withdrawal. */
+  firstCostOfLivingCoveredYearReal = computed<number | null>(() => {
+    if (this.yearlyCostOfLiving() <= 0) return null;
+    const row = this.result().yearRows.find((r) =>
+      this.coversCostOfLiving(r.year, r.endingBalanceReal),
+    );
+    return row?.year ?? null;
+  });
+
+  costOfLivingCoveredTitle(year: number, endingBalance: number, todaysDollars = false): string {
+    const suffix = todaysDollars ? " in today's dollars" : '';
     return (
-      `Withdrawal (${formatCurrency(this.totalWithdrawal(year, endingBalance))}) covers your ` +
-      `${formatCurrency(this.yearlyCostOfLiving())}/year cost of living`
+      `Withdrawal (${formatCurrency(this.totalWithdrawal(year, endingBalance))}${suffix}) ` +
+      `covers your ${formatCurrency(this.yearlyCostOfLiving())}/year cost of living`
     );
   }
 
@@ -795,25 +797,32 @@ export class InvestmentCalculator {
   });
 
   /** Maps each year that first crosses a milestone balance to the milestone(s) it crossed. */
-  milestoneYears = computed<Map<number, number[]>>(() => {
+  milestoneYears = computed(() => this.milestoneMap((r) => r.endingBalance));
+
+  /** Same as milestoneYears, but for the inflation-adjusted (today's $) balance. */
+  milestoneYearsReal = computed(() => this.milestoneMap((r) => r.endingBalanceReal));
+
+  private milestoneMap(balanceOf: (row: InvestmentYearRow) => number): Map<number, number[]> {
     const rows = this.result().yearRows;
     const map = new Map<number, number[]>();
     for (const milestone of MILESTONES) {
-      const row = rows.find((r) => r.endingBalance >= milestone);
+      const row = rows.find((r) => balanceOf(r) >= milestone);
       if (row) {
         map.set(row.year, [...(map.get(row.year) ?? []), milestone]);
       }
     }
     return map;
-  });
-
-  isMilestoneYear(year: number): boolean {
-    return this.milestoneYears().has(year);
   }
 
-  milestoneTitleFor(year: number): string {
-    const milestones = this.milestoneYears().get(year) ?? [];
-    return `${milestones.map((m) => formatCurrency(m)).join(', ')} reached`;
+  isMilestoneYear(year: number, todaysDollars = false): boolean {
+    return (todaysDollars ? this.milestoneYearsReal() : this.milestoneYears()).has(year);
+  }
+
+  milestoneTitleFor(year: number, todaysDollars = false): string {
+    const map = todaysDollars ? this.milestoneYearsReal() : this.milestoneYears();
+    const milestones = map.get(year) ?? [];
+    const suffix = todaysDollars ? " in today's dollars" : '';
+    return `${milestones.map((m) => formatCurrency(m)).join(', ')}${suffix} reached`;
   }
 
   private updateIncomeEntry(id: string, updater: (entry: IncomeEntry) => IncomeEntry): void {
@@ -1041,8 +1050,7 @@ export class InvestmentCalculator {
     this.annualInterestRatePercent.set(10);
     this.compoundFrequency.set('annually');
     this.restoreHorizon(37, 0);
-    this.goalAmountInTodaysDollars.set(false);
-    this.goalWithdrawalInTodaysDollars.set(false);
+    this.goalsInTodaysDollars.set(false);
     this.inflationRatePercent.set(3);
     this.withdrawalRatePercent.set(3.5);
     this.currentAge.set(30);
