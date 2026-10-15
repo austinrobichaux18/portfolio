@@ -99,11 +99,19 @@ export function calculateInvestment(inputs: InvestmentInputs): InvestmentResult 
     const isYearEnd = monthInYear === 12 || month === totalMonths;
 
     // Boosts switch on/off at the start of a year: active from startYear until endYear (if any).
+    // One-time boosts instead land as a lump sum in the first month of their start year.
+    let lumpSumNow = 0;
     if (monthInYear === 1) {
       activeBoostMonthly = boosts
         .filter(
-          (b) => b.startYear <= currentYear && (b.endYear === undefined || currentYear < b.endYear),
+          (b) =>
+            !b.oneTime &&
+            b.startYear <= currentYear &&
+            (b.endYear === undefined || currentYear < b.endYear),
         )
+        .reduce((sum, b) => sum + b.additionalMonthly, 0);
+      lumpSumNow = boosts
+        .filter((b) => b.oneTime && b.startYear === currentYear)
         .reduce((sum, b) => sum + b.additionalMonthly, 0);
     }
 
@@ -122,6 +130,7 @@ export function calculateInvestment(inputs: InvestmentInputs): InvestmentResult 
     if (month <= (inputs.contributionDelayMonths ?? 0)) {
       contributionNow = 0;
     }
+    contributionNow += lumpSumNow;
 
     // A negative contribution is a withdrawal, capped at what's left so the balance stops at $0.
     const deposit = () => {

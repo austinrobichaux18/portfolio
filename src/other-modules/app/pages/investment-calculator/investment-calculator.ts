@@ -6,6 +6,7 @@ import {
   ContributionBoost,
   ContributionFrequency,
   ContributionTiming,
+  ContributionBoostSchedule,
   InvestmentRun,
   InvestmentYearRow,
 } from '../../core/models/Investment';
@@ -448,6 +449,9 @@ export class InvestmentCalculator {
           age !== null && b.atAge !== null ? b.atAge - age : b.atYear;
         if (b.disabled) return null;
         if (startYear === null || startYear <= 0 || b.additionalMonthlyAmount <= 0) return null;
+        if (b.amountFrequency === 'once') {
+          return { startYear, additionalMonthly: b.additionalMonthlyAmount, oneTime: true };
+        }
         const end =
           age !== null && b.endAtAge != null ? b.endAtAge - age : (b.endAtYear ?? null);
         // An end at or before the start means the boost never runs.
@@ -458,9 +462,7 @@ export class InvestmentCalculator {
           additionalMonthly: b.additionalMonthlyAmount,
         };
       })
-      .filter(
-        (b): b is { startYear: number; endYear?: number; additionalMonthly: number } => b !== null,
-      );
+      .filter((b): b is ContributionBoostSchedule => b !== null);
   });
 
   /** Every calculation input except the time horizon, shared by result() and the goal solvers. */
@@ -1029,10 +1031,25 @@ export class InvestmentCalculator {
     );
   }
 
+  /**
+   * Monthly <-> yearly keeps the same per-month amount (so the shown number scales by 12), like
+   * cost of living. Switching to or from one-time keeps the shown number as-is instead, since a
+   * lump sum has no per-month equivalent.
+   */
   setBoostAmountFrequency(id: string, raw: string): void {
-    const amountFrequency = raw === 'yearly' ? 'yearly' : 'monthly';
+    const amountFrequency = raw === 'yearly' || raw === 'once' ? raw : 'monthly';
     this.contributionBoosts.update((list) =>
-      list.map((b) => (b.id === id ? { ...b, amountFrequency } : b)),
+      list.map((b) => {
+        if (b.id !== id) return b;
+        const involvesOnce = amountFrequency === 'once' || b.amountFrequency === 'once';
+        const shown = this.boostDisplayAmount(b);
+        const additionalMonthlyAmount = !involvesOnce
+          ? b.additionalMonthlyAmount
+          : amountFrequency === 'yearly'
+            ? shown / 12
+            : shown;
+        return { ...b, amountFrequency, additionalMonthlyAmount };
+      }),
     );
   }
 
@@ -1262,7 +1279,8 @@ export class InvestmentCalculator {
 
   /**
    * Boosts as |-separated share-param specs: age:<start>[-<end>]:<extra>:<label> or
-   * year:<start>[-<end>]:<extra>:<label>, where <extra> is monthly, or yearly with a "y" suffix.
+   * year:<start>[-<end>]:<extra>:<label>, where <extra> is monthly, yearly with a "y" suffix, or
+   * a one-time lump sum with a "once" suffix.
    * A boost that's switched off is prefixed with "off:".
    */
   boostSpecs(): string | null {
@@ -1275,7 +1293,9 @@ export class InvestmentCalculator {
         const amount =
           b.amountFrequency === 'yearly'
             ? `${this.boostDisplayAmount(b)}y`
-            : `${b.additionalMonthlyAmount}`;
+            : b.amountFrequency === 'once'
+              ? `${b.additionalMonthlyAmount}once`
+              : `${b.additionalMonthlyAmount}`;
         return `${b.disabled ? 'off:' : ''}${when}:${amount}:${b.label.replace(/\|/g, '/')}`;
       });
     return specs.length > 0 ? specs.join('|') : null;
@@ -1294,6 +1314,7 @@ export class InvestmentCalculator {
         const when = toNonNegativeIntOrNull(startRaw);
         const end = toNonNegativeIntOrNull(endRaw);
         const yearly = /y$/i.test(amount);
+        const once = /once$/i.test(amount);
         if ((kind !== 'age' && kind !== 'year') || when === null) return [];
         return [
           {
@@ -1302,10 +1323,12 @@ export class InvestmentCalculator {
             atYear: kind === 'year' ? when : null,
             endAtAge: kind === 'age' ? end : null,
             endAtYear: kind === 'year' ? end : null,
-            additionalMonthlyAmount: yearly
-              ? toNonNegativeNumber(amount.slice(0, -1)) / 12
-              : toNonNegativeNumber(amount),
-            amountFrequency: yearly ? 'yearly' : 'monthly',
+            additionalMonthlyAmount: once
+              ? toNonNegativeNumber(amount.slice(0, -4))
+              : yearly
+                ? toNonNegativeNumber(amount.slice(0, -1)) / 12
+                : toNonNegativeNumber(amount),
+            amountFrequency: once ? 'once' : yearly ? 'yearly' : 'monthly',
             ...(disabled ? { disabled } : {}),
             label: label.join(':'),
           },

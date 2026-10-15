@@ -17,12 +17,12 @@ export interface ContributionBoost {
   endAtAge?: number | null;
   /** Optional year-from-now at which this boost stops (fallback when currentAge is null). */
   endAtYear?: number | null;
-  /** Always stored per month, whichever unit it was entered in. */
+  /** Stored per month whether entered monthly or yearly; for a one-time boost, the lump sum. */
   additionalMonthlyAmount: number;
   /** When true, the boost is kept but left out of the projection (to compare with/without it). */
   disabled?: boolean;
   /** The unit the amount is shown/entered in; defaults to monthly. */
-  amountFrequency?: 'monthly' | 'yearly';
+  amountFrequency?: 'monthly' | 'yearly' | 'once';
   label: string;
 }
 
@@ -40,8 +40,11 @@ export interface InvestmentInputs {
   /** Annual inflation rate used to express balances in today's purchasing power. */
   inflationRatePercent?: number;
   /** Future step-ups in monthly contribution that start at a specific year in the simulation. */
-  /** Each boost is active from startYear up to (not including) endYear, when given. */
-  contributionBoosts?: Array<{ startYear: number; endYear?: number; additionalMonthly: number }>;
+  /**
+   * Each boost is active from startYear up to (not including) endYear, when given. A oneTime boost
+   * instead adds additionalMonthly once, as a lump sum, at the start of startYear.
+   */
+  contributionBoosts?: ContributionBoostSchedule[];
 }
 
 export interface InvestmentYearRow {
@@ -71,4 +74,12 @@ export interface InvestmentRun {
   endingBalance: number;
   /** Only present when the "How Much Can You Invest?" widget had something entered. */
   householdBudget?: HouseholdBudgetSnapshot;
+}
+
+/** A contribution boost as the calculation engine sees it (years counted from now). */
+export interface ContributionBoostSchedule {
+  startYear: number;
+  endYear?: number;
+  additionalMonthly: number;
+  oneTime?: boolean;
 }

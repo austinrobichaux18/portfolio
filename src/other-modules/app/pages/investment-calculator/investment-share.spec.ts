@@ -178,4 +178,34 @@ describe('investment agent tools', () => {
     c.setBoostDurationYears(c.contributionBoosts()[0].id, '3');
     expect(c.contributionBoosts()[0].endAtYear).toBe(8);
   });
+
+  it('treats a one-time boost as a single lump sum and ignores its end', () => {
+    const c = createCalculator();
+    c.setCurrentAge('30');
+    c.setBoostsFromSpecs('age:40:500:Raise');
+    const id = c.contributionBoosts()[0].id;
+
+    c.setBoostAmountFrequency(id, 'once');
+    expect(c.boostDisplayAmount(c.contributionBoosts()[0])).toBe(500);
+    c.setBoostAmount(id, '50000');
+    c.setBoostEndAtAge(id, '45');
+    expect(c.calcContributionBoosts()).toEqual([
+      { startYear: 10, additionalMonthly: 50000, oneTime: true },
+    ]);
+    expect(c.boostSpecs()).toBe('age:40-45:50000once:Raise');
+
+    // Back to yearly keeps the shown number, now as a yearly amount.
+    c.setBoostAmountFrequency(id, 'yearly');
+    expect(c.boostDisplayAmount(c.contributionBoosts()[0])).toBe(50000);
+  });
+
+  it('round-trips a one-time boost through the share link', () => {
+    const c = createCalculator();
+    c.setBoostsFromSpecs('age:55:50000once:Inheritance');
+    expect(c.contributionBoosts()[0]).toMatchObject({
+      additionalMonthlyAmount: 50000,
+      amountFrequency: 'once',
+    });
+    expect(c.boostSpecs()).toBe('age:55:50000once:Inheritance');
+  });
 });

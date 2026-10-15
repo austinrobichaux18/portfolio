@@ -623,6 +623,7 @@
               >
                 <option value="monthly">Monthly</option>
                 <option value="yearly">Yearly</option>
+                <option value="once">One-time</option>
               </select>
             </div>
             <div class="input-prefix">
@@ -662,46 +663,53 @@
               />
             }
 
-            <label [for]="'boost-end-' + boost.id">
-              Ending at {{ currentAge() !== null ? 'Age' : 'Year' }} (optional) · or # of years
-            </label>
-            <div class="half-input-row">
-              @if (currentAge() !== null) {
-                <input
-                  #boostEndAgeInput
-                  [id]="'boost-end-' + boost.id"
-                  type="text"
-                  inputmode="numeric"
-                  placeholder="e.g. 60"
-                  [appNumericValue]="boost.endAtAge ?? ''"
-                  (input)="setBoostEndAtAge(boost.id, boostEndAgeInput.value)"
-                />
-              } @else {
-                <input
-                  #boostEndYearInput
-                  [id]="'boost-end-' + boost.id"
-                  type="text"
-                  inputmode="numeric"
-                  placeholder="e.g. 30"
-                  [appNumericValue]="boost.endAtYear ?? ''"
-                  (input)="setBoostEndAtYear(boost.id, boostEndYearInput.value)"
-                />
-              }
-              <div class="input-suffix">
-                <input
-                  #boostDurationInput
-                  type="text"
-                  inputmode="numeric"
-                  [attr.aria-label]="'Number of years boost #' + ($index + 1) + ' runs'"
-                  [placeholder]="boostStart(boost) === null ? 'set start first' : 'e.g. 10'"
-                  [disabled]="boostStart(boost) === null"
-                  [appNumericValue]="boostDurationYears(boost) ?? ''"
-                  (input)="setBoostDurationYears(boost.id, boostDurationInput.value)"
-                />
-                <span>years</span>
+            @if (boost.amountFrequency !== 'once') {
+              <div class="boost-end-row">
+                <div class="boost-end-field">
+                  <label [for]="'boost-end-' + boost.id">
+                    Ending at {{ currentAge() !== null ? 'Age' : 'Year' }} (optional)
+                  </label>
+                  @if (currentAge() !== null) {
+                    <input
+                      #boostEndAgeInput
+                      [id]="'boost-end-' + boost.id"
+                      type="text"
+                      inputmode="numeric"
+                      placeholder="e.g. 60"
+                      [appNumericValue]="boost.endAtAge ?? ''"
+                      (input)="setBoostEndAtAge(boost.id, boostEndAgeInput.value)"
+                    />
+                  } @else {
+                    <input
+                      #boostEndYearInput
+                      [id]="'boost-end-' + boost.id"
+                      type="text"
+                      inputmode="numeric"
+                      placeholder="e.g. 30"
+                      [appNumericValue]="boost.endAtYear ?? ''"
+                      (input)="setBoostEndAtYear(boost.id, boostEndYearInput.value)"
+                    />
+                  }
+                </div>
+                <div class="boost-end-field">
+                  <label [for]="'boost-duration-' + boost.id">Or # of Years</label>
+                  <div class="input-suffix">
+                    <input
+                      #boostDurationInput
+                      [id]="'boost-duration-' + boost.id"
+                      type="text"
+                      inputmode="numeric"
+                      [placeholder]="boostStart(boost) === null ? 'set start first' : 'e.g. 10'"
+                      [disabled]="boostStart(boost) === null"
+                      [appNumericValue]="boostDurationYears(boost) ?? ''"
+                      (input)="setBoostDurationYears(boost.id, boostDurationInput.value)"
+                    />
+                    <span>years</span>
+                  </div>
+                </div>
               </div>
-            </div>
-            <p class="field-note">Leave both blank to keep the boost going.</p>
+              <p class="field-note">Leave both blank to keep the boost going.</p>
+            }
 
             <label [for]="'boost-label-' + boost.id">Note (optional)</label>
             <input

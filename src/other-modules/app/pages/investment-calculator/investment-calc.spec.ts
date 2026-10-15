@@ -196,4 +196,14 @@ describe('calculateInvestment', () => {
     });
     expect(result.yearRows.map((r) => r.depositThisYear)).toEqual([1000, 2200]);
   });
+
+  it('adds a one-time boost once, as a lump sum at the start of its year', () => {
+    const result = calculateInvestment({
+      ...baseInputs,
+      startingAmount: 0,
+      years: 4,
+      contributionBoosts: [{ startYear: 3, additionalMonthly: 5000, oneTime: true }],
+    });
+    expect(result.yearRows.map((r) => r.depositThisYear)).toEqual([0, 0, 5000, 0]);
+  });
 });
