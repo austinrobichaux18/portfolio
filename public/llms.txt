@@ -1,0 +1,56 @@
+# Austin Robichaux — Portfolio
+
+> Personal portfolio of Austin Robichaux, a software engineer: experience, project case studies, and a set of small self-contained web tools ("Other Modules").
+
+- [Projects](https://austinrobichaux.com/projects): case studies of work and side projects
+- [Experience](https://austinrobichaux.com/experience)
+- [Other Modules](https://austinrobichaux.com/other-modules): standalone tools (investment calculator, kana trainer, career data, and more)
+
+## Investment Calculator
+
+https://austinrobichaux.com/other-modules/investment-calculator
+
+Projects investment growth (starting amount + regular contributions, compounded), shows the result in today's dollars, and estimates a yearly retirement withdrawal. A household-budget widget estimates take-home pay and leftover money to invest.
+
+### Building a scenario link
+
+Every input can be set with a query parameter, so you can build a link that opens the calculator with a specific scenario. Only the parameters you include change; everything else uses its default. The page's "Copy Share Link" button produces the same format, and "Copy Summary for AI" copies the inputs and results as JSON.
+
+Example: https://austinrobichaux.com/other-modules/investment-calculator?startingAmount=25000&contribution=1500&interestRate=8&currentAge=35&goalAmount=2000000
+
+Numbers are plain (no $ or %; commas are fine). Percentages are whole numbers (8 = 8%).
+
+- startingAmount: starting balance in dollars
+- contribution: contribution amount in dollars, per contributionFrequency
+- contributionFrequency: monthly | annually
+- contributionTiming: end | beginning
+- interestRate: annual return, percent
+- compounding: annually | semiannually | quarterly | monthly | daily | continuously
+- inflationRate: annual inflation, percent (for today's-dollars figures)
+- withdrawalRate: yearly withdrawal rate in retirement, percent of balance
+- currentAge: current age in years (empty clears it)
+- incomes: comma-separated; each is yearly:<amount>, monthly:<amount>, or hourly:<rate>:<hoursPerWeek>:<weeksPerYear> (a bare number is yearly)
+- state: two-letter U.S. state code; fills that state's tax rate and average cost of living
+- stateTaxRate: state income tax rate, percent
+- withholdings: paycheck withholdings (401k, insurance, etc.) per withholdingsFrequency
+- withholdingsFrequency: weekly | biweekly | semimonthly | monthly | annually
+- costOfLiving: monthly cost of living in dollars
+- checking: current checking balance (toward a 3-month buffer)
+- savings: current HYSA/savings balance (toward a 6-month buffer)
+- ignoreSaved: 1 to skip the checking/HYSA buffers
+- mortgage: monthly mortgage payment
+- boosts: future contribution increases, |-separated; each is age:<age>:<extraMonthly>:<label> or year:<yearsFromNow>:<extraMonthly>:<label>
+- years, months: time horizon (max 200 years; months 0-11)
+- todaysDollars: 1 to treat goalAmount/goalWithdrawal as today's (inflation-adjusted) dollars
+- retirementAge: target retirement age; holds it fixed and derives the horizon (needs currentAge)
+- goalAmount: target balance in dollars; holds it fixed and solves for the horizon
+- goalWithdrawal: target yearly withdrawal in dollars (excludes Social Security); holds it fixed and solves for the horizon
+- hold: horizon | age | amount | withdrawal — which linked field stays fixed when other inputs change
+
+### In-browser agents (WebMCP)
+
+In browsers that support WebMCP (navigator.modelContext), the calculator page registers these tools:
+
+- get_investment_scenario: current inputs, headline results, and a share link
+- set_investment_inputs: change any of the parameters above (same names and formats); returns the updated results
+- reset_investment_calculator: reset all inputs to defaults

@@ -87,6 +87,18 @@
     <div class="history-header">
       <h3>Saved Scenarios</h3>
       <div class="history-actions">
+        @if (shareStatus(); as status) {
+          <span class="share-status" role="status">{{ status }}</span>
+        }
+        <button type="button" class="link-btn" (click)="copyShareLink()">Copy Share Link</button>
+        <button
+          type="button"
+          class="link-btn"
+          title="Copies your inputs and results as text to paste into ChatGPT, Claude, etc."
+          (click)="copySummaryForAi()"
+        >
+          Copy Summary for AI
+        </button>
         <button type="button" class="link-btn" (click)="saveCurrentToHistory()">
           Save Current Scenario
         </button>
@@ -97,6 +109,13 @@
         }
       </div>
     </div>
+
+    @if (shareFallbackText(); as text) {
+      <label class="share-fallback">
+        Couldn't copy automatically — select and copy this:
+        <textarea readonly rows="3" [value]="text" (focus)="$any($event.target).select()"></textarea>
+      </label>
+    }
 
     @if (historyDescending().length) {
       <div class="history-list">
@@ -1116,7 +1135,7 @@
       <div class="stat-grid">
         <div class="stat-chip stat-chip-highlight">
           <span class="stat-label">
-            Ending Balance
+            Balance
             @if (finalAge(); as age) {
               (Age: {{ age }})
             }
@@ -1137,7 +1156,7 @@
         <div class="stat-grid">
           <div class="stat-chip">
             <span class="stat-label"
-              >Ending Balance (Today's $, {{ inflationRatePercent() }}% inflation)</span
+              >Balance (Today's $, {{ inflationRatePercent() }}% inflation)</span
             >
             <span class="stat-value">{{ formatCurrency(result().endingBalanceReal) }}</span>
           </div>
@@ -1784,7 +1803,7 @@
     <div class="edu-block">
       <h3>Why does this default to 3% inflation?</h3>
       <p>
-        That's roughly the long-run U.S. average, and it's what turns the "Ending Balance" stat into
+        That's roughly the long-run U.S. average, and it's what turns the "Balance" stat into
         something you can actually judge — $2M thirty years from now sounds huge, but in today's
         purchasing power it's a lot less. Contributions are kept flat on purpose rather than assumed
         to grow with raises: the TL;DR above already advises lowballing your inputs, and a raise

@@ -1,6 +1,6 @@
-import { Component, HostListener, computed, signal } from '@angular/core';
+import { Component, DestroyRef, HostListener, computed, inject, signal } from '@angular/core';
 import { DatePipe, NgTemplateOutlet } from '@angular/common';
-import { RouterLink } from '@angular/router';
+import { ActivatedRoute, RouterLink } from '@angular/router';
 import {
   CompoundFrequency,
   ContributionBoost,
@@ -21,6 +21,8 @@ import { MAX_HORIZON_YEARS, calculateInvestment, monthsToReachBalance } from './
 import { calculateHouseholdBudget, incomeEntryAnnualAmount } from './household-budget-calc';
 import { loadHistory, saveHistory } from './investment-storage';
 import { NumericValue } from './numeric-value';
+import { applyShareParams, buildShareParams } from './investment-share';
+import { registerInvestmentAgentTools } from './investment-agent-tools';
 
 const MAX_INCOME_ENTRIES = 10;
 
@@ -34,6 +36,10 @@ function createIncomeEntry(yearlyAmount = 0): IncomeEntry {
     hoursPerWeek: 40,
     weeksPerYear: 52,
   };
+}
+
+function createBoostId(): string {
+  return `boost-${Math.random().toString(36).slice(2)}-${Date.now().toString(36)}`;
 }
 
 const CHART_WIDTH = 640;
@@ -948,7 +954,7 @@ export class InvestmentCalculator {
   }
 
   addContributionBoost(): void {
-    const id = `boost-${Math.random().toString(36).slice(2)}-${Date.now().toString(36)}`;
+    const id = createBoostId();
     this.contributionBoosts.update((list) => [
       ...list,
       { id, atAge: null, atYear: null, additionalMonthlyAmount: 0, label: '' },
@@ -989,7 +995,7 @@ export class InvestmentCalculator {
   addMortgageAsBoost(): void {
     const amount = this.monthlyMortgagePayment();
     if (amount <= 0) return;
-    const id = `boost-${Math.random().toString(36).slice(2)}-${Date.now().toString(36)}`;
+    const id = createBoostId();
     this.contributionBoosts.update((list) => [
       ...list,
       { id, atAge: null, atYear: null, additionalMonthlyAmount: amount, label: 'Mortgage paid off' },
@@ -1040,6 +1046,171 @@ export class InvestmentCalculator {
     const contributionInput =
       typeof document !== 'undefined' ? document.getElementById('contribution-amount') : null;
     contributionInput?.scrollIntoView?.({ behavior: 'smooth', block: 'center' });
+  }
+
+  // ---- Shareable link + AI agent access -------------------------------------------------------
+
+  private readonly route = inject(ActivatedRoute);
+
+  constructor() {
+    // A shared link carries the scenario in its query string; apply it before first render.
+    const query = this.route.snapshot?.queryParamMap;
+    if (query) {
+      const params = new URLSearchParams();
+      for (const key of query.keys) params.set(key, query.get(key) ?? '');
+      applyShareParams(this, params);
+    }
+    registerInvestmentAgentTools(this, inject(DestroyRef));
+  }
+
+  /** Feedback after a copy, e.g. "Link copied" — cleared after a few seconds. */
+  shareStatus = signal<string | null>(null);
+
+  /** Shown in a textbox to copy by hand when the clipboard API isn't available. */
+  shareFallbackText = signal<string | null>(null);
+
+  /** A link to this page with every current input in the query string. */
+  shareLink(): string {
+    const base = typeof location === 'undefined' ? '' : `${location.origin}${location.pathname}`;
+    return `${base}?${buildShareParams(this).toString()}`;
+  }
+
+  /** The current inputs (as share params) and headline results, for AI assistants and agents. */
+  scenarioSummary() {
+    const r = this.result();
+    return {
+      page: 'Investment Calculator — projects investment growth and retirement withdrawals',
+      shareLink: this.shareLink(),
+      inputs: Object.fromEntries(buildShareParams(this)),
+      results: {
+        timeHorizon: `${this.years()} years, ${this.months()} months`,
+        heldField: this.heldGoal(),
+        goalUnreachable: this.goalUnreachable(),
+        ageAtEnd: this.finalAge(),
+        endingBalance: Math.round(r.endingBalance),
+        endingBalanceTodaysDollars: Math.round(r.endingBalanceReal),
+        totalContributions: Math.round(r.totalContributions),
+        totalInterest: Math.round(r.totalInterest),
+        yearlyWithdrawalAtEnd: Math.round(this.finalYearWithdrawal()),
+        yearlyWithdrawalAtEndTodaysDollars: Math.round(this.finalYearWithdrawalReal()),
+        firstYearWithdrawalCoversCostOfLiving: this.firstCostOfLivingCoveredYear(),
+        monthlyLeftoverAfterTaxesAndCostOfLiving: Math.round(
+          this.householdBudget().discretionaryMonthly,
+        ),
+        monthsFillingCheckingAndSavingsFirst: this.contributionDelayMonths(),
+      },
+    };
+  }
+
+  scenarioSummaryText(): string {
+    return (
+      'My investment calculator scenario. Inputs and results are below; open shareLink to see ' +
+      'the full page, or change its query parameters to try a different scenario.\n\n' +
+      JSON.stringify(this.scenarioSummary(), null, 2)
+    );
+  }
+
+  copyShareLink(): Promise<void> {
+    return this.copyToClipboard(this.shareLink(), 'Link copied');
+  }
+
+  copySummaryForAi(): Promise<void> {
+    return this.copyToClipboard(
+      this.scenarioSummaryText(),
+      'Summary copied — paste it into any AI assistant',
+    );
+  }
+
+  private shareStatusTimer: ReturnType<typeof setTimeout> | undefined;
+
+  private async copyToClipboard(text: string, successMessage: string): Promise<void> {
+    clearTimeout(this.shareStatusTimer);
+    try {
+      await navigator.clipboard.writeText(text);
+      this.shareFallbackText.set(null);
+      this.shareStatus.set(successMessage);
+      this.shareStatusTimer = setTimeout(() => this.shareStatus.set(null), 4000);
+    } catch {
+      this.shareStatus.set(null);
+      this.shareFallbackText.set(text);
+    }
+  }
+
+  /** Incomes as share-param specs: yearly:<amt>, monthly:<amt>, or hourly:<rate>:<hrs>:<wks>. */
+  incomeSpecs(): string {
+    return this.incomeEntries()
+      .map((e) => {
+        switch (e.mode) {
+          case 'monthly':
+            return `monthly:${e.monthlyAmount}`;
+          case 'hourly':
+            return `hourly:${e.hourlyRate}:${e.hoursPerWeek}:${e.weeksPerYear}`;
+          default:
+            return `yearly:${e.yearlyAmount}`;
+        }
+      })
+      .join(',');
+  }
+
+  /** Replaces the income list from comma-separated specs (a bare number counts as yearly). */
+  setIncomesFromSpecs(raw: string): void {
+    const entries = raw
+      .split(',')
+      .map((spec) => spec.trim())
+      .filter(Boolean)
+      .slice(0, MAX_INCOME_ENTRIES)
+      .map((spec): IncomeEntry => {
+        const [mode, a = '', b, c] = spec.split(':');
+        const entry = createIncomeEntry();
+        if (mode === 'monthly') {
+          return { ...entry, mode: 'monthly', monthlyAmount: toNonNegativeNumber(a) };
+        }
+        if (mode === 'hourly') {
+          return {
+            ...entry,
+            mode: 'hourly',
+            hourlyRate: toNonNegativeNumber(a),
+            hoursPerWeek: b ? toNonNegativeNumber(b) : entry.hoursPerWeek,
+            weeksPerYear: c ? toNonNegativeNumber(c) : entry.weeksPerYear,
+          };
+        }
+        return { ...entry, yearlyAmount: toNonNegativeNumber(mode === 'yearly' ? a : spec) };
+      });
+    if (entries.length > 0) this.incomeEntries.set(entries);
+  }
+
+  /** Boosts as |-separated share-param specs: age:<age>:<extra>:<label> or year:<n>:<extra>:<label>. */
+  boostSpecs(): string | null {
+    const specs = this.contributionBoosts()
+      .filter((b) => b.atAge !== null || b.atYear !== null)
+      .map((b) => {
+        const when = b.atAge !== null ? `age:${b.atAge}` : `year:${b.atYear}`;
+        return `${when}:${b.additionalMonthlyAmount}:${b.label.replace(/\|/g, '/')}`;
+      });
+    return specs.length > 0 ? specs.join('|') : null;
+  }
+
+  /** Replaces the contribution boosts from |-separated specs; an empty string clears them. */
+  setBoostsFromSpecs(raw: string): void {
+    const boosts = raw
+      .split('|')
+      .map((spec) => spec.trim())
+      .filter(Boolean)
+      .flatMap((spec): ContributionBoost[] => {
+        const [kind, at = '', amount = '', ...label] = spec.split(':');
+        const when = toNonNegativeIntOrNull(at);
+        if ((kind !== 'age' && kind !== 'year') || when === null) return [];
+        return [
+          {
+            id: createBoostId(),
+            atAge: kind === 'age' ? when : null,
+            atYear: kind === 'year' ? when : null,
+            additionalMonthlyAmount: toNonNegativeNumber(amount),
+            label: label.join(':'),
+          },
+        ];
+      });
+    this.contributionBoosts.set(boosts);
   }
 
   reset(): void {

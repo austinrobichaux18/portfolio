@@ -96,7 +96,7 @@ Wired up in `app.ts`:
 
 ### SEO
 
-`src/index.html` has meta description, canonical URL, OpenGraph + Twitter Card tags (pointing at `public/og-image.png`, a generated 1200×630 branded preview image), and a JSON-LD `Person` structured-data block (name, job title, URL, `sameAs` for LinkedIn/GitHub, `knowsAbout` skills — no private info). `public/robots.txt` and `public/sitemap.xml` list all routes. Canonical domain used throughout is `https://austinrobichaux.com` (per the resume; Firebase's default `*.web.app`/`*.firebaseapp.com` domains are not used as canonical).
+`src/index.html` has meta description, canonical URL, OpenGraph + Twitter Card tags (pointing at `public/og-image.png`, a generated 1200×630 branded preview image), and a JSON-LD `Person` structured-data block (name, job title, URL, `sameAs` for LinkedIn/GitHub, `knowsAbout` skills — no private info). `public/robots.txt` and `public/sitemap.xml` list all routes. `public/llms.txt` describes the site for AI tools and documents the Investment Calculator's share-link query parameters — keep it in sync with `SHARE_PARAMS` in `investment-share.ts` when adding a parameter. Canonical domain used throughout is `https://austinrobichaux.com` (per the resume; Firebase's default `*.web.app`/`*.firebaseapp.com` domains are not used as canonical).
 
 ### Testing
 

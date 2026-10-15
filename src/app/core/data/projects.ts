@@ -530,6 +530,11 @@ export const projects: Project[] = [
                     'Time horizon, retirement age, goal balance, and goal yearly withdrawal are four views of one value — editing any of them re-derives the rest. Whichever was edited last is held fixed: the horizon is a computed signal solved from the held target, so changing income, rates, or contributions re-solves it without retyping the goal. Balance and withdrawal goals are inverted by binary-searching the month count over the simulation, which works because the balance only grows with time.'
             },
             {
+                title: 'Shareable, Agent-Readable Scenarios',
+                description:
+                    'Every input serializes to a readable query string from one parameter table, which also generates the JSON Schema for WebMCP tools — so a copied link restores the exact scenario, and in-browser AI agents can read results and change inputs through the same validated path the share link uses.'
+            },
+            {
                 title: 'Progressive Tax Bracket Calculator',
                 description:
                     'Implements the actual 2025 IRS federal brackets and standard deduction for single vs. married filing jointly, plus FICA (Social Security capped at the wage base, uncapped Medicare) and a per-state effective tax rate, to estimate real take-home pay from gross income.'
@@ -545,7 +550,8 @@ export const projects: Project[] = [
             'Pure calculation functions (investment math, tax/budget math)',
             'Angular signals / computed() reactive pipeline',
             'Hand-built SVG charts',
-            'LocalStorage-backed scenario history'
+            'LocalStorage-backed scenario history',
+            'URL query-string scenario sharing + WebMCP agent tools'
         ],
 
         deepDive: [

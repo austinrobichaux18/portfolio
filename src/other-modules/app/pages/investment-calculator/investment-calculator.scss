@@ -273,7 +273,33 @@ h1 {
 .history-actions {
   display: flex;
   flex-wrap: wrap;
+  align-items: center;
   gap: 16px;
+}
+
+.share-status {
+  color: #4ade80;
+  font-size: 0.8rem;
+}
+
+.share-fallback {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 12px;
+  color: #8f9bad;
+  font-size: 0.8rem;
+
+  textarea {
+    width: 100%;
+    padding: 8px 10px;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 8px;
+    background: rgba(17, 24, 39, 0.8);
+    color: #d7dde6;
+    font: 0.8rem/1.4 monospace;
+    resize: vertical;
+  }
 }
 
 .link-btn {

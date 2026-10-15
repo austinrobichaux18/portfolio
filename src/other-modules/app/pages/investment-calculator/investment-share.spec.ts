@@ -1,0 +1,106 @@
+import { TestBed } from '@angular/core/testing';
+import { ActivatedRoute, convertToParamMap, provideRouter } from '@angular/router';
+import { InvestmentCalculator } from './investment-calculator';
+import { applyShareParams, buildShareParams } from './investment-share';
+import { buildInvestmentAgentTools } from './investment-agent-tools';
+
+function createCalculator(queryParams: Record<string, string> = {}): InvestmentCalculator {
+  TestBed.resetTestingModule();
+  TestBed.configureTestingModule({
+    imports: [InvestmentCalculator],
+    providers: [
+      provideRouter([]),
+      {
+        provide: ActivatedRoute,
+        useValue: { snapshot: { queryParamMap: convertToParamMap(queryParams) } },
+      },
+    ],
+  });
+  return TestBed.createComponent(InvestmentCalculator).componentInstance;
+}
+
+describe('investment share links', () => {
+  beforeEach(() => localStorage.clear());
+
+  it('round-trips every input through the query string', () => {
+    const source = createCalculator();
+    source.setStartingAmount('25000');
+    source.setContributionAmount('1500');
+    source.setContributionFrequency('annually');
+    source.setAnnualInterestRatePercent('7.5');
+    source.setCompoundFrequency('monthly');
+    source.setCurrentAge('35');
+    source.setIncomesFromSpecs('yearly:90000,hourly:25:30:50');
+    source.onStateSelected('TX');
+    source.setWithholdingsAmount('200');
+    source.setWithholdingsFrequency('biweekly');
+    source.setCurrentCheckingBalance('4000');
+    source.setBoostsFromSpecs('age:50:800:Mortgage paid off|year:5:100:Raise');
+    source.setGoalsInTodaysDollars(true);
+    source.setGoalAmount('2,000,000');
+
+    const params = buildShareParams(source);
+    const target = createCalculator(Object.fromEntries(params));
+
+    expect(buildShareParams(target).toString()).toBe(params.toString());
+    expect(target.heldGoal()).toBe('amount');
+    expect(target.goalAmountDisplay()).toBe(2_000_000);
+    expect(target.result().endingBalance).toBeCloseTo(source.result().endingBalance);
+    expect(target.contributionBoosts().map((b) => b.label)).toEqual(['Mortgage paid off', 'Raise']);
+  });
+
+  it('leaves params it does not recognize, and invalid enum values, alone', () => {
+    const c = createCalculator({ contributionFrequency: 'weekly', foo: 'bar', contribution: '900' });
+    expect(c.contributionFrequency()).toBe('monthly');
+    expect(c.contributionAmount()).toBe(900);
+  });
+
+  it('treats a bare number in incomes as a yearly salary', () => {
+    const c = createCalculator();
+    c.setIncomesFromSpecs('85000, monthly:2000');
+    expect(c.incomeAnnualAmounts()).toEqual([85_000, 24_000]);
+  });
+
+  it('locks in the value after the other inputs when only hold is given', () => {
+    const c = createCalculator();
+    const expected = createCalculator();
+    expected.setStartingAmount('100000');
+
+    applyShareParams(c, { hold: 'amount', startingAmount: 100000 });
+    expect(c.heldGoal()).toBe('amount');
+    expect(c.goalAmountDisplay()).toBe(Math.floor(expected.result().endingBalance));
+  });
+});
+
+describe('investment agent tools', () => {
+  beforeEach(() => localStorage.clear());
+
+  const run = async (c: InvestmentCalculator, name: string, input: Record<string, unknown> = {}) => {
+    const tool = buildInvestmentAgentTools(c).find((t) => t.name === name)!;
+    return JSON.parse((await tool.execute(input)).content[0].text);
+  };
+
+  it('reports the current scenario', async () => {
+    const c = createCalculator();
+    const summary = await run(c, 'get_investment_scenario');
+    expect(summary.inputs.contribution).toBe('774');
+    expect(summary.results.endingBalance).toBe(Math.round(c.result().endingBalance));
+    expect(summary.shareLink).toContain('contribution=774');
+  });
+
+  it('changes only the inputs passed, and reports which were ignored', async () => {
+    const c = createCalculator();
+    const out = await run(c, 'set_investment_inputs', { interestRate: 6, nonsense: 1 });
+    expect(c.annualInterestRatePercent()).toBe(6);
+    expect(c.contributionAmount()).toBe(774);
+    expect(out.applied).toEqual(['interestRate']);
+    expect(out.ignored).toEqual(['nonsense']);
+  });
+
+  it('resets everything to defaults', async () => {
+    const c = createCalculator();
+    c.setStartingAmount('5000');
+    await run(c, 'reset_investment_calculator');
+    expect(c.startingAmount()).toBe(0);
+  });
+});
