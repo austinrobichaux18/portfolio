@@ -209,6 +209,16 @@ function formatCurrency(value: number): string {
   });
 }
 
+/** Short currency like $1.2M or $80.2K, for tight spaces such as the saved-scenario rows. */
+function formatCompactCurrency(value: number): string {
+  return value.toLocaleString(undefined, {
+    style: 'currency',
+    currency: 'USD',
+    notation: 'compact',
+    maximumFractionDigits: 1,
+  });
+}
+
 /** Which of the four linked horizon/goal fields stays fixed while other inputs change. */
 export type HeldGoal = 'horizon' | 'age' | 'amount' | 'withdrawal';
 
@@ -227,6 +237,7 @@ const HOLD_LABELS: Record<string, string> = {
 })
 export class InvestmentCalculator {
   readonly formatCurrency = formatCurrency;
+  readonly formatCompactCurrency = formatCompactCurrency;
 
   readonly ssAverageAnnualBenefit = SS_AVERAGE_ANNUAL_BENEFIT;
 
@@ -1427,6 +1438,9 @@ export class InvestmentCalculator {
       withdrawalRatePercent: this.withdrawalRatePercent(),
       currentAge: this.currentAge(),
       endingBalance: this.result().endingBalance,
+      endingBalanceReal: this.result().endingBalanceReal,
+      yearlyWithdrawal: this.finalYearWithdrawal(),
+      yearlyWithdrawalReal: this.finalYearWithdrawalReal(),
       householdBudget: this.householdBudgetEntered()
         ? this.buildHouseholdBudgetSnapshot()
         : undefined,
@@ -1482,6 +1496,42 @@ export class InvestmentCalculator {
   finalAgeFor(run: InvestmentRun): number | null {
     if (run.currentAge === null) return null;
     return Math.round(run.currentAge + run.inputs.years + run.inputs.months / 12);
+  }
+
+  /**
+   * A saved run's ending balance and final-year withdrawal, raw and in today's dollars. Older saves
+   * didn't store the last three, so they're rebuilt from the run's inputs (boosts aside, which
+   * those saves never had).
+   */
+  savedResultsFor(run: InvestmentRun): {
+    balance: number;
+    balanceReal: number;
+    withdrawal: number;
+    withdrawalReal: number;
+  } {
+    const totalMonths = run.inputs.years * 12 + run.inputs.months;
+    const lastYear = Math.ceil(totalMonths / 12);
+    const inflation = run.inputs.inflationRatePercent ?? 0;
+    const discount = inflation > 0 ? Math.pow(1 + inflation / 100, lastYear) : 1;
+    const ssEligible =
+      run.currentAge !== null && run.currentAge + lastYear >= SS_FULL_RETIREMENT_AGE;
+    const withdrawalFor = (balance: number) =>
+      balance * (run.withdrawalRatePercent / 100) + (ssEligible ? SS_AVERAGE_ANNUAL_BENEFIT : 0);
+    return {
+      balance: run.endingBalance,
+      balanceReal:
+        run.endingBalanceReal ??
+        (inflation > 0
+          ? run.endingBalance / Math.pow(1 + inflation / 100, totalMonths / 12)
+          : run.endingBalance),
+      withdrawal: run.yearlyWithdrawal ?? withdrawalFor(run.endingBalance),
+      withdrawalReal: run.yearlyWithdrawalReal ?? withdrawalFor(run.endingBalance / discount),
+    };
+  }
+
+  /** Whether a saved run had inflation set, i.e. whether its today's-$ figures differ. */
+  savedHasInflation(run: InvestmentRun): boolean {
+    return (run.inputs.inflationRatePercent ?? 0) > 0;
   }
 
   summaryFor(run: InvestmentRun): string {

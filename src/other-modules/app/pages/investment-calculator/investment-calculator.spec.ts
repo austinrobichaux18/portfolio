@@ -325,6 +325,36 @@ describe('InvestmentCalculator', () => {
     expect(component.finalAgeFor(saved)).toBe(65);
   });
 
+  it('shows a saved run\'s balance and withdrawal, raw and in today\'s dollars', () => {
+    component.setStartingAmount('100000');
+    component.setCurrentAge('70');
+    component.setInflationRatePercent('3');
+    component.saveCurrentToHistory();
+    const saved = component.history()[0];
+    const expected = {
+      balance: component.result().endingBalance,
+      balanceReal: component.result().endingBalanceReal,
+      withdrawal: component.finalYearWithdrawal(),
+      withdrawalReal: component.finalYearWithdrawalReal(),
+    };
+    expect(component.savedResultsFor(saved)).toEqual(expected);
+
+    // Older saves didn't store the derived figures; they're rebuilt from the run's inputs.
+    const legacy = { ...saved };
+    delete legacy.endingBalanceReal;
+    delete legacy.yearlyWithdrawal;
+    delete legacy.yearlyWithdrawalReal;
+    const rebuilt = component.savedResultsFor(legacy);
+    expect(rebuilt.balanceReal).toBeCloseTo(expected.balanceReal, 2);
+    expect(rebuilt.withdrawal).toBeCloseTo(expected.withdrawal, 2);
+    expect(rebuilt.withdrawalReal).toBeCloseTo(expected.withdrawalReal, 2);
+  });
+
+  it('formats compact currency for the saved-scenario rows', () => {
+    expect(component.formatCompactCurrency(1_234_567)).toBe('$1.2M');
+    expect(component.formatCompactCurrency(80_240)).toBe('$80.2K');
+  });
+
   it('omits the final age for a saved run with no current age entered', () => {
     component.setCurrentAge('');
     component.saveCurrentToHistory();

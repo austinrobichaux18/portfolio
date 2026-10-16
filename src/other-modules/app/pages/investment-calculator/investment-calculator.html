@@ -124,11 +124,36 @@
             <button type="button" class="history-row-main" (click)="loadFromHistory(run)">
               <span class="history-row-date">{{ run.timestamp | date: 'medium' }}</span>
               <span class="history-row-summary">{{ summaryFor(run) }}</span>
+              @let saved = savedResultsFor(run);
+              @let inflated = savedHasInflation(run);
               <span class="history-row-result">
-                {{ formatCurrency(run.endingBalance) }}
-                @if (finalAgeFor(run); as age) {
-                  <span class="history-row-age">(Age {{ age }})</span>
-                }
+                <span class="history-row-metrics">
+                  <span class="history-metric-label">
+                    @if (finalAgeFor(run); as age) {
+                      Age {{ age }}
+                    }
+                  </span>
+                  <span class="history-metric-label">Balance</span>
+                  <span class="history-metric-label">Withdraw/yr</span>
+
+                  <span class="history-metric-label">Raw $</span>
+                  <span class="history-metric-value" [class.history-metric-highlight]="!inflated">
+                    {{ formatCompactCurrency(saved.balance) }}
+                  </span>
+                  <span class="history-metric-value" [class.history-metric-highlight]="!inflated">
+                    {{ formatCompactCurrency(saved.withdrawal) }}
+                  </span>
+
+                  @if (inflated) {
+                    <span class="history-metric-label">Today's $</span>
+                    <span class="history-metric-value history-metric-highlight">
+                      {{ formatCompactCurrency(saved.balanceReal) }}
+                    </span>
+                    <span class="history-metric-value history-metric-highlight">
+                      {{ formatCompactCurrency(saved.withdrawalReal) }}
+                    </span>
+                  }
+                </span>
               </span>
             </button>
             <button

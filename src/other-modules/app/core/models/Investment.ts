@@ -72,6 +72,10 @@ export interface InvestmentRun {
   withdrawalRatePercent: number;
   currentAge: number | null;
   endingBalance: number;
+  /** Older saves lack these three; they're derived from the fields above instead. */
+  endingBalanceReal?: number;
+  yearlyWithdrawal?: number;
+  yearlyWithdrawalReal?: number;
   /** Only present when the "How Much Can You Invest?" widget had something entered. */
   householdBudget?: HouseholdBudgetSnapshot;
   /**

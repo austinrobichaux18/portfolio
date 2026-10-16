@@ -376,10 +376,29 @@ h1 {
   font-variant-numeric: tabular-nums;
 }
 
-.history-row-age {
+.history-row-metrics {
+  display: grid;
+  grid-template-columns: auto auto auto;
+  column-gap: 12px;
+  row-gap: 2px;
+  align-items: baseline;
+  text-align: right;
+}
+
+.history-metric-label {
   color: #8f9bad;
-  font-size: 0.75rem;
+  font-size: 0.72rem;
   font-weight: 400;
+}
+
+.history-metric-value {
+  color: #b8c1ce;
+  font-weight: 500;
+}
+
+.history-metric-highlight {
+  color: #49c6ff;
+  font-weight: 600;
 }
 
 .history-delete-btn {
