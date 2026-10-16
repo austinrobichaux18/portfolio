@@ -1196,7 +1196,7 @@
         </div>
       </div>
       <div class="stat-grid">
-        <div class="stat-chip stat-chip-highlight">
+        <div class="stat-chip" [class.stat-chip-highlight]="inflationRatePercent() <= 0">
           <span class="stat-label">
             Balance
             @if (finalAge(); as age) {
@@ -1205,7 +1205,7 @@
           </span>
           <span class="stat-value">{{ formatCurrency(result().endingBalance) }}</span>
         </div>
-        <div class="stat-chip stat-chip-highlight">
+        <div class="stat-chip" [class.stat-chip-highlight]="inflationRatePercent() <= 0">
           <span class="stat-label">
             Withdraw Each Year
             @if (finalAge(); as age) {
@@ -1217,13 +1217,13 @@
       </div>
       @if (inflationRatePercent() > 0) {
         <div class="stat-grid">
-          <div class="stat-chip">
+          <div class="stat-chip stat-chip-highlight">
             <span class="stat-label"
               >Balance (Today's $, {{ inflationRatePercent() }}% inflation)</span
             >
             <span class="stat-value">{{ formatCurrency(result().endingBalanceReal) }}</span>
           </div>
-          <div class="stat-chip">
+          <div class="stat-chip stat-chip-highlight">
             <span class="stat-label"
               >Withdraw Each Year (Today's $, {{ inflationRatePercent() }}% inflation)</span
             >
