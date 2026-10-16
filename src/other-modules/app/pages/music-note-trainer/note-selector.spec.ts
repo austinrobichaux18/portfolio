@@ -16,6 +16,26 @@ function makeNote(id: string): MusicNote {
   };
 }
 
+/**
+ * Feeds pickNextNote evenly spaced rolls across [0, 1) instead of Math.random(), so a weighting
+ * test counts each note's exact share of the range rather than a sample that can fail by chance.
+ */
+function countPicks(
+  pool: MusicNote[],
+  stats: MusicNoteStatsMap,
+  noteId: string,
+  trials: number,
+): number {
+  const random = vi.spyOn(Math, 'random');
+  let count = 0;
+  for (let i = 0; i < trials; i++) {
+    random.mockReturnValueOnce((i + 0.5) / trials);
+    if (pickNextNote(pool, stats, null).id === noteId) count++;
+  }
+  random.mockRestore();
+  return count;
+}
+
 describe('pickNextNote', () => {
   it('never repeats the previous note when more than one is available', () => {
     const pool = [makeNote('a'), makeNote('b')];
@@ -33,11 +53,8 @@ describe('pickNextNote', () => {
       strong: { attempts: 10, correct: 10, totalTimeMs: 0 },
     };
 
-    let weakCount = 0;
     const trials = 500;
-    for (let i = 0; i < trials; i++) {
-      if (pickNextNote(pool, stats, null).id === 'weak') weakCount++;
-    }
+    const weakCount = countPicks(pool, stats, 'weak', trials);
     expect(weakCount).toBeGreaterThan(trials * 0.7);
   });
 
@@ -48,11 +65,8 @@ describe('pickNextNote', () => {
       fast: { attempts: 10, correct: 10, totalTimeMs: 10 * 1000 },
     };
 
-    let slowCount = 0;
     const trials = 500;
-    for (let i = 0; i < trials; i++) {
-      if (pickNextNote(pool, stats, null).id === 'slow') slowCount++;
-    }
+    const slowCount = countPicks(pool, stats, 'slow', trials);
     expect(slowCount).toBeGreaterThan(trials * 0.55);
   });
 
@@ -63,11 +77,8 @@ describe('pickNextNote', () => {
       slowCorrect: { attempts: 10, correct: 10, totalTimeMs: 10 * 100000 },
     };
 
-    let wrongCount = 0;
     const trials = 500;
-    for (let i = 0; i < trials; i++) {
-      if (pickNextNote(pool, stats, null).id === 'wrong') wrongCount++;
-    }
+    const wrongCount = countPicks(pool, stats, 'wrong', trials);
     expect(wrongCount).toBeGreaterThan(trials * 0.5);
   });
 });
