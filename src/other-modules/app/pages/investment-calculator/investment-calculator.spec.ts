@@ -316,6 +316,19 @@ describe('InvestmentCalculator', () => {
     expect(component.history()[0].inputs.startingAmount).toBe(5000);
   });
 
+  it('holds the goal retirement age at 67 by default, also after a reset', () => {
+    expect(component.heldGoal()).toBe('age');
+    expect(component.retirementAgeDisplay()).toBe(67);
+
+    component.setCurrentAge('40');
+    expect(component.years()).toBe(27);
+
+    component.setYears('10');
+    component.reset();
+    expect(component.heldGoal()).toBe('age');
+    expect(component.retirementAgeDisplay()).toBe(67);
+  });
+
   it('computes the age at the end of a saved run\'s horizon', () => {
     component.setCurrentAge('30');
     component.setYears('35');
@@ -327,7 +340,7 @@ describe('InvestmentCalculator', () => {
 
   it('shows a saved run\'s balance and withdrawal, raw and in today\'s dollars', () => {
     component.setStartingAmount('100000');
-    component.setCurrentAge('70');
+    component.setCurrentAge('60');
     component.setInflationRatePercent('3');
     component.saveCurrentToHistory();
     const saved = component.history()[0];

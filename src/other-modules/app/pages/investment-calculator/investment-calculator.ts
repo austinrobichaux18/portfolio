@@ -57,6 +57,9 @@ const MILESTONES =[1_000_000, 2_000_000, 3_000_000, 4_000_000, 5_000_000, 10_000
 const SS_FULL_RETIREMENT_AGE = 67;
 const SS_AVERAGE_ANNUAL_BENEFIT = 25_000;
 
+/** The goal retirement age held by default, so the horizon follows any change to current age. */
+const DEFAULT_RETIREMENT_AGE = SS_FULL_RETIREMENT_AGE;
+
 /** Average top marginal state income tax rate across all 50 states + DC, used as the default. */
 const AVERAGE_STATE_TAX_RATE_PERCENT =
   STATE_TAX_RATES.reduce((sum, state) => sum + state.rate, 0) / STATE_TAX_RATES.length;
@@ -265,10 +268,10 @@ export class InvestmentCalculator {
   /** The horizon as last typed into years/months — used directly while the horizon is held. */
   private manualHorizonMonths = signal(37 * 12);
 
-  heldGoal = signal<HeldGoal>('horizon');
+  heldGoal = signal<HeldGoal>('age');
 
   /** The target kept fixed for the age/amount/withdrawal fields while that field is held. */
-  private heldRetirementAge = signal(0);
+  private heldRetirementAge = signal(DEFAULT_RETIREMENT_AGE);
 
   private heldGoalAmount = signal(0);
 
@@ -667,8 +670,8 @@ export class InvestmentCalculator {
 
   /**
    * Hold toggle for one of the four linked fields. Turning one on locks in its current value;
-   * turning the held one off hands the hold back to the time horizon (which always has it by
-   * default, so it can't be switched off itself).
+   * turning the held one off hands the hold back to the time horizon (the fallback holder, so it
+   * can't be switched off itself).
    */
   setHeldGoal(field: HeldGoal, checked: boolean): void {
     if (!checked) {
@@ -1381,6 +1384,8 @@ export class InvestmentCalculator {
     this.lastAppliedPresetId.set(null);
     this.contributionBoosts.set([]);
 
+    this.heldRetirementAge.set(DEFAULT_RETIREMENT_AGE);
+    this.heldGoal.set('age');
   }
 
   /** True once the budget widget has anything other than its default single income entry. */
