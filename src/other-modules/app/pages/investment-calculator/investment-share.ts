@@ -89,6 +89,18 @@ export const SHARE_PARAMS: readonly ShareParam[] = [
     apply: (c, raw) => c.setCurrentAge(raw),
   },
   {
+    key: 'ssAge',
+    description: 'Age Social Security starts being added to the yearly withdrawal (needs currentAge).',
+    read: (c) => String(c.ssStartAge()),
+    apply: (c, raw) => c.setSsStartAge(raw),
+  },
+  {
+    key: 'ssBenefit',
+    description: "Monthly Social Security benefit in dollars (today's $). 0 leaves SS out.",
+    read: (c) => num(c.ssMonthlyBenefit()),
+    apply: (c, raw) => c.setSsMonthlyBenefit(raw),
+  },
+  {
     key: 'incomes',
     description:
       'Household incomes, comma-separated. Each is yearly:<amount>, monthly:<amount>, or ' +

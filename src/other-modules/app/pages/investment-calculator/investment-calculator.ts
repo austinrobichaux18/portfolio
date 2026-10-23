@@ -53,9 +53,14 @@ const PIE_CENTER = PIE_SIZE / 2;
 
 const MILESTONES =[1_000_000, 2_000_000, 3_000_000, 4_000_000, 5_000_000, 10_000_000];
 
-/** Social Security full retirement age for most people today, and its rough average annual benefit. */
+/** Social Security full retirement age for anyone born 1960 or later; the default SS start age. */
 const SS_FULL_RETIREMENT_AGE = 67;
-const SS_AVERAGE_ANNUAL_BENEFIT = 25_000;
+
+/** SSA's 2026 average monthly retired-worker benefit, the default SS benefit (ssa.gov KA-01903). */
+const DEFAULT_SS_MONTHLY_BENEFIT = 2_071;
+
+/** The yearly SS benefit saved scenarios assumed before it became an input. */
+const LEGACY_SS_ANNUAL_BENEFIT = 25_000;
 
 /** The goal retirement age held by default, so the horizon follows any change to current age. */
 const DEFAULT_RETIREMENT_AGE = SS_FULL_RETIREMENT_AGE;
@@ -242,7 +247,6 @@ export class InvestmentCalculator {
   readonly formatCurrency = formatCurrency;
   readonly formatCompactCurrency = formatCompactCurrency;
 
-  readonly ssAverageAnnualBenefit = SS_AVERAGE_ANNUAL_BENEFIT;
 
   readonly incomeVsSpendingByQuintile = INCOME_VS_SPENDING_BY_QUINTILE.map((q) => {
     const incomeAfterTaxes = Math.round(q.incomeBeforeTaxes * (1 - q.effectiveTaxRatePercent / 100));
@@ -339,6 +343,20 @@ export class InvestmentCalculator {
   withdrawalRatePercent = signal(3.5);
 
   currentAge = signal<number | null>(30);
+
+  /** The age Social Security starts being added on top of the portfolio withdrawal. */
+  ssStartAge = signal(SS_FULL_RETIREMENT_AGE);
+
+  ssMonthlyBenefit = signal(DEFAULT_SS_MONTHLY_BENEFIT);
+
+  ssBenefitFrequency = signal<'monthly' | 'yearly'>('monthly');
+
+  /** The SS benefit shown/entered in whichever unit is currently selected. */
+  ssBenefitDisplayAmount = computed(() =>
+    this.ssBenefitFrequency() === 'yearly' ? this.ssMonthlyBenefit() * 12 : this.ssMonthlyBenefit(),
+  );
+
+  ssAnnualBenefit = computed(() => this.ssMonthlyBenefit() * 12);
 
   contributionBoosts = signal<ContributionBoost[]>([]);
 
@@ -784,15 +802,38 @@ export class InvestmentCalculator {
     return (this.currentAge() ?? 0) + year;
   }
 
-  /** True once this year's age reaches Social Security full retirement age (requires an age entered). */
+  /** True once this year's age reaches the Social Security start age (requires an age entered). */
   isSsEligibleYear(year: number): boolean {
-    return this.currentAge() !== null && this.ageAtYear(year) >= SS_FULL_RETIREMENT_AGE;
+    return (
+      this.currentAge() !== null &&
+      this.ssAnnualBenefit() > 0 &&
+      this.ageAtYear(year) >= this.ssStartAge()
+    );
   }
 
-  /** The portfolio withdrawal plus the average Social Security benefit, once age-eligible. */
+  /** The portfolio withdrawal plus the Social Security benefit, once at the SS start age. */
   totalWithdrawal(year: number, endingBalance: number): number {
     const base = this.withdrawalAmount(endingBalance);
-    return this.isSsEligibleYear(year) ? base + SS_AVERAGE_ANNUAL_BENEFIT : base;
+    return this.isSsEligibleYear(year) ? base + this.ssAnnualBenefit() : base;
+  }
+
+  setSsStartAge(raw: string): void {
+    this.ssStartAge.set(toNonNegativeInt(raw));
+  }
+
+  /** Sets the SS benefit from a monthly figure (share links and AI agents use this unit). */
+  setSsMonthlyBenefit(raw: string): void {
+    this.ssMonthlyBenefit.set(toNonNegativeNumber(raw));
+  }
+
+  /** Writes the entered amount back as a monthly figure, converting down from yearly if needed. */
+  setSsBenefitAmount(raw: string): void {
+    const value = toNonNegativeNumber(raw);
+    this.ssMonthlyBenefit.set(this.ssBenefitFrequency() === 'yearly' ? value / 12 : value);
+  }
+
+  setSsBenefitFrequency(raw: string): void {
+    this.ssBenefitFrequency.set(raw as 'monthly' | 'yearly');
   }
 
   /** True once this year's withdrawal is enough on its own to cover the entered cost of living. */
@@ -1370,6 +1411,9 @@ export class InvestmentCalculator {
     this.inflationRatePercent.set(3);
     this.withdrawalRatePercent.set(3.5);
     this.currentAge.set(30);
+    this.ssStartAge.set(SS_FULL_RETIREMENT_AGE);
+    this.ssMonthlyBenefit.set(DEFAULT_SS_MONTHLY_BENEFIT);
+    this.ssBenefitFrequency.set('monthly');
 
     this.incomeEntries.set([createIncomeEntry(DEFAULT_YEARLY_INCOME)]);
     this.selectedStateCode.set('');
@@ -1521,7 +1565,7 @@ export class InvestmentCalculator {
     const ssEligible =
       run.currentAge !== null && run.currentAge + lastYear >= SS_FULL_RETIREMENT_AGE;
     const withdrawalFor = (balance: number) =>
-      balance * (run.withdrawalRatePercent / 100) + (ssEligible ? SS_AVERAGE_ANNUAL_BENEFIT : 0);
+      balance * (run.withdrawalRatePercent / 100) + (ssEligible ? LEGACY_SS_ANNUAL_BENEFIT : 0);
     return {
       balance: run.endingBalance,
       balanceReal:

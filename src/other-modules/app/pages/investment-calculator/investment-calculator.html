@@ -396,7 +396,9 @@
           </div>
         </div>
 
-        <div class="form-row">
+        <div class="form-row goal-box">
+          <div class="goal-box-header">Your Goal</div>
+          <p class="field-note">The four fields to play with — change one and the rest follow.</p>
           <div class="label-with-info">
             <label for="years">Time Horizon</label>
             <ng-container
@@ -603,6 +605,55 @@
               (input)="setWithdrawalRatePercent(withdrawalRateInput.value)"
             />
             <span>%</span>
+          </div>
+        </div>
+
+        <div class="form-section-header">Social Security</div>
+        <p class="field-note">
+          Added on top of your portfolio withdrawal from the starting age on (needs Current Age).
+          Defaults to full retirement age (67) and the
+          <a href="https://www.ssa.gov/faqs/en/questions/KA-01903.html" target="_blank" rel="noopener"
+            >2026 average retired-worker benefit</a
+          >. Starting earlier lowers the benefit and waiting until 70 raises it — your own estimate
+          is at
+          <a href="https://www.ssa.gov/myaccount/" target="_blank" rel="noopener">my Social Security</a>.
+          Set the amount to 0 to leave it out.
+        </p>
+        <div class="form-row">
+          <label for="ss-start-age">Starting Age</label>
+          <input
+            #ssStartAgeInput
+            id="ss-start-age"
+            type="text"
+            inputmode="numeric"
+            [appNumericValue]="ssStartAge()"
+            (input)="setSsStartAge(ssStartAgeInput.value)"
+          />
+        </div>
+        <div class="form-row">
+          <div class="label-with-info">
+            <label for="ss-benefit">Benefit (today's $)</label>
+            <select
+              #ssBenefitFrequencySelect
+              class="inline-select"
+              aria-label="Social Security benefit period"
+              [value]="ssBenefitFrequency()"
+              (change)="setSsBenefitFrequency(ssBenefitFrequencySelect.value)"
+            >
+              <option value="monthly">Monthly</option>
+              <option value="yearly">Yearly</option>
+            </select>
+          </div>
+          <div class="input-prefix">
+            <span>$</span>
+            <input
+              #ssBenefitInput
+              id="ss-benefit"
+              type="text"
+              inputmode="decimal"
+              [appNumericValue]="ssBenefitDisplayAmount()"
+              (input)="setSsBenefitAmount(ssBenefitInput.value)"
+            />
           </div>
         </div>
 
@@ -1441,11 +1492,11 @@
                             ✕
                           </button>
                           <p>
-                            Includes the average Social Security benefit (~{{
-                              formatCurrency(ssAverageAnnualBenefit)
-                            }}/year) on top of your portfolio withdrawal — investment income doesn't
-                            reduce or conflict with Social Security, so the two stack once you're of
-                            full retirement age.
+                            Includes your Social Security benefit (~{{
+                              formatCurrency(ssAnnualBenefit())
+                            }}/year, set under Social Security above) on top of your portfolio
+                            withdrawal — investment income doesn't reduce or conflict with Social
+                            Security, so the two stack from age {{ ssStartAge() }} on.
                           </p>
                         </div>
                       }

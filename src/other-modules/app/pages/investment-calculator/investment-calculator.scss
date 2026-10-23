@@ -1408,3 +1408,19 @@ select {
   align-items: center;
   gap: 12px;
 }
+
+// Groups the four linked goal fields — the ones you actually play with to explore scenarios.
+.goal-box {
+  padding: 14px 16px;
+  background: rgba(73, 198, 255, 0.06);
+  border: 1px solid rgba(73, 198, 255, 0.45);
+  border-radius: 10px;
+}
+
+.goal-box-header {
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #49c6ff;
+}

@@ -29,6 +29,8 @@ Numbers are plain (no $ or %; commas are fine). Percentages are whole numbers (8
 - inflationRate: annual inflation, percent (for today's-dollars figures)
 - withdrawalRate: yearly withdrawal rate in retirement, percent of balance
 - currentAge: current age in years (empty clears it)
+- ssAge: age Social Security starts being added to the yearly withdrawal (default 67; needs currentAge)
+- ssBenefit: monthly Social Security benefit in today's dollars (default 2071, the 2026 average; 0 leaves SS out)
 - incomes: comma-separated; each is yearly:<amount>, monthly:<amount>, or hourly:<rate>:<hoursPerWeek>:<weeksPerYear> (a bare number is yearly)
 - state: two-letter U.S. state code; fills that state's tax rate and average cost of living
 - stateTaxRate: state income tax rate, percent

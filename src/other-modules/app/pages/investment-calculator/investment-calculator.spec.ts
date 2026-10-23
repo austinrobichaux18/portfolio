@@ -112,7 +112,28 @@ describe('InvestmentCalculator', () => {
 
     const base = component.withdrawalAmount(1_000_000);
     expect(component.totalWithdrawal(6, 1_000_000)).toBeCloseTo(base, 2);
-    expect(component.totalWithdrawal(7, 1_000_000)).toBeCloseTo(base + 25_000, 2);
+    expect(component.totalWithdrawal(7, 1_000_000)).toBeCloseTo(base + 2_071 * 12, 2);
+  });
+
+  it('uses the entered Social Security start age and benefit', () => {
+    component.setCurrentAge('60');
+    component.setSsStartAge('62');
+    component.setSsBenefitFrequency('yearly');
+    component.setSsBenefitAmount('18000');
+    expect(component.ssMonthlyBenefit()).toBe(1500);
+    expect(component.ssBenefitDisplayAmount()).toBe(18000);
+
+    const base = component.withdrawalAmount(1_000_000);
+    expect(component.totalWithdrawal(1, 1_000_000)).toBeCloseTo(base, 2); // age 61
+    expect(component.totalWithdrawal(2, 1_000_000)).toBeCloseTo(base + 18_000, 2); // age 62
+
+    // A $0 benefit leaves Social Security out entirely.
+    component.setSsBenefitAmount('0');
+    expect(component.isSsEligibleYear(2)).toBe(false);
+
+    component.reset();
+    expect(component.ssStartAge()).toBe(67);
+    expect(component.ssMonthlyBenefit()).toBe(2_071);
   });
 
   it('never flags Social Security eligibility without an age entered', () => {
@@ -342,6 +363,9 @@ describe('InvestmentCalculator', () => {
     component.setStartingAmount('100000');
     component.setCurrentAge('60');
     component.setInflationRatePercent('3');
+    // Older saves assumed a flat $25k/year Social Security, so match it for the rebuild below.
+    component.setSsBenefitFrequency('yearly');
+    component.setSsBenefitAmount('25000');
     component.saveCurrentToHistory();
     const saved = component.history()[0];
     const expected = {
