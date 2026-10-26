@@ -135,6 +135,7 @@ MyRecipes/                  ← folder the user picks
   Desserts/                 ← optional grouping folder (no recipe.json): one level only
     brownies/
       recipe.json
+    pie.json                ← loose AI-format file: converted to pie/recipe.json on load
   _pantry.json              ← v2: tracked pantry items
   _receipts/                ← later: scanned receipt photos + extracted JSON
   _trash/                   ← deleted recipes/photos land here; ignored by the loader
@@ -300,6 +301,9 @@ imported recipes start with none.
 - A root folder without `recipe.json` but with subfolders is a grouping folder: its subfolders are
   loaded as recipes (one level only). Ids stay globally unique; the same folder name in two groups
   is reported as a load error. New recipes are created in the root; existing ones save in place.
+- Loose `<name>.json` files (root or grouping folder) — e.g. a saved AI-format reply — are converted
+  on load into `<id>/recipe.json` beside them (untested / want to try), original moved to `_trash/`.
+  A loose `.json` that isn't a recipe is reported and left alone.
 
 ## Build phases
 

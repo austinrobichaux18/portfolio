@@ -1,6 +1,8 @@
 import { Nutrition } from '../../../core/models/Nutrition';
+import { Recipe } from '../../../core/models/Recipe';
 import { PastedRecipe } from './paste-splitter';
-import { OptionGroupForm } from './recipe-form';
+import { applyForm, formFromRecipe, normalizeTags, OptionGroupForm } from './recipe-form';
+import { newRecipe } from './recipe-loader';
 
 /** A recipe read from the AI JSON format (see core/data/ai-recipe-prompt.ts). */
 export interface ImportedRecipe extends PastedRecipe {
@@ -69,6 +71,39 @@ export function parseRecipeJson(text: string): RecipeJsonResult | null {
   const nutrition = toNutrition(data['nutritionPerServing'] ?? data['nutrition']);
   if (nutrition) recipe.nutrition = nutrition;
   return { ok: true, recipe };
+}
+
+/**
+ * A new recipe built from the AI JSON format, the same way the editor's paste box does. Not made
+ * yet, so it starts as untested / want to try.
+ */
+export function recipeFromImported(id: string, imported: ImportedRecipe, fallbackTitle: string): Recipe {
+  const base = newRecipe(id, imported.title ?? fallbackTitle, { frequency: 'want-to-try', trust: 'untested' });
+  const form = formFromRecipe(base);
+  const recipe = applyForm(
+    {
+      ...form,
+      ingredientsText: imported.ingredientsText,
+      stepsText: imported.stepsText,
+      optionGroups: imported.optionGroups,
+      tags: normalizeTags(imported.tags),
+      servings: numberText(imported.servings),
+      prepMinutes: numberText(imported.prepMinutes),
+      cookMinutes: numberText(imported.cookMinutes),
+      restMinutes: numberText(imported.restMinutes),
+      totalMinutes: numberText(imported.totalMinutes),
+      yieldText: imported.yieldText ?? '',
+      description: imported.description ?? '',
+      notes: imported.notesText,
+    },
+    base,
+  );
+  if (imported.nutrition) recipe.sourceNutrition = imported.nutrition;
+  return recipe;
+}
+
+function numberText(value: number | undefined): string {
+  return value === undefined ? '' : String(value);
 }
 
 /** The JSON object in the text, ignoring ```json fences and any words before or after it. */

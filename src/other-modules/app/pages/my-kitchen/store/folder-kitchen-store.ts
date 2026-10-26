@@ -1,4 +1,6 @@
 import { Recipe } from '../../../core/models/Recipe';
+import { uniqueId } from '../lib/recipe-id';
+import { parseRecipeJson, recipeFromImported } from '../lib/recipe-json';
 import { loadRecipe, LoadRecipeResult, serializeRecipe } from '../lib/recipe-loader';
 import {
   assertSafeName,
@@ -15,6 +17,8 @@ const TRASH_DIR = '_trash';
 /**
  * One subfolder per recipe (named by its id) holding recipe.json and its images. Recipes can sit
  * directly in the root or one level down inside a plain grouping folder (e.g. `Desserts/brownies/`).
+ * Loose `<name>.json` files in either place (e.g. saved AI-format replies) are converted into a
+ * recipe folder next to them on load, and the original file is moved to _trash/.
  * New recipes are created in the root; existing ones are saved back where they were found.
  */
 export class FolderKitchenStore implements KitchenStore {
@@ -34,6 +38,7 @@ export class FolderKitchenStore implements KitchenStore {
     const takenNames: string[] = [];
     /** Recipe id → its folder path, to catch the same name in two grouping folders. */
     const found = new Map<string, string>();
+    const looseFiles: LooseFile[] = [];
     this.parents.clear();
 
     const loadInto = async (
@@ -62,24 +67,73 @@ export class FolderKitchenStore implements KitchenStore {
       }
     };
 
-    for (const [name, dir] of await subfolders(this.root)) {
+    const rootEntries = await listEntries(this.root);
+    for (const name of rootEntries.jsonFiles) looseFiles.push({ parent: this.root, name, path: name });
+    for (const [name, dir] of rootEntries.dirs) {
       if (await hasFile(dir, RECIPE_FILE)) {
         await loadInto(this.root, dir, name, name);
         continue;
       }
       takenNames.push(name);
-      const children = await subfolders(dir);
-      if (children.length === 0) {
+      const group = await listEntries(dir);
+      if (group.dirs.length === 0 && group.jsonFiles.length === 0) {
         errors.push({ folder: name, message: 'No recipe.json in this folder.' });
         continue;
       }
       // A grouping folder: only one level deep, so its subfolders must be recipes.
-      for (const [childName, child] of children) {
+      for (const [childName, child] of group.dirs) {
         await loadInto(dir, child, childName, `${name}/${childName}`);
       }
+      for (const file of group.jsonFiles) looseFiles.push({ parent: dir, name: file, path: `${name}/${file}` });
+    }
+
+    // After the scan, so converted recipes get ids that don't clash with any existing folder.
+    for (const file of looseFiles) {
+      const taken = [...found.keys(), ...takenNames];
+      const result = await this.convertLooseFile(file, taken);
+      if (!result.ok) {
+        errors.push({ folder: file.path, message: result.error });
+        continue;
+      }
+      found.set(result.recipe.id, file.path);
+      recipes.push(result.recipe);
     }
 
     return { recipes: sortRecipes(recipes), errors, takenNames };
+  }
+
+  /** Turns `parent/name.json` into `parent/<id>/recipe.json`, then moves the original to _trash/. */
+  private async convertLooseFile(
+    file: LooseFile,
+    taken: string[],
+  ): Promise<{ ok: true; recipe: Recipe } | { ok: false; error: string }> {
+    const original = await (await file.parent.getFileHandle(file.name)).getFile();
+    const baseName = file.name.replace(/\.json$/i, '');
+    const id = uniqueId(baseName, taken);
+    const text = await original.text();
+
+    let recipe: Recipe;
+    const data = tryParse(text);
+    if (isObject(data) && ('ingredientGroups' in data || 'schemaVersion' in data)) {
+      // Already in recipe.json format, just not in its own folder.
+      const result = loadRecipe(data, id);
+      if (!result.ok) return result;
+      recipe = result.recipe;
+    } else {
+      const result = parseRecipeJson(text);
+      if (!result) return { ok: false, error: 'Not a recipe: the file is not valid JSON.' };
+      if (!result.ok) return result;
+      recipe = recipeFromImported(id, result.recipe, baseName);
+    }
+
+    const dir = await file.parent.getDirectoryHandle(id, { create: true });
+    await writeText(dir, RECIPE_FILE, serializeRecipe(recipe));
+    this.parents.set(id, file.parent);
+    // Copy first, delete second: if the copy fails, nothing is lost.
+    const trash = await this.root.getDirectoryHandle(TRASH_DIR, { create: true });
+    await writeBlob(trash, `${trashStamp()}-${file.name}`, original);
+    await file.parent.removeEntry(file.name);
+    return { ok: true, recipe };
   }
 
   async saveRecipe(recipe: Recipe): Promise<void> {
@@ -140,14 +194,37 @@ export class FolderKitchenStore implements KitchenStore {
   }
 }
 
-/** Non-reserved subfolders: "_trash", ".git", etc. are skipped. */
-async function subfolders(dir: FileSystemDirectoryHandle): Promise<[string, FileSystemDirectoryHandle][]> {
-  const result: [string, FileSystemDirectoryHandle][] = [];
+interface LooseFile {
+  parent: FileSystemDirectoryHandle;
+  name: string;
+  /** Shown in load errors, e.g. "Desserts/brownies.json". */
+  path: string;
+}
+
+/** Non-reserved subfolders and loose .json files: "_trash", ".git", "_pantry.json" etc. are skipped. */
+async function listEntries(
+  dir: FileSystemDirectoryHandle,
+): Promise<{ dirs: [string, FileSystemDirectoryHandle][]; jsonFiles: string[] }> {
+  const dirs: [string, FileSystemDirectoryHandle][] = [];
+  const jsonFiles: string[] = [];
   for await (const [name, handle] of dir.entries()) {
-    if (handle.kind !== 'directory' || name.startsWith('_') || name.startsWith('.')) continue;
-    result.push([name, handle as FileSystemDirectoryHandle]);
+    if (name.startsWith('_') || name.startsWith('.')) continue;
+    if (handle.kind === 'directory') dirs.push([name, handle as FileSystemDirectoryHandle]);
+    else if (/\.json$/i.test(name) && name !== RECIPE_FILE) jsonFiles.push(name);
   }
-  return result;
+  return { dirs, jsonFiles };
+}
+
+function tryParse(text: string): unknown {
+  try {
+    return JSON.parse(text);
+  } catch {
+    return undefined;
+  }
+}
+
+function isObject(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
 async function hasFile(dir: FileSystemDirectoryHandle, name: string): Promise<boolean> {

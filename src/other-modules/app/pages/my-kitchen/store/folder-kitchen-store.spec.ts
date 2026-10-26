@@ -183,6 +183,54 @@ describe('FolderKitchenStore', () => {
       expect(root.dirs.get('pie')?.files.has('recipe.json')).toBe(true);
     });
 
+    it('converts loose AI-format .json files into recipe folders and trashes the originals', async () => {
+      const group = await root.getDirectoryHandle('made-with-lau', { create: true });
+      const congee = {
+        title: 'Chicken Congee',
+        servings: 4,
+        yield: '4 bowls',
+        tags: ['cuisine:chinese'],
+        ingredients: [{ group: 'Congee', items: ['3/4 cup jasmine rice', '8 cups water'] }],
+        steps: [{ items: ['Rinse the rice.', 'Simmer 35 minutes.'] }],
+      };
+      group.files.set('chicken-congee.json', new Blob([JSON.stringify(congee)]));
+      root.files.set('toast.json', new Blob([JSON.stringify({ title: 'Toast', ingredients: ['1 slice bread'] })]));
+      await addRecipe(root, 'chicken-congee', 'Other Congee');
+
+      const library = await store.loadLibrary();
+
+      expect(library.errors).toEqual([]);
+      const converted = library.recipes.find((r) => r.title === 'Chicken Congee')!;
+      expect(converted.id).toBe('chicken-congee-2');
+      expect(converted.servings).toBe(4);
+      expect(converted.yieldText).toBe('4 bowls');
+      expect(converted.ingredientGroups[0].name).toBe('Congee');
+      expect(converted.ingredientGroups[0].items).toHaveLength(2);
+      expect(converted.household.trust).toBe('untested');
+      expect(group.files.has('chicken-congee.json')).toBe(false);
+      expect(group.dirs.get('chicken-congee-2')!.files.has('recipe.json')).toBe(true);
+      expect(root.dirs.get('toast')!.files.has('recipe.json')).toBe(true);
+      expect([...root.dirs.get('_trash')!.files.keys()].map((n) => n.replace(/^\d{8}-\d{6}-/, '')).sort()).toEqual([
+        'chicken-congee.json',
+        'toast.json',
+      ]);
+
+      // Second load reads the converted folders like any other recipe.
+      const again = await store.loadLibrary();
+      expect(again.recipes.map((r) => r.id).sort()).toEqual(['chicken-congee', 'chicken-congee-2', 'toast']);
+    });
+
+    it('leaves a loose .json that is not a recipe alone and reports it', async () => {
+      const group = await root.getDirectoryHandle('Notes', { create: true });
+      group.files.set('list.json', new Blob(['[1, 2, 3]']));
+
+      const library = await store.loadLibrary();
+
+      expect(library.recipes).toEqual([]);
+      expect(library.errors.map((e) => e.folder)).toEqual(['Notes/list.json']);
+      expect(group.files.has('list.json')).toBe(true);
+    });
+
     it('does not go deeper than one level and reports duplicate names', async () => {
       const desserts = await root.getDirectoryHandle('Desserts', { create: true });
       const cakes = await desserts.getDirectoryHandle('Cakes', { create: true });
