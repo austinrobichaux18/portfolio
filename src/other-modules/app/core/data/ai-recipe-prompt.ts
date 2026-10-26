@@ -12,6 +12,8 @@ Rules:
 - Keep steps short and practical — no stories, tips or serving suggestions.
 - "nutritionPerServing" is your best estimate per serving for the base recipe with the usual options. Use numbers only.
 - Tags are lowercase with prefixes: cuisine:, meal:, diet:, equip:, effort: (quick, weeknight or project).
+- "source" is where the recipe came from: the link, site name and author. Only fill it in from a link or name I give you — never make up a URL.
+- "images" lists photos I give you: file names (I keep those photos next to the saved .json file) or full https:// image links exactly as I give them. The first one is the cover; "caption" is optional. Leave it out if I don't give you any — never make up a link.
 - Leave out any field you don't know.
 
 {
@@ -22,6 +24,8 @@ Rules:
   "restMinutes": 0,
   "totalMinutes": 30,
   "yield": "2 big bowls",
+  "source": { "url": "https://example.com/weeknight-ramen", "siteName": "Example Kitchen", "author": "Sam Cook" },
+  "images": ["ramen.jpg", { "file": "https://example.com/photos/ramen-toppings.jpg", "caption": "Usual toppings" }],
   "tags": ["cuisine:japanese", "meal:dinner", "effort:weeknight"],
   "ingredients": [
     { "group": "Broth", "items": ["4 cups chicken stock", "2 tbsp soy sauce", "1 tbsp miso paste"] },

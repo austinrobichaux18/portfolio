@@ -302,16 +302,26 @@ function toOptionGroups(value: unknown, warnings: string[]): RecipeOptionGroup[]
   });
 }
 
+/** An http(s) link to a photo on another site, rather than a file in the recipe's folder. */
+export function isImageLink(file: string): boolean {
+  return /^https?:\/\//i.test(file);
+}
+
+/** A file name in the recipe's folder (no paths) or an http(s) link. */
+export function isImageRef(file: string): boolean {
+  return isImageLink(file) || (!file.includes('/') && !file.includes('\\') && !file.startsWith('.'));
+}
+
 function toImage(value: unknown, index: number, warnings: string[]): RecipeImage[] {
   const file = isObject(value) ? str(value['file']) : undefined;
-  if (!isObject(value) || !file || file.includes('/') || file.includes('\\')) {
-    warnings.push(`Skipped image ${index + 1} (needs a plain file name).`);
+  if (!isObject(value) || !file || !isImageRef(file)) {
+    warnings.push(`Skipped image ${index + 1} (needs a plain file name or a web link).`);
     return [];
   }
   const thumb = str(value['thumb']);
   const image: RecipeImage = {
     file,
-    thumb: thumb && !thumb.includes('/') && !thumb.includes('\\') ? thumb : file,
+    thumb: thumb && isImageRef(thumb) ? thumb : file,
     origin: oneOf(value['origin'], ORIGINS) ?? 'own',
   };
   const caption = str(value['caption']);

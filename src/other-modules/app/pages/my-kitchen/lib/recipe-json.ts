@@ -1,8 +1,8 @@
 import { Nutrition } from '../../../core/models/Nutrition';
-import { Recipe } from '../../../core/models/Recipe';
+import { Recipe, RecipeSource } from '../../../core/models/Recipe';
 import { PastedRecipe } from './paste-splitter';
 import { applyForm, formFromRecipe, normalizeTags, OptionGroupForm } from './recipe-form';
-import { newRecipe } from './recipe-loader';
+import { isImageRef, newRecipe } from './recipe-loader';
 
 /** A recipe read from the AI JSON format (see core/data/ai-recipe-prompt.ts). */
 export interface ImportedRecipe extends PastedRecipe {
@@ -11,6 +11,14 @@ export interface ImportedRecipe extends PastedRecipe {
   description?: string;
   tags: string[];
   optionGroups: OptionGroupForm[];
+  source?: RecipeSource;
+  /** Photo file names (expected next to the .json file they came in) or web links; first is the cover. */
+  images: ImportedImage[];
+}
+
+export interface ImportedImage {
+  file: string;
+  caption?: string;
 }
 
 export type RecipeJsonResult = { ok: true; recipe: ImportedRecipe } | { ok: false; error: string };
@@ -57,6 +65,7 @@ export function parseRecipeJson(text: string): RecipeJsonResult | null {
     notesText: str(data['notes']) ?? '',
     tags: arr(data['tags']).flatMap((t) => (typeof t === 'string' && t.trim() ? [t] : [])),
     optionGroups: toOptionGroups(data['options']),
+    images: toImages(data['images'] ?? data['photos']),
   };
   const title = str(data['title']);
   if (title) recipe.title = title;
@@ -70,6 +79,8 @@ export function parseRecipeJson(text: string): RecipeJsonResult | null {
   }
   const nutrition = toNutrition(data['nutritionPerServing'] ?? data['nutrition']);
   if (nutrition) recipe.nutrition = nutrition;
+  const source = toSource(data['source'] ?? data['sourceUrl'] ?? data['url']);
+  if (source) recipe.source = source;
   return { ok: true, recipe };
 }
 
@@ -95,10 +106,20 @@ export function recipeFromImported(id: string, imported: ImportedRecipe, fallbac
       yieldText: imported.yieldText ?? '',
       description: imported.description ?? '',
       notes: imported.notesText,
+      sourceUrl: imported.source?.url ?? '',
+      sourceSiteName: imported.source?.siteName ?? '',
+      sourceAuthor: imported.source?.author ?? '',
     },
     base,
   );
   if (imported.nutrition) recipe.sourceNutrition = imported.nutrition;
+  recipe.images = imported.images.map((img, i) => ({
+    file: img.file,
+    thumb: img.file,
+    origin: 'own',
+    ...(img.caption ? { caption: img.caption } : {}),
+    ...(i === 0 ? { isCover: true } : {}),
+  }));
   return recipe;
 }
 
@@ -207,6 +228,32 @@ function toOptionGroups(value: unknown): OptionGroupForm[] {
       }
     }
     return [{ name: str(group['name'])!, kind, options }];
+  });
+}
+
+/** A link as a plain string, or { url, siteName, author }. Only http(s) links are kept. */
+function toSource(value: unknown): RecipeSource | undefined {
+  const data = typeof value === 'string' ? { url: value } : isObject(value) ? value : {};
+  const source: RecipeSource = {};
+  const url = str(data['url']);
+  if (url && /^https?:\/\//i.test(url)) source.url = url;
+  const siteName = str(data['siteName']) ?? str(data['site']);
+  if (siteName) source.siteName = siteName;
+  const author = str(data['author']);
+  if (author) source.author = author;
+  return Object.keys(source).length ? source : undefined;
+}
+
+/** ["photo.jpg", "https://…/plated.jpg", { "file": "…", "caption": "…" }] — file names (no paths) or links. */
+function toImages(value: unknown): ImportedImage[] {
+  const seen = new Set<string>();
+  return arr(value).flatMap((item) => {
+    const file =
+      typeof item === 'string' ? str(item) : isObject(item) ? (str(item['file']) ?? str(item['url'])) : undefined;
+    if (!file || !isImageRef(file) || seen.has(file)) return [];
+    seen.add(file);
+    const caption = isObject(item) ? str(item['caption']) : undefined;
+    return [caption ? { file, caption } : { file }];
   });
 }
 

@@ -33,6 +33,15 @@ describe('parseRecipeJson', () => {
       },
     });
     expect(recipe.restMinutes).toBeUndefined(); // 0 means "none"
+    expect(recipe.source).toEqual({
+      url: 'https://example.com/weeknight-ramen',
+      siteName: 'Example Kitchen',
+      author: 'Sam Cook',
+    });
+    expect(recipe.images).toEqual([
+      { file: 'ramen.jpg' },
+      { file: 'https://example.com/photos/ramen-toppings.jpg', caption: 'Usual toppings' },
+    ]);
 
     const ingredients = parseIngredientsText(recipe.ingredientsText);
     expect(ingredients.map((g) => [g.name, g.items.map((i) => i.raw)])).toEqual([
@@ -139,6 +148,19 @@ describe('parseRecipeJson', () => {
     );
     expect(recipe.optionGroups[0].kind).toBe('pickOne');
     expect(recipe.optionGroups[0].options.map((o) => o.isDefault)).toEqual([true, false]);
+  });
+
+  it('accepts a bare source link and drops non-web links and image paths', () => {
+    expect(ok('{"title": "Pie", "source": "https://pies.example/apple"}').source).toEqual({
+      url: 'https://pies.example/apple',
+    });
+    expect(ok('{"title": "Pie", "source": "javascript:alert(1)"}').source).toBeUndefined();
+    expect(
+      ok('{"title": "Pie", "images": ["pie.jpg", "../x.jpg", "a/b.jpg", "pie.jpg", "", "ftp://x/y.jpg"]}').images,
+    ).toEqual([{ file: 'pie.jpg' }]);
+    expect(ok('{"title": "Pie", "images": [{ "url": "https://pies.example/pie.jpg" }]}').images).toEqual([
+      { file: 'https://pies.example/pie.jpg' },
+    ]);
   });
 
   it('returns null for ordinary recipe text so the text splitter handles it', () => {

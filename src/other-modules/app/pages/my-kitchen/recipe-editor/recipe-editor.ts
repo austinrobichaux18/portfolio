@@ -224,6 +224,9 @@ export class RecipeEditor implements HasUnsavedChanges, OnDestroy {
         yieldText: imported.yieldText ?? f.yieldText,
         restMinutes: imported.restMinutes ? String(imported.restMinutes) : f.restMinutes,
         description: imported.description ?? f.description,
+        sourceUrl: imported.source?.url ?? f.sourceUrl,
+        sourceSiteName: imported.source?.siteName ?? f.sourceSiteName,
+        sourceAuthor: imported.source?.author ?? f.sourceAuthor,
       }));
     }
     this.form.update((f) => ({
@@ -443,7 +446,8 @@ export class RecipeEditor implements HasUnsavedChanges, OnDestroy {
       }
 
       const recipe = applyForm(formToApply, base);
-      recipe.images = this.images().map((i) => i.image);
+      // Photos may have been resized (and renamed) in the background since the editor opened.
+      recipe.images = this.images().map((i) => this.state.currentImage(recipe.id, i.image));
       const nutrition = this.pastedNutrition();
       if (nutrition) recipe.sourceNutrition = nutrition;
       // Our own changes to an imported recipe's ingredients or steps make it our adaptation.
@@ -467,7 +471,7 @@ export class RecipeEditor implements HasUnsavedChanges, OnDestroy {
 
       const saved = await this.state.saveRecipe(recipe, {
         added: this.images().flatMap((i) => (i.prepared ? [i.prepared] : [])),
-        removed: this.removedImages,
+        removed: this.removedImages.map((image) => this.state.currentImage(recipe.id, image)),
       });
 
       this.saved = true;

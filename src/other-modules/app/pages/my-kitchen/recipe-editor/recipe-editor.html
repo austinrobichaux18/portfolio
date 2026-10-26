@@ -70,6 +70,13 @@
               <li>Paste it into your AI chat and add your meal description at the end.</li>
               <li>Copy the AI's whole reply into the box above and press <strong>Fill in the form</strong>.</li>
             </ol>
+            <p class="muted">
+              Got it from a website? Include the link and it's kept as the recipe's source. Or skip the
+              box: save the reply as <code>&lt;name&gt;.json</code> in your recipe folder, put its photos
+              right next to it, and list their file names under <code>"images"</code> (the first one is
+              the cover). Links to photos on other sites work there too. On the next load it becomes a
+              recipe folder with the photos moved inside, and they're resized the first time you see them.
+            </p>
             <div class="row">
               <button type="button" class="secondary" (click)="copyAiPrompt()">
                 {{ promptCopied() ? '✓ Copied' : 'Copy prompt' }}

@@ -136,6 +136,7 @@ MyRecipes/                  ← folder the user picks
     brownies/
       recipe.json
     pie.json                ← loose AI-format file: converted to pie/recipe.json on load
+    pie.jpg                 ← listed in pie.json "images": moved into pie/ on conversion
   _pantry.json              ← v2: tracked pantry items
   _receipts/                ← later: scanned receipt photos + extracted JSON
   _trash/                   ← deleted recipes/photos land here; ignored by the loader
@@ -304,6 +305,12 @@ imported recipes start with none.
 - Loose `<name>.json` files (root or grouping folder) — e.g. a saved AI-format reply — are converted
   on load into `<id>/recipe.json` beside them (untested / want to try), original moved to `_trash/`.
   A loose `.json` that isn't a recipe is reported and left alone.
+  Photos it lists in `"images"` are moved from beside it into the new folder (first = cover);
+  missing ones are dropped. Entries can also be http(s) links: shown directly, never downloaded or
+  resized (most sites block cross-origin reads). Any folder photo without a thumbnail
+  (`thumb === file`) is resized on first view (KitchenStateService.resizeNewImages) and the original
+  trashed; undecodable ones (e.g. HEIC) show up in the load errors. `"source"` (a link string or
+  `{ url, siteName, author }`) is kept, and the editor's paste box fills the source fields from it.
 
 ## Build phases
 

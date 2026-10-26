@@ -1,7 +1,7 @@
-import { Recipe } from '../../../core/models/Recipe';
+import { Recipe, RecipeImage } from '../../../core/models/Recipe';
 import { uniqueId } from '../lib/recipe-id';
 import { parseRecipeJson, recipeFromImported } from '../lib/recipe-json';
-import { loadRecipe, LoadRecipeResult, serializeRecipe } from '../lib/recipe-loader';
+import { isImageLink, loadRecipe, LoadRecipeResult, serializeRecipe } from '../lib/recipe-loader';
 import {
   assertSafeName,
   KitchenLibrary,
@@ -102,7 +102,11 @@ export class FolderKitchenStore implements KitchenStore {
     return { recipes: sortRecipes(recipes), errors, takenNames };
   }
 
-  /** Turns `parent/name.json` into `parent/<id>/recipe.json`, then moves the original to _trash/. */
+  /**
+   * Turns `parent/name.json` into `parent/<id>/recipe.json`, then moves the original to _trash/.
+   * Photos it lists in `images` are moved from beside it into the new folder (web links stay links);
+   * missing ones are dropped. They're resized later, the first time they're shown.
+   */
   private async convertLooseFile(
     file: LooseFile,
     taken: string[],
@@ -127,6 +131,8 @@ export class FolderKitchenStore implements KitchenStore {
     }
 
     const dir = await file.parent.getDirectoryHandle(id, { create: true });
+    recipe.images = await moveImages(recipe.images, file.parent, dir);
+    if (recipe.images.length && !recipe.images.some((img) => img.isCover)) recipe.images[0].isCover = true;
     await writeText(dir, RECIPE_FILE, serializeRecipe(recipe));
     this.parents.set(id, file.parent);
     // Copy first, delete second: if the copy fails, nothing is lost.
@@ -213,6 +219,28 @@ async function listEntries(
     else if (/\.json$/i.test(name) && name !== RECIPE_FILE) jsonFiles.push(name);
   }
   return { dirs, jsonFiles };
+}
+
+/** Moves each listed image that exists in `from` into `to`; keeps those plus web links. */
+async function moveImages(images: RecipeImage[], from: FileSystemDirectoryHandle, to: FileSystemDirectoryHandle) {
+  const moved: RecipeImage[] = [];
+  for (const image of images) {
+    if (isImageLink(image.file)) {
+      moved.push({ ...image, thumb: image.file });
+      continue;
+    }
+    try {
+      assertSafeName(image.file);
+      const file = await (await from.getFileHandle(image.file)).getFile();
+      // Copy first, delete second: if the copy fails, nothing is lost.
+      await writeBlob(to, image.file, file);
+      await from.removeEntry(image.file);
+      moved.push({ ...image, thumb: image.file });
+    } catch {
+      // Not there (or not a plain name): leave it out rather than show a broken photo.
+    }
+  }
+  return moved;
 }
 
 function tryParse(text: string): unknown {

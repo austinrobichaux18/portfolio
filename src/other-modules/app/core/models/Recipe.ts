@@ -48,8 +48,12 @@ export interface RecipeOptionGroup {
 }
 
 export interface RecipeImage {
-  /** Named by id, never by role: "img-k3f9a2.webp". */
+  /**
+   * Named by id, never by role: "img-k3f9a2.webp". Can also be an http(s) link to a photo on
+   * another site, shown as-is and never copied into the folder.
+   */
   file: string;
+  /** Equal to `file` for photos not resized yet (added by hand or from a loose .json) and links. */
   thumb: string;
   caption?: string;
   isCover?: boolean;

@@ -220,6 +220,37 @@ describe('FolderKitchenStore', () => {
       expect(again.recipes.map((r) => r.id).sort()).toEqual(['chicken-congee', 'chicken-congee-2', 'toast']);
     });
 
+    it('moves photos listed in a loose .json into the new recipe folder and keeps its source', async () => {
+      const group = await root.getDirectoryHandle('made-with-lau', { create: true });
+      const pie = {
+        title: 'Apple Pie',
+        source: { url: 'https://pies.example/apple', author: 'Lau' },
+        images: ['pie.jpg', { file: 'slice.jpg', caption: 'A slice' }, 'missing.jpg', 'https://pies.example/a.jpg'],
+        ingredients: ['6 apples'],
+      };
+      group.files.set('pie.json', new Blob([JSON.stringify(pie)]));
+      group.files.set('pie.jpg', new Blob(['jpg']));
+      group.files.set('slice.jpg', new Blob(['jpg2']));
+
+      const library = await store.loadLibrary();
+
+      expect(library.errors).toEqual([]);
+      const recipe = library.recipes[0];
+      expect(recipe.source).toEqual({ url: 'https://pies.example/apple', author: 'Lau' });
+      expect(recipe.images).toEqual([
+        { file: 'pie.jpg', thumb: 'pie.jpg', origin: 'own', isCover: true },
+        { file: 'slice.jpg', thumb: 'slice.jpg', origin: 'own', caption: 'A slice' },
+        { file: 'https://pies.example/a.jpg', thumb: 'https://pies.example/a.jpg', origin: 'own' },
+      ]);
+      const folder = group.dirs.get('pie')!;
+      expect([...folder.files.keys()].sort()).toEqual(['pie.jpg', 'recipe.json', 'slice.jpg']);
+      expect(group.files.has('pie.jpg')).toBe(false);
+      expect(await store.readImage('pie', 'slice.jpg')).not.toBeNull();
+
+      const again = await store.loadLibrary();
+      expect(again.recipes[0].images.map((i) => i.file)).toEqual(['pie.jpg', 'slice.jpg', 'https://pies.example/a.jpg']);
+    });
+
     it('leaves a loose .json that is not a recipe alone and reports it', async () => {
       const group = await root.getDirectoryHandle('Notes', { create: true });
       group.files.set('list.json', new Blob(['[1, 2, 3]']));

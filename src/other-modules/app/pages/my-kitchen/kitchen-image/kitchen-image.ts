@@ -52,6 +52,8 @@ export class KitchenImage {
       this.state.imageUrl(recipeId, file).then((url) => {
         // Ignore a slow load for an image this component no longer shows.
         if (this.recipeId() === recipeId && this.file() === file) this.url.set(url);
+        // Photos added by hand get resized once they're first seen (no-op for everything else).
+        if (url) this.state.resizeNewImages(recipeId);
       });
     });
   }

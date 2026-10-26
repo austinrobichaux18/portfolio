@@ -2,7 +2,7 @@ import { computed, Injectable, signal } from '@angular/core';
 import { ContentOrigin, HouseholdRecipeData, Recipe, RecipeImage } from '../../../core/models/Recipe';
 import { FULL_IMAGE_MAX_EDGE, resizeImage, THUMB_IMAGE_MAX_EDGE } from '../lib/image-resize';
 import { newImageBaseName, uniqueId } from '../lib/recipe-id';
-import { newRecipe } from '../lib/recipe-loader';
+import { isImageLink, newRecipe } from '../lib/recipe-loader';
 import { createDemoStore } from './demo-library';
 import { FolderKitchenStore } from './folder-kitchen-store';
 import { clearLastFolderHandle, loadLastFolderHandle, saveLastFolderHandle } from './kitchen-folder-handle';
@@ -39,6 +39,12 @@ export class KitchenStateService {
 
   private lastHandle: FileSystemDirectoryHandle | null = null;
   private readonly imageUrls = new Map<string, Promise<string | null>>();
+  /** Recipes whose unresized photos are being resized right now, by id. */
+  private readonly resizing = new Map<string, Promise<void>>();
+  /** "recipeId/file" → its resized replacement, so an editor opened before the resize saves the new names. */
+  private readonly resizedImages = new Map<string, RecipeImage>();
+  /** "recipeId/file" of photos that couldn't be decoded; not retried until the library is reopened. */
+  private readonly unreadableImages = new Set<string>();
 
   constructor() {
     if (this.supported) this.checkLastFolder();
@@ -94,6 +100,8 @@ export class KitchenStateService {
   /** Opens any store: the picked folder, the demo, or an in-memory store in specs. */
   async useStore(store: KitchenStore): Promise<void> {
     this.revokeImageUrls();
+    this.resizedImages.clear();
+    this.unreadableImages.clear();
     this.store.set(store);
     this.status.set('loading');
     try {
@@ -144,6 +152,7 @@ export class KitchenStateService {
       }
     }
     for (const image of changes.removed ?? []) {
+      if (isImageLink(image.file)) continue;
       await store.deleteImage(saved.id, image.file).catch(() => {});
       if (image.thumb !== image.file) await store.deleteImage(saved.id, image.thumb).catch(() => {});
       this.forgetImageUrl(saved.id, image.file);
@@ -172,8 +181,9 @@ export class KitchenStateService {
     };
   }
 
-  /** Object URL for a stored image, cached until the library is closed. */
+  /** Object URL for a stored image (or the link itself for web photos), cached until the library is closed. */
   imageUrl(recipeId: string, fileName: string): Promise<string | null> {
+    if (isImageLink(fileName)) return Promise.resolve(fileName);
     const key = `${recipeId}/${fileName}`;
     let url = this.imageUrls.get(key);
     if (!url) {
@@ -187,6 +197,82 @@ export class KitchenStateService {
       this.imageUrls.set(key, url);
     }
     return url;
+  }
+
+  /** The image as it is now: its resized replacement if it was resized after `image` was read. */
+  currentImage(recipeId: string, image: RecipeImage): RecipeImage {
+    return this.resizedImages.get(`${recipeId}/${image.file}`) ?? image;
+  }
+
+  /**
+   * Photos put in a folder by hand or from a loose .json (no thumbnail yet, `thumb === file`) are
+   * resized the first time they're shown, like ones added in the editor, and the originals moved to
+   * _trash/. Runs in the background; photos that can't be decoded are reported in loadErrors.
+   */
+  resizeNewImages(recipeId: string): Promise<void> {
+    const store = this.store();
+    const recipe = this.recipe(recipeId);
+    if (!store || store.readOnly || !recipe?.images.some((img) => this.needsResize(recipeId, img))) {
+      return Promise.resolve();
+    }
+    let running = this.resizing.get(recipeId);
+    if (!running) {
+      running = this.resizeImages(store, recipeId)
+        .catch(() => {})
+        .finally(() => this.resizing.delete(recipeId));
+      this.resizing.set(recipeId, running);
+    }
+    return running;
+  }
+
+  private needsResize(recipeId: string, image: RecipeImage): boolean {
+    return (
+      image.thumb === image.file &&
+      !isImageLink(image.file) &&
+      !this.unreadableImages.has(`${recipeId}/${image.file}`)
+    );
+  }
+
+  private async resizeImages(store: KitchenStore, recipeId: string): Promise<void> {
+    const recipe = this.recipe(recipeId)!;
+    const usedNames = recipe.images.flatMap((img) => [img.file, img.thumb]);
+    const prepared = new Map<string, PreparedImage>();
+    for (const image of recipe.images.filter((img) => this.needsResize(recipeId, img))) {
+      const blob = await store.readImage(recipeId, image.file);
+      if (!blob) continue; // Missing: the gallery shows a placeholder.
+      try {
+        const resized = await this.prepareImage(blob, usedNames, image.origin);
+        const { file, thumb } = resized.image;
+        usedNames.push(file, thumb);
+        prepared.set(image.file, { ...resized, image: { ...image, file, thumb } });
+      } catch {
+        this.unreadableImages.add(`${recipeId}/${image.file}`);
+        this.loadErrors.update((list) => [
+          ...list,
+          { folder: `${recipeId}/${image.file}`, message: "This photo couldn't be read. Use a JPEG, PNG or WebP." },
+        ]);
+      }
+    }
+    if (!prepared.size) return;
+
+    // The recipe may have been saved while resizing, so swap the photos into its latest version.
+    const latest = this.recipe(recipeId);
+    if (!latest) return;
+    const done = [...prepared.entries()].filter(([old]) => latest.images.some((img) => img.file === old));
+    if (!done.length) return;
+    for (const [, p] of done) {
+      await store.writeImage(recipeId, p.image.file, p.full);
+      await store.writeImage(recipeId, p.image.thumb, p.thumb);
+    }
+    const replacements = new Map(done.map(([old, p]) => [old, p.image]));
+    // Housekeeping, not an edit: updatedAt stays as it was.
+    const updated: Recipe = { ...latest, images: latest.images.map((img) => replacements.get(img.file) ?? img) };
+    await store.saveRecipe(updated);
+    for (const [old, image] of replacements) {
+      this.resizedImages.set(`${recipeId}/${old}`, image);
+      await store.deleteImage(recipeId, old).catch(() => {});
+    }
+    this.recipes.update((list) => list.map((r) => (r.id === recipeId ? updated : r)));
   }
 
   private forgetImageUrl(recipeId: string, fileName: string): void {
