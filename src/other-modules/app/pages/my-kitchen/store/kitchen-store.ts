@@ -9,6 +9,8 @@ export interface RecipeLoadError {
 export interface KitchenLibrary {
   recipes: Recipe[];
   errors: RecipeLoadError[];
+  /** Folder names in use by something other than a loaded recipe (grouping or broken folders), so new ids avoid them. */
+  takenNames?: string[];
 }
 
 /**

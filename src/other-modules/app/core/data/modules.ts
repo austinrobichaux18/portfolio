@@ -60,7 +60,7 @@ export const modules: Module[] = [
     description:
       'Keep the recipes your family actually cooks in a local folder — type or paste them, pick options like toppings, scale servings, cook step by step, and log what you made.',
     route: 'my-kitchen',
-    lastUpdated: '2026-10-12',
+    lastUpdated: '2026-10-26',
     group: 'Local Folder',
   },
   {

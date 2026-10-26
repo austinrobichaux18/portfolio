@@ -135,6 +135,72 @@ describe('FolderKitchenStore', () => {
     expect(await store.readImage('ramen', 'img-a.webp')).toBeNull();
   });
 
+  describe('grouping folders (one level deep)', () => {
+    async function addRecipe(parent: FakeDir, id: string, title: string): Promise<FakeDir> {
+      const dir = await parent.getDirectoryHandle(id, { create: true });
+      dir.files.set('recipe.json', new Blob([serializeRecipe(newRecipe(id, title))]));
+      return dir;
+    }
+
+    it('loads recipes from the root and from grouping folders', async () => {
+      await addRecipe(root, 'toast', 'Toast');
+      const desserts = await root.getDirectoryHandle('Desserts', { create: true });
+      await addRecipe(desserts, 'brownies', 'Brownies');
+      await desserts.getDirectoryHandle('_trash', { create: true });
+
+      const library = await store.loadLibrary();
+
+      expect(library.recipes.map((r) => r.id)).toEqual(['brownies', 'toast']);
+      expect(library.errors).toEqual([]);
+      expect(library.takenNames).toEqual(['Desserts']);
+    });
+
+    it('saves, writes images and trashes a nested recipe in place', async () => {
+      const desserts = await root.getDirectoryHandle('Desserts', { create: true });
+      const brownies = await addRecipe(desserts, 'brownies', 'Brownies');
+      const [recipe] = (await store.loadLibrary()).recipes;
+
+      await store.saveRecipe({ ...recipe, title: 'Fudgy Brownies' });
+      await store.writeImage('brownies', 'img-a.webp', new Blob(['photo']));
+
+      expect(root.dirs.has('brownies')).toBe(false);
+      expect(await readText(brownies.files.get('recipe.json')!)).toContain('Fudgy Brownies');
+      expect(await readText((await store.readImage('brownies', 'img-a.webp'))!)).toBe('photo');
+
+      await store.deleteRecipe('brownies');
+      expect(desserts.dirs.has('brownies')).toBe(false);
+      const trashed = [...root.dirs.get('_trash')!.dirs.values()][0];
+      expect([...trashed.files.keys()].sort()).toEqual(['img-a.webp', 'recipe.json']);
+    });
+
+    it('puts new recipes in the root', async () => {
+      const desserts = await root.getDirectoryHandle('Desserts', { create: true });
+      await addRecipe(desserts, 'brownies', 'Brownies');
+      await store.loadLibrary();
+
+      await store.saveRecipe(newRecipe('pie', 'Pie'));
+
+      expect(root.dirs.get('pie')?.files.has('recipe.json')).toBe(true);
+    });
+
+    it('does not go deeper than one level and reports duplicate names', async () => {
+      const desserts = await root.getDirectoryHandle('Desserts', { create: true });
+      const cakes = await desserts.getDirectoryHandle('Cakes', { create: true });
+      await addRecipe(cakes, 'sponge', 'Sponge');
+      await addRecipe(root, 'pie', 'Pie');
+      const sweets = await root.getDirectoryHandle('Sweets', { create: true });
+      await addRecipe(sweets, 'pie', 'Pie');
+
+      const library = await store.loadLibrary();
+
+      expect(library.recipes.map((r) => r.id)).toEqual(['pie']);
+      expect(library.errors).toEqual([
+        { folder: 'Desserts/Cakes', message: 'No recipe.json in this folder.' },
+        { folder: 'Sweets/pie', message: 'Another recipe already uses the folder name "pie" (pie).' },
+      ]);
+    });
+  });
+
   it('refuses ids and file names that could escape the folder or hit reserved names', async () => {
     await expect(store.saveRecipe(newRecipe('../evil', 'Evil'))).rejects.toThrow();
     await expect(store.saveRecipe(newRecipe('_trash', 'Trash'))).rejects.toThrow();

@@ -132,6 +132,9 @@ MyRecipes/                  ← folder the user picks
     recipe.json
     img-p81xq0.webp
     img-p81xq0.thumb.webp
+  Desserts/                 ← optional grouping folder (no recipe.json): one level only
+    brownies/
+      recipe.json
   _pantry.json              ← v2: tracked pantry items
   _receipts/                ← later: scanned receipt photos + extracted JSON
   _trash/                   ← deleted recipes/photos land here; ignored by the loader
@@ -294,6 +297,9 @@ imported recipes start with none.
 - On a broken or hand-edited file: skip it and list it in a visible "couldn't load" panel —
   never crash the library
 - Ignores any root folder starting with `_` (`_trash/`, and later `_meal-plans/` etc.)
+- A root folder without `recipe.json` but with subfolders is a grouping folder: its subfolders are
+  loaded as recipes (one level only). Ids stay globally unique; the same folder name in two groups
+  is reported as a load error. New recipes are created in the root; existing ones save in place.
 
 ## Build phases
 

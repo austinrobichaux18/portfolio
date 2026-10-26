@@ -26,6 +26,8 @@ export class KitchenStateService {
   readonly store = signal<KitchenStore | null>(null);
   readonly recipes = signal<Recipe[]>([]);
   readonly loadErrors = signal<RecipeLoadError[]>([]);
+  /** Folder names new recipe ids must avoid (see KitchenLibrary.takenNames). */
+  private takenNames: string[] = [];
   readonly lastFolderName = signal<string | null>(null);
   readonly errorMessage = signal('');
 
@@ -109,6 +111,7 @@ export class KitchenStateService {
     const library = await store.loadLibrary();
     this.recipes.set(library.recipes);
     this.loadErrors.set(library.errors);
+    this.takenNames = library.takenNames ?? [];
   }
 
   closeLibrary(): void {
@@ -116,15 +119,13 @@ export class KitchenStateService {
     this.store.set(null);
     this.recipes.set([]);
     this.loadErrors.set([]);
+    this.takenNames = [];
     this.status.set('idle');
   }
 
   /** A fresh, unsaved recipe with a unique id. */
   draftRecipe(title: string, household: Partial<HouseholdRecipeData>, origin: ContentOrigin = 'own'): Recipe {
-    const id = uniqueId(
-      title,
-      this.recipes().map((r) => r.id),
-    );
+    const id = uniqueId(title, [...this.recipes().map((r) => r.id), ...this.takenNames]);
     return newRecipe(id, title, household, origin);
   }
 
