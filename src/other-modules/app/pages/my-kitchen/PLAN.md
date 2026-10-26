@@ -311,6 +311,12 @@ imported recipes start with none.
   (`thumb === file`) is resized on first view (KitchenStateService.resizeNewImages) and the original
   trashed; undecodable ones (e.g. HEIC) show up in the load errors. `"source"` (a link string or
   `{ url, siteName, author }`) is kept, and the editor's paste box fills the source fields from it.
+- A `<id>/recipe.json` in the AI format (`ingredients`/`steps`, no `ingredientGroups`/`stepGroups`)
+  is converted on load like a loose file (photos in the folder become its images). Recipe-scraper
+  output (step objects with `text`, `source_url`) reads the same way.
+- **Never lose data on load:** any load-time rewrite of a recipe.json first copies the original to
+  `_trash/<stamp>-<id>-recipe.json`. (2026-10-26: AI-format recipe.json files were silently rewritten
+  through the full-format loader, dropping their ingredients and steps.)
 
 ## Build phases
 
