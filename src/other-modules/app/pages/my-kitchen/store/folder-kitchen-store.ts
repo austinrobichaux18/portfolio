@@ -47,7 +47,7 @@ export class FolderKitchenStore implements KitchenStore {
       name: string,
       path: string,
     ) => {
-      const result = await readRecipe(dir, name);
+      const result = await this.readRecipe(dir, name);
       if (!result.ok) {
         errors.push({ folder: path, message: result.error });
         takenNames.push(name);
@@ -62,8 +62,14 @@ export class FolderKitchenStore implements KitchenStore {
       this.parents.set(name, parent);
       recipes.push(result.recipe);
       if (result.changed) {
-        // Persist generated ids (e.g. a missing uid) so they stay stable across loads.
-        await writeText(dir, RECIPE_FILE, serializeRecipe(result.recipe)).catch(() => {});
+        // Persist generated ids (e.g. a missing uid) so they stay stable across loads. The file as it
+        // was goes to _trash/ first: a rewrite drops anything the loader doesn't understand.
+        try {
+          await this.trashCopy(`${name}-${RECIPE_FILE}`, result.original);
+          await writeText(dir, RECIPE_FILE, serializeRecipe(result.recipe));
+        } catch {
+          // Not saved this time; the generated values are just regenerated on the next load.
+        }
       }
     };
 
@@ -118,7 +124,7 @@ export class FolderKitchenStore implements KitchenStore {
 
     let recipe: Recipe;
     const data = tryParse(text);
-    if (isObject(data) && ('ingredientGroups' in data || 'schemaVersion' in data)) {
+    if (isObject(data) && !isAiFormat(data)) {
       // Already in recipe.json format, just not in its own folder.
       const result = loadRecipe(data, id);
       if (!result.ok) return result;
@@ -140,6 +146,41 @@ export class FolderKitchenStore implements KitchenStore {
     await writeBlob(trash, `${trashStamp()}-${file.name}`, original);
     await file.parent.removeEntry(file.name);
     return { ok: true, recipe };
+  }
+
+  /**
+   * Reads `dir/recipe.json`. One in the AI format (e.g. a saved AI reply dropped into a folder) is
+   * converted, with the photos in the folder; `original` is the file as read, for a backup.
+   */
+  private async readRecipe(
+    dir: FileSystemDirectoryHandle,
+    id: string,
+  ): Promise<(LoadRecipeResult & { ok: false }) | { ok: true; recipe: Recipe; changed: boolean; original: Blob }> {
+    let original: File;
+    try {
+      original = await (await dir.getFileHandle(RECIPE_FILE)).getFile();
+    } catch {
+      return { ok: false, error: 'No recipe.json in this folder.' };
+    }
+    const text = await original.text();
+    const data = tryParse(text);
+    if (data === undefined) return { ok: false, error: 'recipe.json is not valid JSON.' };
+    if (isObject(data) && isAiFormat(data)) {
+      const result = parseRecipeJson(text);
+      if (!result) return { ok: false, error: 'recipe.json is not valid JSON.' };
+      if (!result.ok) return result;
+      const recipe = recipeFromImported(id, result.recipe, id);
+      recipe.images = await imagesInFolder(dir, recipe.images);
+      return { ok: true, recipe, changed: true, original };
+    }
+    const result = loadRecipe(data, id);
+    return result.ok ? { ok: true, recipe: result.recipe, changed: result.changed, original } : result;
+  }
+
+  /** Copies a file's contents into _trash/ under a timestamped name. */
+  private async trashCopy(name: string, data: Blob): Promise<void> {
+    const trash = await this.root.getDirectoryHandle(TRASH_DIR, { create: true });
+    await writeBlob(trash, `${trashStamp()}-${name}`, data);
   }
 
   async saveRecipe(recipe: Recipe): Promise<void> {
@@ -264,20 +305,29 @@ async function hasFile(dir: FileSystemDirectoryHandle, name: string): Promise<bo
   }
 }
 
-async function readRecipe(dir: FileSystemDirectoryHandle, id: string): Promise<LoadRecipeResult> {
-  let text: string;
-  try {
-    text = await (await (await dir.getFileHandle(RECIPE_FILE)).getFile()).text();
-  } catch {
-    return { ok: false, error: 'No recipe.json in this folder.' };
+/** The AI JSON format (`ingredients` / `steps` lists) rather than recipe.json's own groups. */
+function isAiFormat(data: Record<string, unknown>): boolean {
+  return !('ingredientGroups' in data) && !('stepGroups' in data) && ('ingredients' in data || 'steps' in data);
+}
+
+const IMAGE_FILE = /\.(?:jpe?g|png|webp|gif|avif)$/i;
+
+/**
+ * The listed photos that exist in the folder (plus web links); when none are listed, every photo
+ * file in the folder. Unresized (thumb = file) — they're resized the first time they're shown.
+ */
+async function imagesInFolder(dir: FileSystemDirectoryHandle, listed: RecipeImage[]): Promise<RecipeImage[]> {
+  const files: string[] = [];
+  for await (const [name, handle] of dir.entries()) {
+    if (handle.kind === 'file' && IMAGE_FILE.test(name) && !name.startsWith('.') && !name.startsWith('_')) {
+      files.push(name);
+    }
   }
-  let data: unknown;
-  try {
-    data = JSON.parse(text);
-  } catch {
-    return { ok: false, error: 'recipe.json is not valid JSON.' };
-  }
-  return loadRecipe(data, id);
+  const images = listed.length
+    ? listed.filter((img) => isImageLink(img.file) || files.includes(img.file))
+    : files.sort().map((file): RecipeImage => ({ file, thumb: file, origin: 'own' }));
+  if (images.length && !images.some((img) => img.isCover)) images[0] = { ...images[0], isCover: true };
+  return images;
 }
 
 async function writeText(dir: FileSystemDirectoryHandle, name: string, text: string): Promise<void> {

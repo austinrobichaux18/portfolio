@@ -110,6 +110,73 @@ describe('FolderKitchenStore', () => {
     expect(await readText(dir.files.get('recipe.json')!)).toContain(first.recipes[0].uid);
   });
 
+  it('backs up recipe.json to _trash before rewriting it on load', async () => {
+    const dir = await root.getDirectoryHandle('toast', { create: true });
+    const original = JSON.stringify({ title: 'Toast', somethingNew: 'kept in the backup' });
+    dir.files.set('recipe.json', new Blob([original]));
+
+    await store.loadLibrary();
+
+    const trash = root.dirs.get('_trash')!;
+    const [backup] = [...trash.files.keys()];
+    expect(backup).toMatch(/^\d{8}-\d{6}-toast-recipe\.json$/);
+    expect(await readText(trash.files.get(backup)!)).toBe(original);
+  });
+
+  it('converts an AI-format recipe.json in a folder instead of dropping its ingredients and steps', async () => {
+    const dir = await root.getDirectoryHandle('abalone-with-lettuce', { create: true });
+    const ai = {
+      title: "Dad's Abalone with Lettuce",
+      source: { url: 'https://www.madewithlau.com/recipes/abalone-with-lettuce', siteName: 'Made With Lau' },
+      servings: 4,
+      tags: ['cuisine:chinese'],
+      ingredients: [{ group: 'Sauce', items: ['1 tbsp oyster sauce', '2 tsp sugar'] }],
+      steps: ['Blanch the lettuce.', 'Add the sauce.'],
+    };
+    dir.files.set('recipe.json', new Blob([JSON.stringify(ai)]));
+    dir.files.set('image.jpg', new Blob(['jpg']));
+
+    const library = await store.loadLibrary();
+
+    expect(library.errors).toEqual([]);
+    const recipe = library.recipes[0];
+    expect(recipe.id).toBe('abalone-with-lettuce');
+    expect(recipe.ingredientGroups[0].name).toBe('Sauce');
+    expect(recipe.ingredientGroups[0].items.map((i) => i.raw)).toEqual(['1 tbsp oyster sauce', '2 tsp sugar']);
+    expect(recipe.stepGroups[0].steps.map((s) => s.text)).toEqual(['Blanch the lettuce.', 'Add the sauce.']);
+    expect(recipe.source?.url).toBe('https://www.madewithlau.com/recipes/abalone-with-lettuce');
+    expect(recipe.images).toEqual([{ file: 'image.jpg', thumb: 'image.jpg', origin: 'own', isCover: true }]);
+    // Original kept, and the second load reads the converted file the same way.
+    expect([...root.dirs.get('_trash')!.files.keys()][0]).toMatch(/abalone-with-lettuce-recipe\.json$/);
+    const again = await store.loadLibrary();
+    expect(again.recipes[0].ingredientGroups).toEqual(recipe.ingredientGroups);
+    expect(again.recipes[0].uid).toBe(recipe.uid);
+  });
+
+  it('reads recipe-scraper output (step objects, source_url) dropped into a folder', async () => {
+    const dir = await root.getDirectoryHandle('bok-choy', { create: true });
+    const scraped = {
+      title: 'Bok Choy',
+      source_url: 'https://www.madewithlau.com/recipes/bok-choy',
+      prep_time: '',
+      ingredients: ['1 lb bok choy', '2 cloves garlic'],
+      steps: [
+        { title: 'Wash', text: 'Wash the bok choy.\n\nDrain well.' },
+        { title: 'Cook', text: 'Stir-fry 2 minutes.' },
+      ],
+    };
+    dir.files.set('recipe.json', new Blob([JSON.stringify(scraped)]));
+
+    const recipe = (await store.loadLibrary()).recipes[0];
+
+    expect(recipe.ingredientGroups[0].items).toHaveLength(2);
+    expect(recipe.stepGroups[0].steps.map((s) => s.text)).toEqual([
+      'Wash the bok choy.\nDrain well.',
+      'Stir-fry 2 minutes.',
+    ]);
+    expect(recipe.source?.url).toBe('https://www.madewithlau.com/recipes/bok-choy');
+  });
+
   it('moves a deleted recipe and its images into _trash instead of deleting them', async () => {
     await store.saveRecipe(newRecipe('ramen', 'Ramen'));
     await store.writeImage('ramen', 'img-a.webp', new Blob(['photo']));

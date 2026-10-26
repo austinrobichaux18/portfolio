@@ -79,7 +79,7 @@ export function parseRecipeJson(text: string): RecipeJsonResult | null {
   }
   const nutrition = toNutrition(data['nutritionPerServing'] ?? data['nutrition']);
   if (nutrition) recipe.nutrition = nutrition;
-  const source = toSource(data['source'] ?? data['sourceUrl'] ?? data['url']);
+  const source = toSource(data['source'] ?? data['sourceUrl'] ?? data['source_url'] ?? data['url']);
   if (source) recipe.source = source;
   return { ok: true, recipe };
 }
@@ -192,6 +192,11 @@ function groupsToText(
       continue;
     }
     if (!isObject(group)) continue;
+    // A single step object, e.g. { "title": "Blanch", "text": "…" } from a recipe scraper.
+    if (!('items' in group) && str(group['text'])) {
+      if (clean(group['text'] as string)) blocks.push(clean(group['text'] as string));
+      continue;
+    }
     const items = arr(group['items']).flatMap((l) => (typeof l === 'string' && clean(l) ? [clean(l)] : []));
     if (!items.length) continue;
     const name = str(group['group']) ?? str(group['name']);
