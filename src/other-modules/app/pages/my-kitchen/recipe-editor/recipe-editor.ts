@@ -99,7 +99,8 @@ export class RecipeEditor implements HasUnsavedChanges, OnDestroy {
 
   protected readonly showPaste = signal(this.isNew && this.route.snapshot.queryParamMap.has('paste'));
   protected readonly pasteText = signal('');
-  protected readonly showDetails = signal(false);
+  /** Open when editing a recipe that already has notes or a source, so they're in view. */
+  protected readonly showDetails = signal(!!(this.base?.household.notes || this.base?.source));
   protected readonly aiPrompt = AI_RECIPE_PROMPT;
   protected readonly promptCopied = signal(false);
   protected readonly tagDraft = signal('');

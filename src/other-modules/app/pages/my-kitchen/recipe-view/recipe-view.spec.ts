@@ -43,6 +43,19 @@ describe('RecipeView', () => {
     expect((await store.loadLibrary()).recipes[0].household.rating).toBeUndefined();
   });
 
+  it('changes status and how often right on the page', async () => {
+    const { harness, store } = await setupKitchen([sampleRamen()]);
+    const view = await harness.navigateByUrl('/r/ramen', RecipeView);
+
+    await view.setTrust('ours');
+    await view.setFrequency('rare');
+
+    const household = (await store.loadLibrary()).recipes[0].household;
+    expect(household.trust).toBe('ours');
+    expect(household.frequency).toBe('rare');
+    expect(household.rating).toBe(8); // untouched
+  });
+
   it('deletes to trash after confirming and returns to the library', async () => {
     const { harness, store, router } = await setupKitchen([sampleRamen()]);
     const view = await harness.navigateByUrl('/r/ramen', RecipeView);

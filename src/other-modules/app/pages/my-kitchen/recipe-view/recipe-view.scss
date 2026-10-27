@@ -36,6 +36,24 @@
   }
 }
 
+.status-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+
+  label {
+    display: flex;
+    flex-direction: column;
+    flex: 1 1 200px;
+    max-width: 280px;
+  }
+
+  select {
+    padding: 6px 10px;
+    font-size: 0.9rem;
+  }
+}
+
 .badges,
 .facts,
 .actions,

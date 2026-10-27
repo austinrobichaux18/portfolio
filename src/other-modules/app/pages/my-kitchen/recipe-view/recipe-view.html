@@ -15,12 +15,33 @@
       }
       <div class="hero-text">
         <h2>{{ recipe.title }}</h2>
-        <div class="badges">
-          <span class="badge" [class.untested]="recipe.household.trust === 'untested'" [class.ours]="recipe.household.trust === 'ours'">
-            {{ trustLabel(recipe) }}
-          </span>
-          <span class="badge">{{ frequencyLabel(recipe) }}</span>
-        </div>
+        @if (state.readOnly()) {
+          <div class="badges">
+            <span class="badge" [class.untested]="recipe.household.trust === 'untested'" [class.ours]="recipe.household.trust === 'ours'">
+              {{ trustLabel(recipe) }}
+            </span>
+            <span class="badge">{{ frequencyLabel(recipe) }}</span>
+          </div>
+        } @else {
+          <div class="status-row">
+            <label>
+              <span class="label">Status</span>
+              <select [value]="recipe.household.trust" [disabled]="saving()" (change)="setTrust($any($event.target).value)">
+                @for (t of trustLevels; track t.id) {
+                  <option [value]="t.id" [selected]="t.id === recipe.household.trust">{{ t.label }} — {{ t.description }}</option>
+                }
+              </select>
+            </label>
+            <label>
+              <span class="label">How often</span>
+              <select [value]="recipe.household.frequency" [disabled]="saving()" (change)="setFrequency($any($event.target).value)">
+                @for (f of frequencies; track f.id) {
+                  <option [value]="f.id" [selected]="f.id === recipe.household.frequency">{{ f.label }} — {{ f.description }}</option>
+                }
+              </select>
+            </label>
+          </div>
+        }
 
         <div class="facts">
           @if (recipe.yieldText) {
@@ -223,7 +244,7 @@
     }
 
     @if (recipe.household.notes || recipe.description || recipe.source || recipe.tags.length) {
-      <details class="card more">
+      <details class="card more" open>
         <summary>Notes &amp; source</summary>
         @if (recipe.household.notes) {
           <p class="pre">{{ recipe.household.notes }}</p>

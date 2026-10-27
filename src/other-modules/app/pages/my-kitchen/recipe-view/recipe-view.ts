@@ -2,9 +2,9 @@ import { Component, computed, effect, inject, signal } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { map } from 'rxjs';
-import { frequencyInfo, trustInfo } from '../../../core/data/recipe-statuses';
+import { FREQUENCIES, frequencyInfo, TRUST_LEVELS, trustInfo } from '../../../core/data/recipe-statuses';
 import { CookLogEntry } from '../../../core/models/CookLogEntry';
-import { Recipe, RecipeOption, RecipeOptionGroup } from '../../../core/models/Recipe';
+import { Recipe, RecipeFrequency, RecipeOption, RecipeOptionGroup, RecipeTrust } from '../../../core/models/Recipe';
 import { RecipeIngredient } from '../../../core/models/RecipeIngredient';
 import { KitchenImage } from '../kitchen-image/kitchen-image';
 import { deleteCookEntry, optionNames } from '../lib/cook-log';
@@ -118,6 +118,8 @@ export class RecipeView {
   });
 
   protected readonly ratingValues = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
+  protected readonly trustLevels = TRUST_LEVELS;
+  protected readonly frequencies = FREQUENCIES;
   protected readonly saving = signal(false);
   protected readonly errorMessage = signal('');
   /** 'new' = logging a cook; an entry = editing it; null = closed. */
@@ -210,6 +212,18 @@ export class RecipeView {
     if (household.rating === value) delete household.rating;
     else household.rating = value;
     await this.save({ ...recipe, household });
+  }
+
+  async setTrust(trust: RecipeTrust): Promise<void> {
+    const recipe = this.recipe();
+    if (!recipe || this.state.readOnly() || this.saving() || recipe.household.trust === trust) return;
+    await this.save({ ...recipe, household: { ...recipe.household, trust } });
+  }
+
+  async setFrequency(frequency: RecipeFrequency): Promise<void> {
+    const recipe = this.recipe();
+    if (!recipe || this.state.readOnly() || this.saving() || recipe.household.frequency === frequency) return;
+    await this.save({ ...recipe, household: { ...recipe.household, frequency } });
   }
 
   async deleteEntry(entry: CookLogEntry): Promise<void> {
