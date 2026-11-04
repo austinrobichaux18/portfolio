@@ -94,90 +94,102 @@ export const projects: Project[] = [
         title: 'Hexing',
 
         description:
-            'A roguelike deckbuilding strategy game built in Godot using C#. Features hex-based terrain, automated combat, card mechanics, and progression systems.',
+            'A roguelite deckbuilder / tower defense built solo in Godot 4 with C#. Heroes march in waves to destroy your summoning circle, and you deal monster camps onto a procedurally generated hex board to stop them.',
 
         tags: [
             'Godot',
             'C#',
-            'Roguelike',
+            '.NET',
+            'Roguelite',
             'Steam'
         ],
 
         status:
-            'In Development',
+            'Wishlist on Steam',
 
         result:
-            'Sole developer taking a commercial strategy game from concept through release.',
+            'Solo-developed commercial game with a live Steam page, backed by ~890 unit tests and 160+ automated in-game test scripts.',
 
         link: '/projects/hexing',
 
         featured: true,
 
         overview: [
-            'Hexing is a roguelike deckbuilding strategy game built solo in Godot using C#, combining hex-based tactical positioning with card-driven combat and run-based progression.',
-            'As the sole developer, I own the project end-to-end, from systems design and gameplay programming to UI/UX, tooling, and release planning, applying the same engineering discipline used in enterprise software development to an independent commercial product.'
+            'Hexing is a roguelite deckbuilder / tower defense built solo in Godot 4.7 with C# (.NET 8). Heroes march in waves from the edge of a procedurally generated hex board toward your summoning circle; you deal monster camps, shrines, traps, runes, and rituals onto the board to stop them, and each run is about building something that grows exponentially stronger.',
+            'As the sole developer I own it end-to-end: game design, gameplay systems, UI, tooling, Steamworks integration, store page, and release planning. The Steam page is live, with a demo targeted at Steam Next Fest (February 2027) and full release after it.'
         ],
 
         myRole:
-            'Sole developer responsible for software architecture, system design, gameplay programming, procedural generation, AI systems, data-driven frameworks, UI/UX, performance optimization, and custom development tools.',
+            'Sole developer responsible for game design, software architecture, gameplay programming, procedural generation, unit AI, data-driven content, UI/UX, test automation, Steamworks integration, and release.',
 
         technicalChallenges: [
             {
-                title: 'Hex-Grid System',
+                title: 'Hex Board & Procedural Maps',
                 description:
-                    'Built the hex-based grid powering tactical positioning, movement, and encounter placement across each run.'
+                    'A procedurally generated hex board where placement is the strategy: cards have multi-hex footprints, shrines lend their trait to adjacent camps, and terrain (swamp, road, scorched ground) changes how units behave.'
             },
             {
-                title: 'Card System',
+                title: 'Combat & Unit AI',
                 description:
-                    'Built data-driven frameworks for cards, enemies, and encounters so new content can be added without touching engine code.'
+                    'Wave budgets spawn heroes that march to destroy the core, fighting whatever blocks or attacks them on the way, while each camp spawns monsters with their own abilities and traits (burn, shred, slow, pierce, splash, taunt).'
             },
             {
-                title: 'Combat & AI Systems',
+                title: 'Layered Progression',
                 description:
-                    'Implemented automated combat and enemy AI systems driving hex-based tactical encounters.'
+                    'Each progression system owns exactly one kind of growth (kill scaling, terrain, camp stacking and evolutions, the risk/reward "Hexing" upgrade, support cards, and a meta Soul Shop skill tree) so new content never makes another system redundant.'
             },
             {
-                title: 'Procedural Generation',
+                title: 'Data-Driven Content',
                 description:
-                    'Designed procedural systems for hex-based terrain and run generation to keep each playthrough distinct.'
+                    'Cards, camps, heroes, terrain bonuses, and balance numbers live in JSON data files, so content and tuning change without touching engine code, with data-integrity tests checking every card, animation, and trait.'
             },
             {
-                title: 'Save System',
+                title: 'Steamworks Integration',
                 description:
-                    'Built a save system that persists run state, progression, and data-driven content across sessions.'
+                    'Achievements, lifetime user stats, and Steam Workshop publishing and loading call the Steamworks SDK\'s flat C API directly via P/Invoke (no wrapper library), active only in release builds so test runs never touch a real account.'
             },
             {
-                title: 'UI Architecture',
+                title: 'Daily Runs, Saves & Modding',
                 description:
-                    'Designed the game\'s UI/UX systems to stay responsive and readable as card, combat, and progression state grows in complexity.'
+                    'A seeded daily run picks its deck, modifiers, and map from the UTC date; versioned saves migrate forward across releases; and a built-in level editor paints, test-plays, and publishes custom maps to the Workshop.'
             }
         ],
 
         architecture: [
-            'Godot Engine',
-            'C# Gameplay Systems',
-            'Data-Driven Content (Cards / Encounters)',
-            'Save System'
+            'Godot 4.7 (.NET 8 / C#)',
+            'Engine-Free C# Rules Layer',
+            'Managers & Services (Waves, Combat, Economy, Hand)',
+            'JSON Game Data (Cards / Balance / Terrain)',
+            'Versioned Saves + Migrations',
+            'Steamworks SDK (P/Invoke)'
         ],
 
         deepDive: [
             {
                 title: 'Testing',
                 description:
-                    'Core systems like hex-grid resolution, card effects, and save/load logic are covered by targeted unit tests, backed up by manual playtesting for game feel and balance.'
-            },
-            {
-                title: 'Performance',
-                description:
-                    'Godot\'s profiler is used to track frame time and memory as systems and content are added, keeping performance consistent as the game grows in complexity.'
+                    'Game rules are written as pure C# in an engine-free Rules layer and covered by ~890 xUnit tests. A scripted automation service drives the real game headless or off-screen for 160+ end-to-end scripts, and the runner maps changed files to game areas so each change runs only the scripts that cover it.'
             },
             {
                 title: 'CI/CD',
                 description:
-                    'Builds are automated to catch compile errors and broken exports early, rather than relying solely on manual builds before releases.'
+                    'GitHub Actions runs the unit tests on every push, and a release workflow exports a Windows player build whenever the changelog names a new version, so releases come straight from versioned, player-facing changelog entries.'
+            },
+            {
+                title: 'AI-Assisted Workflow',
+                description:
+                    'Built with Claude Code agents working from a docs-first repo: an indexed set of architecture and design docs, a scoped task queue that fresh agent sessions pull from, and grading rubrics for code, docs, and task readiness, with design and balance calls kept with me.'
+            },
+            {
+                title: 'Playtesting & Balance',
+                description:
+                    'Playtest feedback is logged and drives UX priorities, and automated balance runs tune the numbers behind wave growth, hex odds, and camp scaling.'
             }
-        ]
+        ],
+
+        links: {
+            steam: 'https://store.steampowered.com/app/4998470/Hexing/'
+        }
 
     },
 

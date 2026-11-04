@@ -93,11 +93,22 @@ h2 {
 
 }
 
-.case-study {
+.game-links {
 
-    display:inline-block;
+    display:flex;
+
+    flex-wrap:wrap;
+
+    gap:24px;
 
     margin-top:20px;
+
+}
+
+.case-study,
+.steam-link {
+
+    display:inline-block;
 
     color:#49c6ff;
 
@@ -112,5 +123,11 @@ h2 {
         text-decoration:underline;
 
     }
+
+}
+
+.steam-link {
+
+    color:#4ade80;
 
 }

@@ -9,14 +9,16 @@ export const games: Game[] = [
 
         platform: 'Steam',
 
-        engine: 'Godot 4 / C#',
+        engine: 'Godot 4.7 / C#',
 
-        status: 'In Development',
+        status: 'Wishlist on Steam',
 
         description:
-            'A roguelike deckbuilding strategy game where players build and manage a dungeon using cards, hex terrain, monsters, and automated battles.',
+            'A roguelite deckbuilder / tower defense. Heroes march in waves to destroy your summoning circle; deal monster camps, shrines, and traps onto a procedurally generated hex board to stop them, and build an army that grows exponentially stronger each run.',
 
-        link: '/projects/hexing'
+        link: '/projects/hexing',
+
+        steam: 'https://store.steampowered.com/app/4998470/Hexing/'
 
     }
 

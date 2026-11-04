@@ -68,6 +68,14 @@
 
         }
 
+        @if(project.links?.steam) {
+
+            <a class="try-it" [href]="project.links!.steam" target="_blank" rel="noopener">
+                View on Steam
+            </a>
+
+        }
+
     </div>
 
 </article>

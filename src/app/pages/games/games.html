@@ -57,11 +57,23 @@
 
             </div>
 
-            @if (game.link) {
+            <div class="game-links">
 
-                <a [routerLink]="game.link" class="case-study"> View Case Study </a>
+                @if (game.link) {
 
-            }
+                    <a [routerLink]="game.link" class="case-study"> View Case Study </a>
+
+                }
+
+                @if (game.steam) {
+
+                    <a [href]="game.steam" target="_blank" rel="noopener" class="steam-link">
+                        View on Steam
+                    </a>
+
+                }
+
+            </div>
 
         </article>
 

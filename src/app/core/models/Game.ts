@@ -14,4 +14,6 @@ export interface Game {
 
     link?: string;
 
+    steam?: string;
+
 }
