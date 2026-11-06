@@ -1,4 +1,14 @@
-import { Component, OnDestroy, WritableSignal, computed, inject, signal } from '@angular/core';
+import {
+  Component,
+  ElementRef,
+  OnDestroy,
+  WritableSignal,
+  computed,
+  effect,
+  inject,
+  signal,
+  viewChild,
+} from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { FormsModule } from '@angular/forms';
 import { CurrencyPipe, DatePipe, DecimalPipe } from '@angular/common';
@@ -963,15 +973,43 @@ export class UsCareerData implements OnDestroy {
     );
   });
 
-  private syncingScroll = false;
+  // Top scrollbar <-> table horizontal scroll sync. Listeners are attached natively (passive,
+  // not via template (scroll) bindings) so scrolling never triggers change detection over the
+  // whole table. Whichever container the user is actively scrolling becomes the "driver"; the
+  // echo scroll events it causes on the other container are ignored until scrolling settles,
+  // so the two can't write stale positions back and forth (the source of the jitter).
+  private readonly topScrollRef = viewChild<ElementRef<HTMLElement>>('topScroll');
+  private readonly tableScrollRef = viewChild<ElementRef<HTMLElement>>('tableScroll');
+  private scrollDriver: HTMLElement | null = null;
+  private scrollDriverRelease?: ReturnType<typeof setTimeout>;
 
-  syncScroll(source: HTMLElement, target: HTMLElement) {
-    if (this.syncingScroll) return;
-    this.syncingScroll = true;
-    requestAnimationFrame(() => {
-      target.scrollLeft = source.scrollLeft;
-      this.syncingScroll = false;
+  private readonly scrollSyncEffect = effect((onCleanup) => {
+    const top = this.topScrollRef()?.nativeElement;
+    const table = this.tableScrollRef()?.nativeElement;
+    if (!top || !table) return;
+
+    const fromTop = () => this.syncScroll(top, table);
+    const fromTable = () => this.syncScroll(table, top);
+    top.addEventListener('scroll', fromTop, { passive: true });
+    table.addEventListener('scroll', fromTable, { passive: true });
+    onCleanup(() => {
+      top.removeEventListener('scroll', fromTop);
+      table.removeEventListener('scroll', fromTable);
+      clearTimeout(this.scrollDriverRelease);
+      this.scrollDriver = null;
     });
+  });
+
+  private syncScroll(source: HTMLElement, target: HTMLElement) {
+    const left = source.scrollLeft;
+    // Already in sync: a vertical-only table scroll, or the echo of our own write.
+    if (target.scrollLeft === left) return;
+    if (this.scrollDriver && this.scrollDriver !== source) return;
+
+    this.scrollDriver = source;
+    clearTimeout(this.scrollDriverRelease);
+    this.scrollDriverRelease = setTimeout(() => (this.scrollDriver = null), 150);
+    target.scrollLeft = left;
   }
 
   startResize(event: MouseEvent, field: SortField) {

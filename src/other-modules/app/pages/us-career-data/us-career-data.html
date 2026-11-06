@@ -583,11 +583,11 @@
       </div>
     }
 
-    <div class="table-scroll-top" #topScroll (scroll)="syncScroll(topScroll, tableScroll)">
+    <div class="table-scroll-top" #topScroll>
       <div class="table-scroll-top-spacer" [style.width.px]="tableTotalWidth()"></div>
     </div>
 
-    <div class="table-scroll" #tableScroll (scroll)="syncScroll(tableScroll, topScroll)">
+    <div class="table-scroll" #tableScroll>
       <table class="career-table">
         <thead>
           <tr>
